@@ -1,0 +1,215 @@
+Description,LocID,Location,Status,Address,City,State,Country,Zip,Phone Number,Timezone,Long,Lat
+Starbucks,9417-77713,Safeway - Alameda 3281,Licensed,2600 5th Street,Alameda,CA,US,94501,510-523-1804,GMT-08:00 America/Los_Angeles,-122.28,37.79
+Starbucks,8499-78611,Park & Central Alameda,Company Owned,1364 Park Street,Alameda,CA,US,945014542,510-521-5815,GMT-08:00 America/Los_Angeles,-122.24,37.76
+Starbucks,3541-35377,Las Trampas & Danville Blvd,Company Owned,3225 Danville Boulevard,Alamo,CA,US,945071913,(925) 362-9568,GMT-08:00 America/Los_Angeles,-122.03,37.85
+Starbucks,3275-97767,Target Albany T-1926,Licensed,1057 Eastshore Hwy,Albany,CA,US,947101011,510-982-3394,GMT-08:00 America/Los_Angeles,-122.31,37.88
+Starbucks,3221-16522,American Canyon & Highway 29,Company Owned,"101 W American Canyon Rd, Napa Junction",American Canyon,CA,US,945031162,707-649-2067,GMT-08:00 America/Los_Angeles,-122.25,38.17
+Starbucks,2108-34651,Lone Tree & Deer Valley,Company Owned,"4448 Lone Tree Way, Bluerock Center",Antioch,CA,US,945317413,(925) 778-3001,GMT-08:00 America/Los_Angeles,-121.78,37.97
+Starbucks,6530-91011,Lone Tree & Slatten Ranch,Company Owned,"5779 Lone Tree Way, G, Eastwood Shopping Center",Antioch,CA,US,945318604,925-754-9377,GMT-08:00 America/Los_Angeles,-121.74,37.96
+Starbucks,4757-16918,Somersville & Delta Fair,Company Owned,2504 Somersville Rd.,Antioch,CA,US,945094409,925-754-4002,GMT-08:00 America/Los_Angeles,-121.84,38
+Starbucks,4207-33864,Ralston & El Camino Belmont,Company Owned,1050-A El Camino Real,Belmont,CA,US,940023956,650-654-5533,GMT-08:00 America/Los_Angeles,-122.28,37.52
+Starbucks,4352-43634,Safeway - Benicia #774,Licensed,50 Solano Square,Benicia,CA,US,945102712,707-745-4047,GMT-08:00 America/Los_Angeles,-122.16,38.05
+Starbucks,3922-54377,2224 Shattuck - Berkeley,Company Owned,2224 Shattuck Avenue,Berkeley,CA,US,947041416,(510) 843-6806,GMT-08:00 America/Los_Angeles,-122.27,37.87
+Starbucks,2039-19513,Safeway-Brentwood #2621,Licensed,3110 Balfour Road,Brentwood,CA,US,945135500,925-626-6020,GMT-08:00 America/Los_Angeles,-121.72,37.92
+Starbucks,8277-27028,Marriott San Francisco Airport,Licensed,1800 Old Bayshore Hwy,Burlingame,CA,US,940101294,,GMT-08:00 America/Los_Angeles,-122.37,37.6
+Starbucks,1838-99420,Hwy 4 & Bixler - Discovery Bay,Company Owned,"14804 Hwy 4, Space 1-B",Byron,CA,US,94514,925-513-4991,GMT-08:00 America/Los_Angeles,-121.62,37.89
+Starbucks,9031-96280,267 E. Campbell Ave.,Company Owned,267 E. Campbell Avenue,Campbell,CA,US,950082075,408-364-0846,GMT-08:00 America/Los_Angeles,-121.95,37.29
+Starbucks,6720-31386,Castro Valley & Lake Chabot,Company Owned,2720 Castro Valley Blvd,Castro Valley,CA,US,945465412,510-888-0420,GMT-08:00 America/Los_Angeles,-122.09,37.69
+Starbucks,5729-73252,Safeway-Clayton #1195,Licensed,5431 Clayton Rd,Clayton,CA,US,945171039,925-672-2035,GMT-08:00 America/Los_Angeles,-121.95,37.95
+Starbucks,8534-73573,Cloverdale & Hwy 101,Company Owned,1198 A S. Cloverdale Blvd.,Cloverdale,CA,US,954254483,707-894-4637,GMT-08:00 America/Los_Angeles,-123.01,38.78
+Starbucks,2371-15964,Junipero Serra & Serramonte Colma,Company Owned,"990 Serramonte Blvd., A",Colma,CA,US,94014,650-757-1086,GMT-08:00 America/Los_Angeles,-122.46,37.67
+Starbucks,9611-70405,Sunvalley Mall - Concord,Company Owned,"1 Sunvalley Mall, D 115",Concord,CA,US,945205801,925-680-2571,GMT-08:00 America/Los_Angeles,-122.06,37.97
+Starbucks,6947-88240,Safeway - Concord #1192,Licensed,4309 Clayton Rd,Concord,CA,US,945212842,825-365-2710,GMT-08:00 America/Los_Angeles,-121.99,37.97
+Starbucks,9955-11445,Oak Grove & Treat,Company Owned,"790 Oak Grove Road, C-1, Diamond Center",Concord,CA,US,945182787,925-682-0579,GMT-08:00 America/Los_Angeles,-122.02,37.94
+Starbucks,7004-46475,Port Chicago & Olivera,Company Owned,"3373 Port Chicago Highway, Suite 3",Concord,CA,US,945201601,925-687-9759,GMT-08:00 America/Los_Angeles,-122.03,37.99
+Starbucks,1126-30119,Town Center Corte Madera,Company Owned,209 Corte Madera Town Center,Corte Madera,CA,US,949251208,415-927-1048,GMT-08:00 America/Los_Angeles,-122.52,37.93
+Starbucks,5945-77903,E Cotati & Lasalle,Company Owned,"640 E. Cotati Avenue, E",Cotati,CA,US,949314025,707-794-9016,GMT-08:00 America/Los_Angeles,-122.7,38.33
+Starbucks,9012-27347,Homestead & Foothill,Company Owned,22390 Homestead Road,Cupertino,CA,US,950140116,408-746-0151,GMT-08:00 America/Los_Angeles,-122.07,37.34
+Starbucks,2180-63228,Target Express Cupertino,Licensed,Mainstreet & Stevens Creek Blvd,Cupertino,CA,US,95014,,GMT-08:00 America/Los_Angeles,-122.01,37.32
+Starbucks,1932-62039,John Daly & Westlake Center,Company Owned,"332 Westlake Center, 332",Daly City,CA,US,940151431,650-994-2948,GMT-08:00 America/Los_Angeles,-122.48,37.7
+Starbucks,9448-95798,Railroad & Love,Company Owned,1 Railroad Blvd.,Danville,CA,US,945263873,925-743-1664,GMT-08:00 America/Los_Angeles,-122,37.82
+Starbucks,1733-60387,Blackhawk Plaza,Company Owned,"4000 Blackhawk Plaza Circle, A1",Danville,CA,US,945064654,925-736-7662,GMT-08:00 America/Los_Angeles,-121.92,37.8
+Starbucks,9623-64891,Target Davis T-2455,Licensed,4601 2nd St,Davis,CA,US,956189446,530-761-0126,GMT-08:00 America/Los_Angeles,-121.7,38.56
+Starbucks,9747-25944,Safeway - Davis #1205,Licensed,1435 W. Covell,Davis,CA,US,956165932,530-757-4540,GMT-08:00 America/Los_Angeles,-121.77,38.56
+Starbucks,9441-89820,3rd & F Street - Davis,Company Owned,208 F. Street,Davis,CA,US,956164515,530-753-6309,GMT-08:00 America/Los_Angeles,-121.74,38.54
+Starbucks,4264-46475,Safeway - Dixon #1258,Licensed,"1235 Stratford Ave., Dixon Landing",Dixon,CA,US,956202024,707-678-7400,GMT-08:00 America/Los_Angeles,-121.84,38.46
+Starbucks,7465-27742,I-80 & Pitt School - Dixon,Company Owned,"1450 Ary Lane, Suite F",Dixon,CA,US,956204413,707-693-1542,GMT-08:00 America/Los_Angeles,-121.84,38.46
+Starbucks,3392-87228,Dublin Blvd & Regional St,Company Owned,7904 Dublin Blvd.,Dublin,CA,US,945682925,(925) 803-7520,GMT-08:00 America/Los_Angeles,-121.93,37.7
+Starbucks,9893-70718,Fallon & 580,Company Owned,"2710 Dublin Blvd, Hacienda Crossings",Dublin,CA,US,94568,9257854051,GMT-08:00 America/Los_Angeles,-121.85,37.71
+Starbucks,5169-36315,Safeway-El Cerrito #2940,Licensed,"11450 San Pablo Ave, El Cerrito Plaza",El Cerrito,CA,US,945301917,510-233-8400,GMT-08:00 America/Los_Angeles,-122.32,37.92
+Starbucks,9535-93565,Appian & Valley View - El Sobrante,Company Owned,"454 Appian Way, G",El Sobrante,CA,US,948031671,510-223-3019,GMT-08:00 America/Los_Angeles,-122.3,37.98
+Starbucks,4621-37086,Emeryville,Company Owned,3839 Emery Street,Emeryville,CA,US,946083662,(510) 547-8849,GMT-08:00 America/Los_Angeles,-122.28,37.83
+Teavana,3380-96710,Teavana - Solano Town Center,Company Owned,"1350 Travis Blvd Store, No. L-2",Fairfield,CA,US,94533,707-422-1497,GMT-08:00 America/Los_Angeles,-122.05,38.26
+Starbucks,4897-30435,Pittman & Central - Fairfield,Company Owned,"4490 Central Way, 100",Fairfield,CA,US,945341609,707-863-7344,GMT-08:00 America/Los_Angeles,-122.13,38.22
+Starbucks,9848-73627,N. Texas & Dickson Hill,Company Owned,"3334 North Texas Street, Suite A",Fairfield,CA,US,945339776,(707) 435-8281,GMT-08:00 America/Los_Angeles,-122.03,38.29
+Starbucks,7860-12370,Foster City & Marlin Cove - Foster,Company Owned,1066 Foster City Boulevard,Foster City,CA,US,944042301,650-341-4419,GMT-08:00 America/Los_Angeles,-122.26,37.55
+Starbucks,5838-31776,Boscell & Auto Mall Pkwy,Company Owned,"5605 Automall Parkway, Warm Springs Plaza",Fremont,CA,US,945383133,510-657-7249,GMT-08:00 America/Los_Angeles,-121.98,37.5
+Starbucks,3598-42674,Mission & Warm Springs Blvd,Company Owned,"46655 Mission Boulevard, 100",Fremont,CA,US,94539,510-661-9956,GMT-08:00 America/Los_Angeles,-121.93,37.49
+Starbucks,9741-65924,Mission & Las Palmas,Company Owned,39981 Mission Blvd.,Fremont,CA,US,945393627,510-445-0729,GMT-08:00 America/Los_Angeles,-121.95,37.56
+Starbucks,1519-19121,Fremont Blvd & Irvington,Company Owned,"41093 Fremont Blvd., MIssion Blvd. & Cedar Street",Fremont,CA,US,94538,510-979-9716,GMT-08:00 America/Los_Angeles,-121.96,37.53
+Starbucks,2985-49819,Mission & Cedar,Company Owned,"43587 Mission Blvd., A-1",Fremont,CA,US,94539,510-623-9514,GMT-08:00 America/Los_Angeles,-121.92,37.53
+Starbucks,5932-53886,Mowry & Blacow,Company Owned,"5034 Mowry Ave, H",Fremont,CA,US,945381045,510-818-9026,GMT-08:00 America/Los_Angeles,-122,37.53
+Starbucks,3217-68480,Fremont Blvd & Nicolet,Company Owned,35674 Fremont Boulevard,Fremont,CA,US,945363420,(510) 742-7157,GMT-08:00 America/Los_Angeles,-122.03,37.57
+Starbucks,2165-52691,Gilroy Town Place,Company Owned,"795 First Street, Gilroy Outlet Center",Gilroy,CA,US,950204918,(408) 847-5920,GMT-08:00 America/Los_Angeles,-121.59,37.01
+Starbucks,1844-93487,Safeway - Guerneville #950,Licensed,16405 River Rd,Guerneville,CA,US,954469654,707-869-9433,GMT-08:00 America/Los_Angeles,-123,38.5
+Starbucks,4484-19675,Hwy 1 & Belleville - Half Moon Bay,Company Owned,"80 Cabrillo Highway N, V",Half Moon Bay,CA,US,940191650,650-726-5753,GMT-08:00 America/Los_Angeles,-122.43,37.47
+Starbucks,6649-60197,Target Hayward T-2185,Licensed,19661 Hesperian Blvd,Hayward,CA,US,945414200,510-731-0001,GMT-08:00 America/Los_Angeles,-122.12,37.67
+Starbucks,3767-21648,Whipple & Industrial,Company Owned,2472-1 Whipple Road,Hayward,CA,US,945447808,510-489-2907,GMT-08:00 America/Los_Angeles,-122.06,37.61
+Starbucks,7464-80315,Industrial & Hwy 92,Company Owned,25945 Industrial Blvd,Hayward,CA,US,94545,(510) 264-0175,GMT-08:00 America/Los_Angeles,-122.11,37.63
+Starbucks,7031-82427,Safeway - Healdsburg #998,Licensed,"1115 Vine, Vineyard Plaza Shopping Center",Healdsburg,CA,US,954484831,707-431-7102,GMT-08:00 America/Los_Angeles,-122.87,38.61
+Starbucks,7400-95966,I-80 & Willow - Hercules,Company Owned,"842 Willow Avenue, N/Q",Hercules,CA,US,945473800,510-245-2166,GMT-08:00 America/Los_Angeles,-122.26,38.02
+Starbucks,5432-97282,Safeway-Lafayette #783,Licensed,3540 Mt. Diablo Blvd.,Lafayette,CA,US,945493814,925-283-0228,GMT-08:00 America/Los_Angeles,-122.12,37.89
+Starbucks,7425-91943,Larkfield,Company Owned,"4745 Old Redwood Hwy, Larkspur Landing",Larkfield,CA,US,954037516,7075768796,GMT-08:00 America/Los_Angeles,-122.75,38.5
+Starbucks,3712-50770,Las Positas & Vasco,Company Owned,223 South Vasco Road,Livermore,CA,US,945519203,925-371-0539,GMT-08:00 America/Los_Angeles,-121.72,37.7
+Starbucks,3439-50118,Isabel & Vineyard,Company Owned,"101 East Vineyard Avenue, 135",Livermore,CA,US,945506374,925-846-0259,GMT-08:00 America/Los_Angeles,-121.8,37.65
+Starbucks,2799-61300,First & P St.,Company Owned,1472 1st Street,Livermore,CA,US,945504204,(925) 606-5663,GMT-08:00 America/Los_Angeles,-121.78,37.68
+Starbucks,2303-86863,Downtown Los Altos,Company Owned,296 Main Street,Los Altos,CA,US,940222908,6509493565,GMT-08:00 America/Los_Angeles,-122.12,37.38
+Starbucks,5500-38841,Blossom Hill Pavilion,Company Owned,624 Blossom Hill Road,Los Gatos,CA,US,950324514,408-402-0310,GMT-08:00 America/Los_Angeles,-121.96,37.24
+Starbucks,4836-78781,Blossom Hill & Harwood,Company Owned,14180 Blossom Hill Road,Los Gatos,CA,US,95032,408-356-5856,GMT-08:00 America/Los_Angeles,-121.91,37.24
+Starbucks,9731-17527,Arnold & Morello,Company Owned,1051 Arnold Drive,Martinez,CA,US,94553,9252934415,GMT-08:00 America/Los_Angeles,-122.11,37.99
+Starbucks,4368-80986,Main & North Court,Company Owned,700 Main Street,Martinez,CA,US,945531131,925-228-0553,GMT-08:00 America/Los_Angeles,-122.14,38.02
+Starbucks,4728-43966,Santa Cruz Avenue Menlo Park,Company Owned,643-693 Santa Cruz Avenue,Menlo Park,CA,US,940254502,6503235118,GMT-08:00 America/Los_Angeles,-122.18,37.45
+Starbucks,5939-49876,Secure Access SLAC,Company Owned,"2575 Sand Hill Rd, Building #047",Menlo Park,CA,US,94025,6502348187,GMT-08:00 America/Los_Angeles,-122.2,37.42
+Starbucks,7863-71921,Willow & Hamilton - Menlo Park,Company Owned,1401 Willow,Menlo Park,CA,US,940251414,650-328-7160,GMT-08:00 America/Los_Angeles,-122.15,37.48
+Starbucks,1967-27021,Safeway - Mill Valley #2718,Licensed,110 Strawberry Village,Mill Valley,CA,US,949412505,415-360-9016,GMT-08:00 America/Los_Angeles,-122.52,37.9
+Starbucks,4077-27264,Calaveras & Park Victoria,Company Owned,1197 East Calaveras Boulevard,Milpitas,CA,US,950355502,408-586-7306,GMT-08:00 America/Los_Angeles,-121.89,37.44
+Starbucks,9645-60243,Moraga & Rheem,Company Owned,500 Moraga Road,Moraga,CA,US,945562211,925-377-0523,GMT-08:00 America/Los_Angeles,-122.12,37.86
+Starbucks,7535-71772,Vineyard Blvd & Monterey,Company Owned,"251 Vineyard Town Center Way, Coyote Creek Center",Morgan Hill,CA,US,950375673,(408) 779-8692,GMT-08:00 America/Los_Angeles,-121.64,37.11
+Starbucks,9112-20446,Cochrane & Hwy 101,Company Owned,1041 Cochrane Road,Morgan Hill,CA,US,950379076,408-776-2061,GMT-08:00 America/Los_Angeles,-121.65,37.16
+Starbucks,5172-32554,Shoreline & Pear,Company Owned,"1380 Pear Avenue, Blossom Valley Shopping Center",Mountain View,CA,US,940431360,650-965-2048,GMT-08:00 America/Los_Angeles,-122.08,37.42
+Starbucks,8755-60029,Castro & High School,Company Owned,750 Castro St,Mountain View,CA,US,940412015,650-564-9255,GMT-08:00 America/Los_Angeles,-122.08,37.39
+Starbucks,1943-56520,Soscol at Hwy 121-Napa,Company Owned,"247 Soscol Avenue, Redwood Plaza",Napa,CA,US,945594007,(707) 226-5251,GMT-08:00 America/Los_Angeles,-122.27,38.28
+Starbucks,8770-15518,Hwy 29 & Redwood,Company Owned,2007 Redwood Rd,Napa,CA,US,945583212,707-256-3968,GMT-08:00 America/Los_Angeles,-122.31,38.32
+Starbucks,6015-73907,Thornton & Sycamore,Company Owned,7324 Thorton Av,Newark,CA,US,945603647,510-742-8005,GMT-08:00 America/Los_Angeles,-122.04,37.53
+Starbucks,9003-52134,San Marin & San Ramon,Company Owned,"127 San Marin Dr, The Village at Novato",Novato,CA,US,949451209,4158975832,GMT-08:00 America/Los_Angeles,-122.6,38.12
+Starbucks,4912-66595,Safeway - Novato #2828,Licensed,5720 Nave Drive,Novato,CA,US,949496210,415-881-9256,GMT-08:00 America/Los_Angeles,-122.53,38.06
+Starbucks,5485-47843,OAK T -1 Gate 4,Licensed,1 Airport Drive,Oakland,CA,US,946211430,5105633851,GMT-08:00 America/Los_Angeles,-122.21,37.72
+Starbucks,3347-63726,2059 Mountain Blvd. - Oakland,Company Owned,2059 Mountain Blvd,Oakland,CA,US,946112815,510-338-1090,GMT-08:00 America/Los_Angeles,-122.21,37.83
+Starbucks,9623-68899,Main St & Carol,Company Owned,"2190 Main Street, A",Oakley,CA,US,945613351,925-679-3247,GMT-08:00 America/Los_Angeles,-121.73,38
+Starbucks,8299-91621,Moraga & Bryant,Company Owned,"2 Theatre Square, 106",Orinda,CA,US,945633389,925-258-0476,GMT-08:00 America/Los_Angeles,-122.18,37.88
+Starbucks,7014-39720,Hwy 1 & Linda Mar - Linda Mar,Company Owned,1227 Linda Mar Shopping Center,Pacifica,CA,US,940443347,650-738-1652,GMT-08:00 America/Los_Angeles,-122.5,37.6
+Starbucks,5389-76523,Oceana & Manor,Company Owned,549 Oceana,Pacifica,CA,US,94044,4154702321,GMT-08:00 America/Los_Angeles,-122.49,37.65
+Starbucks,1462-67038,Safeway - Pacifica #3008,Licensed,12 Manor Plaza,Pacifica,CA,US,940441800,650-359-2751,GMT-08:00 America/Los_Angeles,-122.49,37.65
+Starbucks,5398-28554,Embarcadero & St. Francis,Company Owned,"2190 West Bayshore Road, Ste. 180",Palo Alto,CA,US,94303,650-739-0373,GMT-08:00 America/Los_Angeles,-122.13,37.45
+Starbucks,8814-38346,Target Petaluma T-2601,Licensed,401 Kenilworth Dr,Petaluma,CA,US,94952,707-775-6322,GMT-08:00 America/Los_Angeles,-122.63,38.24
+Starbucks,2220-65171,Safeway-Petaluma #3011,Licensed,"389 S McDowell Blvd, Parkway Plaza",Petaluma,CA,US,94952,707-762-7872,GMT-08:00 America/Los_Angeles,-122.68,38.28
+Starbucks,1779-37707,Sonoma Mountain & Riesling,Company Owned,"701 Sonoma Mountain Pkwy, C12, Petaluma Plaza Shopping Center",Petaluma,CA,US,949548518,707-776-4591,GMT-08:00 America/Los_Angeles,-122.64,38.27
+Starbucks,6518-39399,Railroad & Leland,Company Owned,2285 Railroad Avenue,Pittsburg,CA,US,945654924,925-427-3025,GMT-08:00 America/Los_Angeles,-121.89,38.01
+Starbucks,8514-64227,Safeway - Pittsburg #1215,Licensed,660 Bailey Road,Pittsburg,CA,US,945654306,925-458-0181,GMT-08:00 America/Los_Angeles,-121.94,38.02
+Starbucks,4459-99410,Safeway - Pleasant Hill #928,Licensed,"600 Patterson Blvd., The Crossroads at Pleasant Hill",Pleasant Hill,CA,US,945234155,,GMT-08:00 America/Los_Angeles,-122.07,37.93
+Starbucks,7264-72511,Bernal & Stanley - Pleasanton,Company Owned,"3040 Bernal Ave, 320",Pleasanton,CA,US,94566,9255197565,GMT-08:00 America/Los_Angeles,-121.86,37.67
+Starbucks,7934-83246,Safeway-Pleasanton #2856,Licensed,"6790 Bernal Ave, Stoneridge Center",Pleasanton,CA,US,94566,925-846-8644,GMT-08:00 America/Los_Angeles,-121.9,37.66
+Starbucks,4089-56794,Park Place & Washington,Company Owned,133 Park Place,Point Richmond,CA,US,948013922,5102366021,GMT-08:00 America/Los_Angeles,-122.38,37.93
+Starbucks,5436-16930,Woodside & Gordon - Redwood City,Company Owned,820 Woodside Road,Redwood City,CA,US,940613746,650-299-0327,GMT-08:00 America/Los_Angeles,-122.22,37.47
+Starbucks,7883-88826,SMF Sac Term A Lower Level Baggage,Licensed,6942 Airport Blvd.,Sacramento,CA,US,958371109,,GMT-08:00 America/Los_Angeles,-121.59,38.69
+Starbucks,9536-73146,Safeway-San Anselmo #1723,Licensed,838 Sir Francis Drake Blvd.,San Anselmo,CA,US,949601914,415-456-9157,GMT-08:00 America/Los_Angeles,-122.56,37.98
+Starbucks,6293-83733,The Shops at Tanforan,Company Owned,"1150 El Camino Real, Suite 186, Bayhill Shopping Center",San Bruno,CA,US,940662429,650-588-2451,GMT-08:00 America/Los_Angeles,-122.42,37.64
+Starbucks,5850-85719,Industrial & Howard,Company Owned,"1135 Industrial Rd., A",San Carlos,CA,US,940704162,650-596-2741,GMT-08:00 America/Los_Angeles,-122.25,37.5
+Teavana,2813-87142,Teavana - San Francisco Centre,Company Owned,"865 Market St., #324",San Francisco,CA,US,94103,415-512-7205,GMT-08:00 America/Los_Angeles,-122.41,37.78
+Teavana,5464-65704,Teavana - Stonestown Galleria,Company Owned,"3251  20th Ave., #216",San Francisco,CA,US,94132,415-682-8517,GMT-08:00 America/Los_Angeles,-122.48,37.73
+Starbucks,2347-48910,Safeway - San Francisco #667,Licensed,5290 Diamond Heights Blvd,San Francisco,CA,US,941312118,415-824-7744,GMT-08:00 America/Los_Angeles,-122.44,37.74
+Starbucks,6729-81938,5455 Geary Blvd. - WFB,Company Owned,5455 Geary Blvd,San Francisco,CA,US,941212383,(415) 386-8813,GMT-08:00 America/Los_Angeles,-122.48,37.78
+Starbucks,6423-61419,Jones & Jefferson,Company Owned,"2801 Jones S, Ste 111, Stonestown Galleria",San Francisco,CA,US,941331116,415-776-7907,GMT-08:00 America/Los_Angeles,-122.42,37.81
+Starbucks,3334-23620,3rd & Evans,Company Owned,"3801 3rd Street, 112",San Francisco,CA,US,94124,415-471-0874,GMT-08:00 America/Los_Angeles,-122.39,37.74
+Starbucks,9315-61561,Hyde & Beach,Company Owned,685 Beach Street,San Francisco,CA,US,94109,4154090840,GMT-08:00 America/Los_Angeles,-122.42,37.81
+Starbucks,6639-90407,Bay & Taylor,Company Owned,499 Bay Street,San Francisco,CA,US,941331860,415-409-1847,GMT-08:00 America/Los_Angeles,-122.42,37.81
+Starbucks,1909-83623,Almaden Center - San Jose,Company Owned,"6471-90 Almaden Expressway, Canyon Creek Plaza",San Jose,CA,US,95120,(408) 323-9511,GMT-08:00 America/Los_Angeles,-121.86,37.22
+Starbucks,8535-61878,Silver Creek & Beaumont Canyon,Company Owned,5651 Silver Creek Valley Rd.,San Jose,CA,US,951382473,(408) 274-1055,GMT-08:00 America/Los_Angeles,-121.78,37.29
+Starbucks,3258-37164,Alum Rock & White,Company Owned,3103 & 3107 Alum Rock,San Jose,CA,US,95127,408-259-1497,GMT-08:00 America/Los_Angeles,-121.83,37.37
+Starbucks,2690-99049,Berryessa & King St,Company Owned,1712 Berryessa Avenue,San Jose,CA,US,951331067,4082544988,GMT-08:00 America/Los_Angeles,-121.87,37.37
+Starbucks,4671-61480,W.Santa Clara at San Pedro Sq,Company Owned,145 West Santa Clara Street,San Jose,CA,US,951131705,(408) 288-8803,GMT-08:00 America/Los_Angeles,-121.89,37.34
+Starbucks,8623-85071,Story & King,Company Owned,"1110 King Road, 20",San Jose,CA,US,951222118,4089233583,GMT-08:00 America/Los_Angeles,-121.84,37.34
+Starbucks,7175-77590,Cottle & Coronado,Company Owned,"5670 Cottle Rd, Bldg S4",San Jose,CA,US,95123,(408) 226-2735,GMT-08:00 America/Los_Angeles,-121.8,37.25
+Starbucks,1306-31451,Safeway - San Jose #1483,Licensed,1530 Hamilton Ave.,San Jose,CA,US,951254539,408-264-1523,GMT-08:00 America/Los_Angeles,-121.91,37.29
+Starbucks,3325-29692,Target San Jose T-1427,Licensed,"1600 Saratoga Ave, Meridian Glen Center",San Jose,CA,US,95129,408-871-7984,GMT-08:00 America/Los_Angeles,-121.99,37.29
+Starbucks,4463-20063,Technology & Metro Drive,Company Owned,"1759 Technology Dr, Ste A, The Alliance Building",San Jose,CA,US,951103813,408-451-9318,GMT-08:00 America/Los_Angeles,-121.92,37.37
+Starbucks,6322-32718,Saratoga & Kiely,Company Owned,"405 Saratoga Ave, Suite 10",San Jose,CA,US,95129,408-260-9160,GMT-08:00 America/Los_Angeles,-121.97,37.32
+Starbucks,3511-15140,Capitol & Timberloop,Company Owned,605 West Capitol Expressway,San Jose,CA,US,951364069,4084484369,GMT-08:00 America/Los_Angeles,-121.86,37.27
+Starbucks,4488-74336,Curtner & Monterey,Company Owned,"175 Curtner Avenue, San Jose Marketcenter",San Jose,CA,US,951251014,408-971-1752,GMT-08:00 America/Los_Angeles,-121.86,37.3
+Starbucks,1524-25899,Target San Jose North T-2581,Licensed,"95 Holger Wy, Park & Naglee",San Jose,CA,US,951341372,408-834-1527,GMT-08:00 America/Los_Angeles,-121.96,37.42
+Starbucks,7471-96197,Target San Jose T-626,Licensed,"2155 Morrill Ave, Evergreen Commons",San Jose,CA,US,95132,408-946-6791,GMT-08:00 America/Los_Angeles,-121.87,37.41
+Starbucks,4199-94792,E 14th & 136th,Company Owned,"13808 E 14th St., A",San Leandro,CA,US,945782633,510-667-0895,GMT-08:00 America/Los_Angeles,-122.14,37.71
+Starbucks,1301-21404,17th & El Camino - San Mateo,Company Owned,1701 South El Camino Real,San Mateo,CA,US,944023025,650-357-8176,GMT-08:00 America/Los_Angeles,-122.31,37.55
+Starbucks,3375-68666,Peninsula & Delaware - San Mateo,Company Owned,842 North Delaware Street,San Mateo,CA,US,944011504,650-685-8864,GMT-08:00 America/Los_Angeles,-122.33,37.58
+Starbucks,5060-83211,DeAnza & Polhemus,Company Owned,111 DeAnza Blvd,San Mateo,CA,US,944023988,(650) 345-0483,GMT-08:00 America/Los_Angeles,-122.34,37.52
+Starbucks,2881-92665,San Pablo Dam & I-80,Company Owned,30-A San Pablo Town Center,San Pablo,CA,US,948063967,510-236-1544,GMT-08:00 America/Los_Angeles,-122.33,37.95
+Starbucks,2150-69314,Terra Linda at Northgate,Company Owned,260 Northgate One,San Rafael,CA,US,949033416,(415) 492-1928,GMT-08:00 America/Los_Angeles,-122.55,38.01
+Starbucks,2425-96325,Safeway - San Rafael #932,Licensed,950 Las Gallinas,San Rafael,CA,US,94903,415-479-6111,GMT-08:00 America/Los_Angeles,-122.55,38.01
+Starbucks,5582-15683,Chevron USA Headquarters Lobby,Licensed,"6001 Bollinger Canyon Rd, Magnolia Square Shopping Center",San Ramon,CA,US,94583,9258423651,GMT-08:00 America/Los_Angeles,-121.96,37.76
+Starbucks,8007-87025,Safeway - San Ramon #2712,Licensed,"11060 Bollinger Canyon Rd, Country Club Village S.C.",San Ramon,CA,US,945824959,925-359-2005,GMT-08:00 America/Los_Angeles,-121.92,37.77
+Starbucks,2159-35882,Alcosta & Village Pkwy,Company Owned,"9150 A Alcosta Blvd, Crow Canyon Place",San Ramon,CA,US,945833854,(925) 803-0554,GMT-08:00 America/Los_Angeles,-121.93,37.73
+Starbucks,6839-89372,Washington & Linden,Company Owned,71 Washington Ave,Santa Clara,CA,US,950506138,408-244-3025,GMT-08:00 America/Los_Angeles,-121.94,37.34
+Starbucks,9524-73085,Safeway - Santa Clara #1990,Licensed,3970 Rivermark Plaza,Santa Clara,CA,US,950544155,408-855-0980,GMT-08:00 America/Los_Angeles,-121.95,37.39
+Starbucks,4668-44353,Target Santa Rosa T-937,Licensed,1980 Santa Rosa Ave,Santa Rosa,CA,US,954077621,707-575-0665,GMT-08:00 America/Los_Angeles,-122.71,38.42
+Starbucks,3463-72576,Hwy 12 & Mission,Company Owned,"4575 Sonoma Hwy, Bldg A, Raley's Fulton Marketplace",Santa Rosa,CA,US,954094135,707-539-1010,GMT-08:00 America/Los_Angeles,-122.67,38.46
+Starbucks,7993-39893,Yulupa & Bethards,Company Owned,"2755 Yulupa Avenue, Mendocino Marketplace",Santa Rosa,CA,US,954058584,707-545-2738,GMT-08:00 America/Los_Angeles,-122.67,38.43
+Starbucks,2771-45028,Target Santa Rosa T-2804,Licensed,950 Coddingtown Ctr,Santa Rosa,CA,US,95401,,GMT-08:00 America/Los_Angeles,-122.76,38.44
+Starbucks,9701-65114,Saratoga & Big Basin,Company Owned,"14410 Big Basin Way, Unit D",Saratoga,CA,US,950706036,4087411264,GMT-08:00 America/Los_Angeles,-122.03,37.26
+Starbucks,5320-42662,Sausalito,Company Owned,"14-16 Princess Street, Marin Gateway Retail Center",Sausalito,CA,US,949652210,(415) 332-0320,GMT-08:00 America/Los_Angeles,-122.48,37.86
+Starbucks,6462-45427,Mt Herman & Springs Lake,Company Owned,"219 Mt Herman Rd, Ste B",Scotts Valley,CA,US,950664021,831-440-1256,GMT-08:00 America/Los_Angeles,-122.03,37.04
+Starbucks,3075-43096,Gravenstein & Redwood,Company Owned,962 Gravenstein Hwy S,Sebastopol,CA,US,954724544,7078295029,GMT-08:00 America/Los_Angeles,-122.82,38.39
+Starbucks,9275-88459,Safeway - Sonoma #911,Licensed,477 W Napa,Sonoma,CA,US,954766551,7079960633,GMT-08:00 America/Los_Angeles,-122.47,38.29
+Starbucks,3563-76415,El Camino & Mathilda,Company Owned,332 W. El Camino Real,Sunnyvale,CA,US,940871306,408-736-6859,GMT-08:00 America/Los_Angeles,-122.04,37.37
+Starbucks,4617-18688,Travis AFB BX,Licensed,"461 Skymaster Circle, Gateway at Donner Pass",Travis AFB,CA,US,945351909,707-437-8342,GMT-08:00 America/Los_Angeles,-121.95,38.27
+Starbucks,9528-44265,Mission & Tamarack,Company Owned,"33115 Mission Boulevard, A",Union City,CA,US,94587,510-324-8157,GMT-08:00 America/Los_Angeles,-122.02,37.61
+Starbucks,4970-97561,Target Vacaville T-827,Licensed,3000 Harbison Dr,Vacaville,CA,US,956873909,707-452-8053,GMT-08:00 America/Los_Angeles,-121.96,38.36
+Starbucks,7332-56809,Leisure Town & Orange - Vacavile,Company Owned,"1110 Leisure Town Road, 10",Vacaville,CA,US,95687,707-4461763,GMT-08:00 America/Los_Angeles,-121.93,38.38
+Starbucks,7302-82161,Alamo & Butcher - Vacaville,Company Owned,"970 Alamo Drive, Vacaville Retail Center",Vacaville,CA,US,956875696,707-455-8557,GMT-08:00 America/Los_Angeles,-122,38.34
+Starbucks,6357-90716,Safeway - Vallejo #1631,Licensed,"122 Robies Way, Target Center, Vallejo",Vallejo,CA,US,945918039,707-554-4467,GMT-08:00 America/Los_Angeles,-122.21,38.08
+Starbucks,3703-39573,I-80 & Admiral Callaghan - Vallejo,Company Owned,966 Admiral Callaghan,Vallejo,CA,US,945913680,707-643-1687,GMT-08:00 America/Los_Angeles,-122.22,38.13
+Starbucks,4477-42909,Sonoma & Hwy 37,Company Owned,"4300 Sonoma Blvd, 250, Lincoln & Benicia @ Hwy. 80",Vallejo,CA,US,94589,707-554-4375,GMT-08:00 America/Los_Angeles,-122.26,38.13
+Teavana,5937-65956,Teavana - Broadway Plaza,Company Owned,"117 Broadway Lane, Space #1046",Walnut Creek,CA,US,94596,,GMT-08:00 America/Los_Angeles,-122.06,37.9
+Starbucks,2333-47142,Lake & Enterprise,Company Owned,4055 Lake Rd,West Sacramento,CA,US,956913415,916-371-5616,GMT-08:00 America/Los_Angeles,-121.58,38.57
+Starbucks,6516-41066,Harbor Pointe & Stillwater,Company Owned,"715 Harbor Point Place, 100",West Sacramento,CA,US,956051629,916-371-3524,GMT-08:00 America/Los_Angeles,-121.55,38.59
+Starbucks,1117-10581,Windsor Town Green,Company Owned,1001 McCleland Dr,Windsor,CA,US,954929597,707-837-0432,GMT-08:00 America/Los_Angeles,-122.82,38.55
+Starbucks,1687-75471,Shiloh & Hembree,Company Owned,"6560 Hembree Lane, 170",Windsor,CA,US,95492,707-836-1745,GMT-08:00 America/Los_Angeles,-122.79,38.53
+Starbucks,9683-34602,Main & Pioneer,Company Owned,"401 Pioneer Avenue, Suite A",Woodland,CA,US,95776,5306695821,GMT-08:00 America/Los_Angeles,-121.75,38.68
+Starbucks,6846-50671,Ashley & Main,Company Owned,271 W. Main Street,Woodland,CA,US,956956801,530-669-1556,GMT-08:00 America/Los_Angeles,-121.8,38.68
+Bart,8513-26845,Antioch,NA,Address not available,Antoich,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-121.7808147,37.99684592
+Bart,5634-91791,Pittsburg/Baypoint,NA,Address not available,Pittsburg/Baypoint,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-121.9458324,38.01686417
+Bart,1320-31367,Martinez,NA,Address not available,Martinez,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.0246682,38.00625295
+Bart,8837-38212,Concord,NA,Address not available,Concord,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.029478,37.97689232
+Bart,2014-97599,Pleasant Hill,NA,Address not available,Pleasant Hill,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.0559319,37.93056312
+Bart,1592-79027,Walnut Creek,NA,Address not available,Walnut Creek,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.0676273,37.90969446
+Bart,5459-74406,Lafayette,NA,Address not available,Lafayette,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.1241552,37.89899521
+Bart,8678-67827,Orinda,NA,Address not available,Orinda,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.1798054,37.89310996
+Bart,2258-97372,Dublin/Pleasanton,NA,Address not available,Dublin/Pleasanton,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-121.8982808,37.71353203
+Bart,6313-58637,West Dublin,NA,Address not available,West Dublin,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-121.9284932,37.70755669
+Bart,1658-19626,Castro Valley,NA,Address not available,Castro Valley,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.076122,37.70484047
+Bart,6312-30374,Bay Fair,NA,Address not available,Bay Fair,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.1276204,37.70864315
+Bart,7659-64259,San Leandro,NA,Address not available,San Leandro,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.1619526,37.73308432
+Bart,5467-26501,Hayward,NA,Address not available,Hayward,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.0877949,37.68038998
+Bart,8386-82019,South Hayward,NA,Address not available,South Hayward,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.0563459,37.64706322
+Bart,4521-16643,Union City,NA,Address not available,Union City,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.0165205,37.59974819
+Bart,7238-28832,Fremont,NA,Address not available,Fremont,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-121.9753218,37.56546679
+Bart,2560-15893,Warm Spring,NA,Address not available,Warm Spring,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-121.9396162,37.51101945
+Bart,1908-77372,Oakland Airport,NA,Address not available,Oakland Airport,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.2122145,37.72422533
+Bart,5251-18099,Oakland Coliseum,NA,Address not available,Oakland Coliseum,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.2005415,37.76766159
+Bart,6296-38798,Fruitvale,NA,Address not available,Fruitvale,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.2218275,37.78502895
+Bart,3382-93559,Lake Merrit,NA,Address not available,Lake Merrit,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.2645148,37.80030494
+Bart,3917-94869,12th St. Oakland,NA,Address not available,12th St. Oakland,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.2720332,37.80668546
+Bart,1214-59229,19th St . Oakland,NA,Address not available,19th St . Oakland,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.2675778,37.81416537
+Bart,3779-94347,West Oakland,NA,Address not available,West Oakland,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.2957025,37.80932552
+Bart,1272-53833,Mac Arthur,NA,Address not available,Mac Arthur,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.2672994,37.83176217
+Bart,1288-32001,Rockridge,NA,Address not available,Rockridge,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.2508701,37.84869513
+Bart,1827-61391,Ashby,NA,Address not available,Ashby,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.2698055,37.85639064
+Bart,9547-71219,Berkeley,NA,Address not available,Berkeley,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.2689702,37.87419718
+Bart,5383-52777,North Berkeley,NA,Address not available,North Berkeley,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.2848425,37.87881298
+Bart,5055-25142,El Cerrito Plaza,NA,Address not available,El Cerrito Plaza,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.2984872,37.90869882
+Bart,7193-51610,El Cerrito Del Norte,NA,Address not available,El Cerrito Del Norte,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.3163088,37.92890884
+Bart,4357-74132,Richmond,NA,Address not available,Richmond,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.3530658,37.93945098
+Bart,2188-34555,Embarcadaro,NA,Address not available,Embarcadaro,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.3978605,37.7995584
+Bart,4472-83866,Montgomery,NA,Address not available,Montgomery,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.4015296,37.79428707
+Bart,8563-96754,Powell,NA,Address not available,Powell,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.4075335,37.78848818
+Bart,3524-83579,Civic Center,NA,Address not available,Civic Center,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.4138709,37.78532495
+Bart,9435-75434,16th and Mission,NA,Address not available,16th and Mission,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.4195412,37.76950679
+Bart,5774-81584,24th and Mission,NA,Address not available,24th and Mission,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.4198748,37.75737724
+Bart,1320-92855,Glenn Park,NA,Address not available,Glenn Park,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.4318825,37.73575007
+Bart,3528-41069,Balboa Park,NA,Address not available,Balboa Park,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.4468923,37.72783611
+Bart,6979-32873,Daly City,NA,Address not available,Daly City,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.4685729,37.71147792
+Bart,1391-62825,Colma,NA,Address not available,Colma,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.4665716,37.68878154
+Bart,4799-64400,South San Francisco,NA,Address not available,South San Francisco,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.4432232,37.67030262
+Bart,5626-60336,San Bruno,NA,Address not available,San Bruno,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.4155386,37.64336794
+Bart,1708-82392,Milbrae,NA,Address not available,Milbrae,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.386793,37.60410591
+Bart,1611-95238,SF Airport,NA,Address not available,SF Airport,CA,US,0,999-999-9999,GMT-08:00 America/Los_Angeles,-122.3914425,37.61902268
+McDonald''s,4404-72502,Shields-Reid Community Center,company,"2301 Macdonald Ave, Richmond, CA 94804, United States",Richmond,CA,US,95050,15102337824,GMT-08:00 America/Los_Angeles,-121.939418,37.956423

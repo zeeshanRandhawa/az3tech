@@ -1,0 +1,3 @@
+droute_name,origin_node,destination_node,departure_time,departure_flexibility,driver_id,capacity,max_wait,fixed_route,droute_dbm_tag
+Place1,123,45,2023-01-01 09:30:00,3,2,2,3,1,DataSet_X
+Place2,57,174,2023-02-14 14:45:00,5,1,3,1,0,DataSet_X

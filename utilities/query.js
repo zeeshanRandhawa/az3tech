@@ -1,0 +1,652 @@
+const { Pool } = require('pg');
+const pgp = require('pg-promise')();
+
+const { logDebugInfo } = require('../utilities/logger');
+
+const pool = new Pool({
+
+  // user: 'postgres',
+  // password: '1234',
+  // host: 'localhost',
+  // port: 5432,
+  // database: 'test-transport'
+
+  user: 'doadmin',
+  password: 'AVNS_MHGwE5WNGWUy_wvn_-l',
+  host: 'db-postgresql-sfo2-32856-do-user-13737111-0.b.db.ondigitalocean.com',
+  port: 25060,
+  database: 'local-test',
+  ssl: {
+    rejectUnauthorized: false,
+    require: true
+  }
+});
+
+
+
+// make pg pool it is much better option than pg.connect
+// as it maintain a list of connections and closes them automatically f not needed
+// const pool = new Pool({
+//   user: 'postgres',
+//   password: '1234',
+//   host: 'localhost',
+//   port: 5432,
+//   database: 'test-transport'
+// });
+
+
+
+// used in case of batch file upload
+const db = pgp({
+  // user: 'postgres',
+  // password: '1234',
+  // host: 'localhost',
+  // port: 5432,
+  // database: 'test-transport'
+
+  user: 'doadmin',
+  password: 'AVNS_MHGwE5WNGWUy_wvn_-l',
+  host: 'db-postgresql-sfo2-32856-do-user-13737111-0.b.db.ondigitalocean.com',
+  port: 25060,
+  database: 'local-test',
+  ssl: {
+    rejectUnauthorized: false,
+    require: true
+  }
+
+});
+
+const getAllNodes = async () => {
+  try {
+    const data = await pool.query('SELECT * FROM nodes');
+    return data.rows;
+  } catch (error) {
+  }
+}
+
+
+// check by cookie if user is super admin
+const queryGetRole = async (session_token = '', email = '') => {
+  try {
+    if (session_token != '') {
+      const emailData = await pool.query(`SELECT email FROM sessions WHERE session_token='${session_token}'`);
+      const data = await pool.query(`SELECT role_type FROM "users" INNER JOIN "roles" ON users.role_id=roles.role_id WHERE users.email='${emailData.rows[0].email}'`);
+      return { status: 200, data: data.rows }
+    } else {
+      const data = await pool.query(`SELECT role_type FROM "users" INNER JOIN "roles" ON users.role_id=roles.role_id WHERE users.email='${email}'`);
+      return { status: 200, data: data.rows }
+    }
+  } catch (error) {
+    logDebugInfo('error', 'query_get_role', 'users/roles', error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+
+// generic query to query data from tables
+// it can have one column in where condition
+// for more than one column custom queries are made
+const queryAll = async (tableName, columnName = '', columnValue = null, pagination = null, columns = null) => {
+  try {
+    //make query depends on data type also
+    const query = `SELECT ${columns == null ? `*` : columns.map(col => col).join(',')} FROM "${tableName}"${columnName !== '' ? ' WHERE '.concat(columnName).concat(typeof (columnValue) == 'object' ? ' IN' : '=').concat(typeof (columnValue) == 'string' ? `'${columnValue}'` : typeof (columnValue) == 'object' ? ' ('.concat(columnValue.map(route => `\'${route}\'`).join(', ')).concat(')') : columnValue) : ''}${pagination != null ? ` LIMIT 10 OFFSET ${(pagination - 1) * 10}` : ''}`;
+    const data = await pool.query(query); // execute query
+    return { status: 200, data: data.rows } // return data
+  } catch (error) {
+    return { status: 500, data: error.message }; // if error return error message
+  }
+}
+
+const queryBetweenPoints = async (dataPoints) => {
+  // const pointQuery = `SELECT lat, long FROM nodes WHERE ((lat - ${dataPoints[0][1]})*(${dataPoints[1][0]} - ${dataPoints[0][0]}) - (long - ${dataPoints[0][0]}) * (${dataPoints[1][1]} - ${dataPoints[0][1]})) >= 0 AND ((lat - ${dataPoints[1][1]}) * (${dataPoints[2][0]} - ${dataPoints[1][0]}) - (long - ${dataPoints[1][0]}) * (${dataPoints[2][1]} - ${dataPoints[1][1]})) >= 0 AND ((lat - ${dataPoints[2][1]}) * (${dataPoints[3][0]} - ${dataPoints[2][0]}) - (long - ${dataPoints[2][0]}) * (${dataPoints[3][1]} - ${dataPoints[2][1]})) >= 0 AND ((lat - ${dataPoints[3][1]}) * (${dataPoints[0][0]} - ${dataPoints[3][0]}) - (long - ${dataPoints[3][0]}) * (${dataPoints[0][1]} - ${dataPoints[3][1]})) >= 0`;
+  try {
+    const pointQuery = `SELECT lat, long FROM nodes WHERE 
+    (((${dataPoints[1][0]} - ${dataPoints[0][0]}) * (long - ${dataPoints[0][0]})) + ((${dataPoints[1][1]} - ${dataPoints[0][1]}) * (lat - ${dataPoints[0][1]}))) >= 0
+     AND (((${dataPoints[1][0]} - ${dataPoints[0][0]}) * (long - ${dataPoints[0][0]})) + ((${dataPoints[1][1]} - ${dataPoints[0][1]}) * (lat - ${dataPoints[0][1]}))) <= (((${dataPoints[1][0]} - ${dataPoints[0][0]}) * (${dataPoints[1][0]} - ${dataPoints[0][0]})) + ((${dataPoints[1][1]} - ${dataPoints[0][1]}) * (${dataPoints[1][1]} - ${dataPoints[0][1]})))
+      AND (((${dataPoints[2][0]} - ${dataPoints[1][0]}) * (long - ${dataPoints[1][0]})) + ((${dataPoints[2][1]} - ${dataPoints[1][1]}) * (lat - ${dataPoints[1][1]}))) >= 0
+       AND (((${dataPoints[2][0]} - ${dataPoints[1][0]}) * (long - ${dataPoints[1][0]})) + ((${dataPoints[2][1]} - ${dataPoints[1][1]}) * (lat - ${dataPoints[1][1]}))) <= (((${dataPoints[2][0]} - ${dataPoints[1][0]}) * (${dataPoints[2][0]} - ${dataPoints[1][0]})) + ((${dataPoints[2][1]} - ${dataPoints[1][1]}) * (${dataPoints[2][1]} - ${dataPoints[1][1]})))`
+
+    const data = await pool.query(pointQuery); // execute query
+
+    return { status: 200, data: data.rows } // return data
+
+  } catch (error) {
+    return { status: 500, data: error.message }; // if error return error message
+  }
+}
+
+
+// get all table names made by user
+const queryTablesName = async () => {
+  try {
+    const data = await pool.query(`SELECT table_name FROM information_schema.tables WHERE table_schema='public'`);
+    return { status: 200, data: data.rows };
+  } catch (error) {
+    logDebugInfo('error', 'get_table_names', 'information_schema.tables', error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+
+// get rowCount of table
+const queryTableRows = async (tableName) => {
+  try {
+    const data = await pool.query(`SELECT count(*) FROM ${tableName}`);
+    return { status: 200, data: data.rows[0].count };
+  } catch (error) {
+    logDebugInfo('error', 'get_table_row_count', tableName, error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+
+// return usage (sapce) taken by a table in bytes
+const queryTableUsage = async (tableName) => {
+  try {
+    const data = await pool.query(`SELECT pg_total_relation_size('${tableName}')`);
+    return { status: 200, data: data.rows[0].pg_total_relation_size };
+  } catch (error) {
+    logDebugInfo('error', 'get_table_usage', tableName, error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+
+// drop specific table if table dropped return OK
+const purgeTable = async (tableName) => {
+  try {
+    await pool.query(`DROP TABLE "${tableName}" RESTRICT`);
+    return { status: 200 };
+  } catch (error) {
+    logDebugInfo('error', 'purge_table', tableName, error.message, error.stack);
+    return { status: 400, data: error.message };
+  }
+}
+
+
+//truncates data based on filters provided
+const truncFilteredData = async (purgeList, tableName, id = null) => {
+  try {
+    const processedQuery = await makeTruncFilterQuery(purgeList, tableName, id); // make trunc query (takes tableName and filter list)
+    const truncRes = await pool.query(processedQuery); // execute query
+    return { status: 200, rows: truncRes.rowCount !== null ? truncRes.rowCount : 0 }; // if query executed return row count if no row effectd it will return 0
+  } catch (error) {
+    logDebugInfo('error', 'trunc_filtere_list', tableName, error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+// process trunc filter query (takes list of objects and table name)
+const makeTruncFilterQuery = async (filters, tableName, id) => {
+  try {
+    // let filter_conditions = filters.map(filter => { return ((filter.d_type == 'datetime' && filter.start != undefined) || (filter.d_type != 'datetime' && filter.value != null)) ? filter.name.concat(filter.d_type == 'varchar' ? ' ILIKE ' : '=').concat(filter.d_type == 'datetime' ? `'${filter.value}'` : filter.d_type === 'boolean' ? filter.value === true ? 1 : 0 : filter.d_type == 'varchar' ? `'%${filter.value}%'` : `${filter.value}`) : undefined }).filter(value => value !== null && value !== undefined).join(` and `);
+    let filter_conditions = '';
+    filters.forEach((fltr) => {
+      if ((fltr.d_type === 'datetime' && (fltr.start !== null && fltr.end !== null)) || (fltr.d_type !== 'datetime' && fltr.value !== null)) {
+        if (filter_conditions !== '') {
+          filter_conditions = filter_conditions.concat(' AND');
+        }
+        if (fltr.d_type === 'datetime') {
+          filter_conditions = filter_conditions.concat(` ${fltr.name}>=\'${fltr.start}:00\' AND ${fltr.name}<=\'${fltr.end}:00\'`);
+        } else if (fltr.d_type === 'varchar') {
+          filter_conditions = filter_conditions.concat(` ${fltr.name} ILIKE \'%${fltr.value}%\'`);
+        } else if (fltr.d_type === 'boolean') {
+          filter_conditions = filter_conditions.concat(` ${fltr.name} = `.concat(fltr.value === 'true' ? 1 : 0));
+        } else {
+          filter_conditions = filter_conditions.concat(` ${fltr.name} = ${fltr.value}`);
+        }
+      }
+    });
+    if (filter_conditions !== '') {
+      filter_conditions = `DELETE FROM "${tableName}" WHERE `.concat(filter_conditions);
+      if (id != null) {
+        filter_conditions = filter_conditions.concat(` AND `).concat(tableName === 'rroutes' ? `rider_id=${id}` : `driver_id=${id}`);
+      }
+      return filter_conditions;
+    }
+    return '';
+  } catch (error) {
+    logDebugInfo('error', 'make_trunc_filter_query', tableName, error.message, error.stack);
+    return '';
+  }
+}
+
+// generic query to create either rider or driver
+const queryCreate = async (tableName, bioData) => {
+  try {
+    const bioQuery = `INSERT INTO "${tableName}"(${((Object.keys(bioData)).filter(bioDataKey => bioData[bioDataKey] != null)).join(', ')}) VALUES(${((Object.keys(bioData)).filter(bioDataKey => bioData[bioDataKey] != null)).map(_key => `'${bioData[_key]}'`).join(', ')})`;
+
+    await pool.query(bioQuery);
+    const qRes = await pool.query(`SELECT LASTVAL();`) // if data inserted get last row id. It is persistant it will give correct id even if more rows are inserted in other sessions
+    return { status: 200, data: qRes.rows[0] };
+  }
+  catch (error) {
+    logDebugInfo('error', 'create_entity', tableName, error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+// return data based on filters provided for riders or drivers
+const queryFilter = async (tableName, riderSearchFilters) => {
+  try {
+    const searchQuery = await makeSearchFilterQuery(tableName, riderSearchFilters); // process filter query
+    const qRes = await pool.query(searchQuery); // execute query
+    return { status: 200, data: qRes.rows }; // if OK return data
+  }
+  catch (error) {
+    logDebugInfo('error', 'search_data_by_filter', tableName, error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+// process filter query
+const makeSearchFilterQuery = async (tableName, SearchFilters) => {
+  const query = `SELECT * FROM "${tableName}" WHERE ${SearchFilters.map(filter => filter.name.concat(typeof (filter.value) == 'number' ? filter.operator : filter.operator === '=' ? ' ILIKE ' : ' NOT ILIKE ').concat(typeof (filter.value) == 'number' ? `${filter.value}` : `'%${filter.value}%'`)).join(` and `)}`;
+  return query;
+}
+
+
+// update rider or driver 
+const modifyProfile = async (tableName, userId, userDetails) => {
+  try {
+    const modifyQuery = await makeUpdateQuery(tableName, userId, userDetails); // process update query
+    await pool.query(modifyQuery); //execute modify patch query
+    return { status: 204 };
+  }
+  catch (error) {
+    logDebugInfo('error', 'update_profile_query', tableName, error.message, error.stack);
+    return { status: 400, data: error.message };
+  }
+}
+
+// process update query
+const makeUpdateQuery = async (tableName, uniqueId, details) => { // slicing table name and appending _id based on column
+  try {
+    const query = `UPDATE "${tableName}" SET ${Object.keys(details).map(column_key => `${column_key}=`.concat(details[column_key] != null ? `'${details[column_key]}'` : 'NULL'))} WHERE ${tableName.slice(0, -1)}_id=${uniqueId}`;
+    return query;
+  } catch (error) {
+    logDebugInfo('error', 'make_update_profile_query', tableName, error.message, error.stack);
+    return ''
+  }
+}
+
+
+const queryBatchInsert = async (tableName, batchdata) => {
+  try {
+    let failedData = [];
+    // await db.tx(async (t) => {
+
+    const columns = Object.keys(batchdata[0]).map((str) => str.trim());
+    const setTable = new pgp.helpers.ColumnSet(columns, { table: tableName });
+
+    for (const data of batchdata) {
+      let insertData = pgp.helpers.insert(data, setTable);
+      try {
+        await db.none(insertData);
+      } catch (error) {
+        failedData.push({ data: data, message: error.message });
+      }
+    }
+    // });
+    if (failedData.length === 0) {
+      return { status: 200, message: 'Bulk data inserted successfully' };
+    } else {
+      return { status: 500, message: 'Error inserting bulk data', data: failedData };
+    }
+  } catch (error) {
+    logDebugInfo('error', 'insert_batch_data', tableName, error.message, error.stack);
+    return { status: 500, message: error.message };
+  }
+}
+
+
+const queryRemove = async (tableName, uniqueId) => {
+  try {
+    const delQuery = `DELETE FROM "${tableName}" WHERE ${tableName.slice(0, -1)}_id=${uniqueId}`;
+    qRes = await pool.query(delQuery);
+    return qRes.rowCount === 0 ? { status: 204 } : { status: 200 };
+  }
+  catch (error) {
+    logDebugInfo('error', 'delete_data_by_id', tableName, error.message, error.stack);
+    return { status: 400, data: error.message };
+  }
+}
+
+
+const purgeRoutes = async (tableName, routeId) => {
+  try {
+    const delQuery = `DELETE FROM "${tableName}" WHERE ${tableName.slice(0, -1)}_id=${routeId}`;
+    const qRes = await pool.query(delQuery);
+    return qRes.rowCount === 0 ? { status: 204 } : { status: 200 };
+  }
+  catch (error) {
+    logDebugInfo('error', 'purge_routes_by_id', tableName, error.message, error.stack);
+    return { status: 400, data: error.message };
+  }
+}
+
+
+const queryInsertSessionCookie = async (sessionCookie = '', user_email) => {
+  try {
+    const query = `INSERT INTO "sessions" (session_expire_timestamp, session_token, email) VALUES (LOCALTIMESTAMP(0) + INTERVAL \'1 hour\',\'${sessionCookie}\', \'${user_email}\')`;
+    await pool.query(query);
+    return { status: 200 };
+  } catch (error) {
+    logDebugInfo('error', 'update_session_cookie', '', error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+
+const queryRemoveSessionCookie = async (sessionCookie) => {
+  try {
+    const query = `DELETE FROM "sessions" WHERE session_token='${sessionCookie}'`;
+    await pool.query(query);
+    return { status: 200 };
+  } catch (error) {
+    logDebugInfo('error', 'remove_session_cookie', '', error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+const queryRemoveExpiredSessions = async () => {
+  try {
+    const query = `DELETE FROM "sessions" WHERE session_expire_timestamp<LOCALTIMESTAMP(0)`;
+    await pool.query(query);
+    return { status: 200 };
+  } catch (error) {
+    logDebugInfo('error', 'remove_expired_sessions', 'sessions', error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+const queryDistinctRoutes = async (tableName) => {
+  try {
+    const data = await pool.query(`SELECT DISTINCT ${tableName.slice(0, 1)}route_dbm_tag FROM "${tableName}" ORDER BY ${tableName.slice(0, 1)}route_dbm_tag ASC`);
+    return { status: 200, data: data.rows };
+  } catch (error) {
+    logDebugInfo('error', 'get_table_usage', tableName, error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+
+const queryDeleteRoutesByTag = async (tableName, tagsList) => {
+  try {
+    const query = `DELETE FROM "${tableName}" WHERE ${tableName.slice(0, 1)}route_dbm_tag IN (${tagsList.map(tag => `'${tag}'`).join(', ')})`;
+    await pool.query(query);
+    return { status: 200 };
+  } catch (error) {
+    logDebugInfo('error', 'delete_routes_by_tags', 'dr_routes', error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+
+const queryInsertPic = async (id, tableName, fileBuffer, reference) => {
+  try {
+    // const query = `INSERT INTO "${tableName}" (${reference}, profile_picture) VALUES (${id}, '${fileBuffer}')`;
+    const query = `UPDATE "${tableName}" SET profile_picture='${fileBuffer}' WHERE ${reference}=${id}`;
+    await pool.query(query);
+    return { status: 200 };
+  } catch (error) {
+    logDebugInfo('error', 'insert_user_pic', tableName, error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+
+const queryInsertRiderRoute = async (riderRouteData) => {
+  try {
+    await pool.query('BEGIN');
+
+    let qres = await queryInsertNode('origin', { "origin_address": riderRouteData.origin_address, "origin_city": riderRouteData.origin_city, "origin_state_province": riderRouteData.origin_state_province, "origin_zip_postal_code": riderRouteData.origin_zip_postal_code });
+    origin_node_id = (await pool.query(`SELECT LASTVAL()`)).rows[0].lastval  // if data inserted get last row id. It is persistant it will give correct id even if more rows are inserted in other sessions
+
+    qres = await queryInsertNode('destination', { "destination_address": riderRouteData.destination_address, "destination_city": riderRouteData.destination_city, "destination_state_province": riderRouteData.destination_state_province, "destination_zip_postal_code": riderRouteData.destination_zip_postal_code });
+    destination_node_id = (await pool.query(`SELECT LASTVAL()`)).rows[0].lastval  // if data inserted get last row id. It is persistant it will give correct id even if more rows are inserted in other sessions
+
+    const insertQuery = `INSERT INTO "rroutes" (rider_id, origin_node, destination_node, departure_time, time_flexibility, rroute_dbm_tag, status) VALUES(\'${riderRouteData.rider_id}\', ${origin_node_id}, ${destination_node_id}, \'${riderRouteData.departure_time}\', ${riderRouteData.time_flexibility}, \'${riderRouteData.rroute_dbm_tag}\', \'REQUESTED\')`;
+    await pool.query(insertQuery);
+    await pool.query('COMMIT');
+    return { status: 201 };
+  } catch (error) {
+    await pool.query('ROLLBACK');
+    logDebugInfo('error', 'insert_route', 'rroutes', error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+const queryInsertDriverRoute = async (driverRouteData) => {
+  try {
+    const insertQuery = `INSERT INTO "droutes" (driver_id, origin_node, destination_node, departure_time, departure_flexibility, droute_dbm_tag, droute_name, capacity, max_wait, fixed_route) VALUES(${driverRouteData.driver_id}, ${driverRouteData.origin_node}, ${driverRouteData.destination_node}, \'${driverRouteData.departure_time}\', ${driverRouteData.departure_flexibility}, \'${driverRouteData.droute_dbm_tag}\', \'${driverRouteData.droute_name}\', ${driverRouteData.capacity}, ${driverRouteData.max_wait}, ${driverRouteData.fixed_route})`;
+    await pool.query(insertQuery);
+    return { status: 201 };
+  } catch (error) {
+    logDebugInfo('error', 'insert_route', 'droutes', error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+
+const queryInsertNode = async (node_type, nodeData) => {
+  try {
+    const insertQuery = `INSERT INTO "nodes" (${Object.keys(nodeData).map(d_key => `${d_key.split(node_type.concat('_'))[1]}`).join(',')}) VALUES (${Object.keys(nodeData).map(d_key => `\'${nodeData[d_key]}\'`).join(',')})`
+    await pool.query(insertQuery);
+    return { status: 200 };
+  }
+  catch (error) {
+    logDebugInfo('error', 'create_node', 'nodes', error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+
+const queryTableCount = async (tableName, id, tagsList) => {
+  try {
+    const query = `SELECT COUNT(*) FROM "${tableName}"${id != null ? tableName == 'rroutes' ? ` WHERE rider_id=${id}` : tableName == 'droutenodes' ? ` WHERE droute_id=${id}` : tableName == 'rroutenodes' ? ` WHERE rroute_id=${id}` : ` WHERE driver_id=${id}` : ''}${tagsList != null ? ` ${id != null ? `AND` : `WHERE`} ${tableName == 'rroutes' ? 'r' : 'd'}route_dbm_tag IN (${tagsList.map(tag => `\'${tag}\'`).join(',')})` : ''}`;
+    const countRes = await pool.query(query);
+
+    return { status: 200, data: countRes.rows[0] };
+  }
+  catch (error) {
+    logDebugInfo('error', 'create_node', '', error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+
+const queryRRoutesFilter = async (filterData) => {
+  try {
+    const searchQuery = `SELECT * FROM "rroutes" WHERE origin_node=${filterData.nodeId} AND departure_time>=\'${filterData.startTimeWindow}\' AND departure_time<=\'${filterData.endTimeWindow}\'`
+    let searchRes = (await pool.query(searchQuery)).rows;
+
+    searchRes = await Promise.all(searchRes.map(async (rrouteData) => {
+      let rNodesRes = (await pool.query(`SELECT droute_id, node_id, permutation_id, arrival_time, departure_time, rank, cum_distance, cum_time, status from rroutenodes WHERE rroute_id=${rrouteData.rroute_id} AND rider_id=${rrouteData.rider_id}`)).rows;
+
+      rNodesRes = await Promise.all(rNodesRes.map(async (rrouteNodeData) => {
+        let nodesRes = (await pool.query(`SELECT lat, long from nodes WHERE node_id=${rrouteNodeData.node_id}`)).rows;
+        return { ...rrouteNodeData, cordinates: nodesRes };
+      }));
+      return { ...rrouteData, route_nodes: rNodesRes }
+    }));
+
+    return { status: 200, data: searchRes };
+  }
+  catch (error) {
+    logDebugInfo('error', 'filter_routes', 'rroutes', error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+
+const queryDRoutesFilter = async (filterData) => {
+  try {
+    const searchQuery = `SELECT * FROM "droutes" WHERE destination_node=${filterData.nodeId}`;
+    let searchRes = (await pool.query(searchQuery)).rows;
+
+    searchRes = await Promise.all(searchRes.map(async (drouteData) => {
+      let rNodesRes = (await pool.query(`SELECT droute_id, node_id, permutation_id, arrival_time, departure_time, rank, cum_distance, cum_time,capacity_used, status from droutenodes WHERE droute_id=${drouteData.droute_id} AND outb_driver_id=${drouteData.driver_id} AND arrival_time>=\'${filterData.startTimeWindow}\' AND arrival_time<=\'${filterData.endTimeWindow}\'`)).rows;
+      if (rNodesRes.length > 0) {
+        rNodesRes = await Promise.all(rNodesRes.map(async (drouteNodeData) => {
+          let nodesRes = (await pool.query(`SELECT lat, long from nodes WHERE node_id=${drouteNodeData.node_id}`)).rows;
+          return { ...drouteNodeData, cordinates: nodesRes };
+        }));
+        return { ...drouteData, route_nodes: rNodesRes };
+      } else {
+        return {};
+      }
+    }));
+    return { status: 200, data: searchRes.filter(obj => Object.keys(obj).length != 0) };
+  }
+  catch (error) {
+    logDebugInfo('error', 'filter_routes', 'rroutes', error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+
+const queryBatchInsertTransitRoute = async (batchTransitData) => {
+  try {
+    let failedData = [];
+
+    const columns = Object.keys(batchTransitData[0]).map((str) => str.trim()).filter(str => str != 'arrival_time');
+    const setTable = new pgp.helpers.ColumnSet(columns, { table: 'droutes' });
+
+    for (const data of batchTransitData) {
+      let insertData = pgp.helpers.insert(data, setTable);
+      await db.tx(async (t) => {
+        try {
+          const droute_id = (await t.one(`${insertData} RETURNING droute_id`)).droute_id;
+          await t.none(`INSERT INTO "droutenodes" (droute_id, outb_driver_id, node_id, departure_time, capacity) VALUES(${droute_id}, ${data.driver_id}, ${data.origin_node}, \'${data.departure_time}\', ${data.capacity})`);
+          await t.one(`INSERT INTO "droutenodes" (droute_id, outb_driver_id, node_id, arrival_time, capacity) VALUES(${droute_id}, ${data.driver_id}, ${data.destination_node}, \'${data.arrival_time}\', ${data.capacity})`);
+        } catch (error) {
+          failedData.push({ data: data, message: error.message });
+        }
+      });
+    }
+
+    if (failedData.length === 0) {
+      return { status: 200, message: 'Bulk data inserted successfully' };
+    } else {
+      return { status: 500, message: 'Error inserting bulk data', data: failedData };
+    }
+  } catch (error) {
+    logDebugInfo('error', 'insert_batch_transit_droutes', 'droutes', error.message, error.stack);
+    return { status: 500, message: error.message };
+  }
+}
+
+
+const queryBatchInsertNodes = async (batchNodeData) => {
+  try {
+    let failedData = [];
+    // let insertedNodeIds = [];
+
+    const columns = Object.keys(batchNodeData[0]).map((str) => str.trim()).filter(str => str != 'arrival_time');
+    const setTable = new pgp.helpers.ColumnSet(columns, { table: 'nodes' });
+
+    for (const data of batchNodeData) {
+      let insertData = pgp.helpers.insert(data, setTable);
+      await db.tx(async (t) => {
+        try {
+          // insertedNodeIds.push({ node_id: (await t.one(`${insertData} RETURNING node_id`)).node_id, long: data.long, lat: data.lat });
+          await t.none(insertData)
+        } catch (error) {
+          failedData.push({ data: data, message: error.message });
+        }
+      });
+    }
+
+    if (failedData.length === 0) {
+      // return { status: 200, message: 'Bulk data inserted successfully', data: insertedNodeIds };
+      return { status: 200, message: 'Bulk data inserted successfully'};
+    } else {
+      return { status: 500, message: 'Error inserting bulk data', data: failedData };
+    }
+  } catch (error) {
+    logDebugInfo('error', 'insert_batch_transit_droutes', 'droutes', error.message, error.stack);
+    return { status: 500, message: error.message };
+  }
+}
+
+
+const insertNode = async (nodes) => {
+  console.log("in insertNodes")
+  const values = nodes.flatMap(node => [
+    node.Location.slice(0, 50),
+    node.Description.slice(0, 50),
+    node.Address.slice(0, 50),
+    node.City.slice(0, 50),
+    node.State.slice(0, 50),
+    node.Zip.slice(0, 50),
+    node.Long.slice(0, 50),
+    node.Lat.slice(0, 50),
+  ]);
+
+  console.log("New Node Length:", nodes.length);
+  console.log("New Node:", nodes);
+  const placeholders = [];
+  for (let i = 1; i <= nodes.length; i++) {
+    placeholders.push(`($${(i - 1) * 8 + 1}, $${(i - 1) * 8 + 2}, $${(i - 1) * 8 + 3}, $${(i - 1) * 8 + 4}, $${(i - 1) * 8 + 5}, $${(i - 1) * 8 + 6}, $${(i - 1) * 8 + 7}, $${(i - 1) * 8 + 8})`);
+  }
+  const query = `INSERT INTO nodes (location, description, address, city, state_province, zip_postal_code, long, lat) VALUES ${placeholders.join(', ')}`;
+
+  return pool.query(query, values);
+}
+
+
+const correctLocIDValues = async () => {
+  const query = `
+      UPDATE nodes AS n
+      SET locID = (
+        SELECT lpad(floor(random() * 10000)::text, 4, '0') || '-' || lpad(floor(random() * 100000)::text, 5, '0') AS new_locID
+        WHERE NOT EXISTS (
+          SELECT 1 FROM nodes n2 WHERE n2.locID = (
+            SELECT lpad(floor(random() * 10000)::text, 4, '0') || '-' || lpad(floor(random() * 100000)::text, 5, '0')
+            WHERE NOT EXISTS (
+              SELECT 1 FROM nodes n3 WHERE n3.locID = n2.locID AND n3.node_id != n2.node_id
+            )
+          ) AND n2.node_id = n.node_id
+        ) AND (n.locID !~ '^[0-9]{4}-[0-9]{5}$' OR n.locID IS NULL)
+        LIMIT 1
+      )
+      WHERE n.locID !~ '^[0-9]{4}-[0-9]{5}$' OR n.locID IS NULL OR EXISTS (
+        SELECT 1 FROM nodes n2 WHERE n2.locID = n.locID AND n2.node_id != n.node_id
+      )
+    `;
+  return pool.query(query);
+}
+
+module.exports = {
+  getAllNodes,
+  insertNode,
+  correctLocIDValues,
+  queryTablesName,
+  queryTableRows,
+  queryTableUsage,
+  purgeTable,
+  truncFilteredData,
+  queryCreate,
+  queryFilter,
+  modifyProfile,
+  queryRemove,
+  queryAll,
+  purgeRoutes,
+  queryBatchInsert,
+  queryInsertSessionCookie,
+  queryRemoveExpiredSessions,
+  queryGetRole,
+  queryRemoveSessionCookie,
+  queryInsertPic,
+  queryDistinctRoutes,
+  queryDeleteRoutesByTag,
+  queryInsertRiderRoute,
+  queryInsertDriverRoute,
+  queryTableCount,
+  queryRRoutesFilter,
+  queryBatchInsertTransitRoute,
+  queryDRoutesFilter,
+  queryBatchInsertNodes,
+  queryBetweenPoints
+};
