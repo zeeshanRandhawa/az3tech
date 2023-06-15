@@ -125,7 +125,8 @@ app.use((req, res, next) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-const port = process.env.PORT;
+// const port = process.env.PORT;
+const port = 4000;
 // server listening 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
