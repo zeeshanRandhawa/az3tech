@@ -31,11 +31,12 @@ const databaseManagement = require('./routes/databaseManagement');
 const { createRiderProfile, searchRiders, patchRider, deleteRider, listRiders, deleteRiderRoute, batchImportRiders, listRiderRoutes, uploadRiderProfilePic, getRRouteTags, filterRRouteByTags, deleteRRouteByTags } = require('./routes/riderAdmin');
 const { listDrivers, createDriverProfile, searchDrivers, patchDriver, deleteDriver, deleteDriverRoute, batchImportDrivers, listDriverRoutes, uploadDriverProfilePic, getDRouteTags, filterDRouteByTags, deleteDRouteByTags } = require('./routes/driverAdmin');
 const { createRiderRoute, filterRRouteByANodeTW, listRRouteNodes } = require('./routes/riderRouteAdmin');
-const { batchImportNodes, displayNodesByCoordinate } = require('./routes/nodeAdmin');
+const { batchImportNodes, displayNodesByCoordinate, displayNodesBy2Point } = require('./routes/nodeAdmin');
 const { createDriverRoute, importDriverTransitScheduleRoutes, filterDRouteByDNodeTW, listDRouteNodes } = require('./routes/driverRouteAdmin');
 const { getpageCount } = require('./utilities/utilities');
 const { isAuthenticated, isSuperAdmin } = require('./routes/middleware');
 // const { socketListen } = require('./utilities/socket');
+
 
 
 
@@ -83,6 +84,7 @@ app.post('/api/v1/driver/route', isAuthenticated, isSuperAdmin, createDriverRout
 app.post('/api/v1/user/login', userLogin);// authenticate admin
 app.get('/api/v1/admin/logout', isAuthenticated, adminLogout);// logout admin
 app.get('/api/v1/admin/check-login', isLoggedIn);// check if admin is authenticated
+app.post('/api/v1/user/signup', userSignUp)
 
 app.get('/api/v1/admin/role', isAuthenticated, getRole);
 
@@ -112,7 +114,11 @@ app.post('/api/v1/nodes/batch-import', upload, batchImportNodes)  // in process
 
 app.get('/api/v1/nodes/display', displayNodesByCoordinate);
 
-app.post('/api/v1/user/signup', userSignUp)
+
+
+
+app.get('/api/v1/nodes/display/two-point', displayNodesBy2Point);
+
 
 
 app.use((req, res, next) => {

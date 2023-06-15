@@ -41,7 +41,7 @@ const distanceDurationBetweenAllNodes = async (oldNodes, newNodes) => {
     // })
 
     const parsedData = await parseApiData(apiResultData);
-    
+
 
     console.log(parsedData)
   } catch (err) {

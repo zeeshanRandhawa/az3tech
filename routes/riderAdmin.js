@@ -258,7 +258,6 @@ const batchImportRiders = async (req, res) => {
         if (!req.files[0]) { // validate if file uploaded
             return res.status(400).json({ message: 'No file uploaded' });
         }
-        console.log(req.files[0].mimetype);
         if (!(['text/csv', 'application/vnd.ms-excel'].includes(req.files[0].mimetype))) { // check if file mimetype is csv
             return res.status(400).json({ message: 'Unsupported file type' });
         }

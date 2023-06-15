@@ -1,7 +1,7 @@
 
-const { queryBatchInsertNodes, queryAll, queryBetweenPoints } = require('../utilities/query');
+const { queryBatchInsertNodes, findPointsOfInterestBetweenPolygon } = require('../utilities/query');
 const { logDebugInfo } = require('../utilities/logger');
-const { distanceDurationBetweenAllNodes } = require('../node_calculation/n2n');
+const { getRouteInfo, isIntermediateNode, findParallelLines } = require('../utilities/utilities')
 
 
 
@@ -89,7 +89,7 @@ const displayNodesByCoordinate = async (req, res) => {
             //     [-122.50438505111305, 37.74653781043583]
             // ]
 
-            const nodesData = await queryBetweenPoints(dataPoints);
+            const nodesData = await findPointsOfInterestBetweenPolygon(dataPoints);
 
             if (nodesData.status == 200) {
                 res.status(200).json({ nodesData: nodesData.data });
@@ -102,12 +102,131 @@ const displayNodesByCoordinate = async (req, res) => {
         logDebugInfo('error', 'batch_node_insert_with_n2n_calculation', 'nodes/n2n', error.message, error.stack);
         res.status(500).json({ message: "Server Error " + error.message });
     }
-
 }
 
-module.exports = { batchImportNodes, displayNodesByCoordinate }
 
-34.07656506059995, -117.8586465679738
-33.804277509479775, -117.8586465679738
-33.804277509479775, -118.37514687386543
-34.07656506059995, -118.37514687386543
+
+const displayNodesBy2Point = async (req, res) => {
+    try {
+        if (!req.query.originNode || !req.query.destinationNode) {
+            return res.status(400).json({ message: 'Invalid Data' });
+        }
+        else {
+
+            // let intermediateNodes = []
+            let waypointNodes = [];
+            let dataPoints = [];
+            dataPoints.push(req.query.originNode.split(',').map(Number));
+            dataPoints.push(req.query.destinationNode.split(',').map(Number));
+
+
+            // calculate edges of square polygon
+            // takes two long;lat points
+            // return 4 points of polygon
+            const source = dataPoints[0]
+            const destination = dataPoints[1]
+            dataPoints = findParallelLines(dataPoints)
+            // dataPoints = await calculatepolygonEdges(dataPoints);
+
+            // return nodes of interest in polygon
+            let nodesData = await findPointsOfInterestBetweenPolygon(dataPoints);
+            console.log("ROI length", nodesData.data.length);
+
+            //gets osrm route complete details
+            const routeInfo = await getRouteInfo(source, destination);
+            let inter = []
+            for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length-1; i++) {
+                let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
+                
+                let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length-1];
+                
+                waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
+                for (let j = 0; j < nodesData.data.length; j++) {
+                    let calculatedintermediateNode = isIntermediateNode(waypointStart, waypointEnd, nodesData.data[j]);
+                    
+                    if (calculatedintermediateNode.intercepted == true) {
+                        inter.push(calculatedintermediateNode)
+                        if (Object.keys(nodesData.data[j]).includes('isWaypoint')) {
+                            if (nodesData.data[j].distance > calculatedintermediateNode.distance) {
+                                
+                                // nodesData.data[j].distance = calculatedintermediateNode.distance;
+                                // { distance: calculatedintermediateNode.distance, ...nodesData.data[j] }
+                            }
+                            
+                        } else {
+                            nodesData.data[j] = { 'isWaypoint': true, 'distance': calculatedintermediateNode.distance, ...nodesData.data[j] };
+                            console.log("iN else")
+                        }
+                        // intermediateNodes.push({ 'distance': calculatedintermediateNode.distance, 'lat': nodesData.data[j].lat, 'long': nodesData.data[j].long });
+                    }
+                }
+            }
+            console.log(inter)
+            // let intermediateNodesSet = makeIntermediateNodeSet(intermediateNodes);
+            nodesData = formatNodeData(nodesData.data);
+           
+            res.status(200).json({ "intermediateNodes": nodesData, "osrmRoute": routeInfo, "GISWaypoints": waypointNodes })
+        }
+    } catch (error) {
+        logDebugInfo('error', 'batch_node_insert_with_n2n_calculation', 'nodes/n2n', error.message, error.stack);
+        res.status(500).json({ message: "Server Error " + error.message });
+    }
+}
+
+
+// const formatNodeData = (nodesData) => {
+//     return nodesData.map((node) => {
+//         if (!('isWaypoint' in node)) {
+//             node = { 'isWaypoint': false, 'distance': 0, ...node };
+//         }
+//         return node;
+//     }).filter(node => node.distance < 250);
+// }
+
+const formatNodeData = (nodesData) => {
+    return nodesData.map((node) => {
+        if (!('isWaypoint' in node)) {
+            node = { 'isWaypoint': false, 'distance': 0, ...node };
+        } else if (node.distance > 550) {
+            // node = { 'isWaypoint': false, 'distance': 0, ...node };
+            node.distance = 0;
+            node.isWaypoint = false;
+        }
+        return node;
+    })
+    // .filter(node => node.distance < );
+}
+const makeIntermediateNodeSet = (intermediateNodes) => {
+    intermediateNodes = intermediateNodes.filter(node => node.distance < 50);
+
+    let intermediateNodesSet = new Set(intermediateNodes.map(node => JSON.stringify({ lat: node.lat, long: node.long, ...node })));
+
+    const uniqueObjects = Array.from(intermediateNodesSet, str => ({ ...JSON.parse(str) }));
+
+    return uniqueObjects;
+}
+
+const calculatepolygonEdges = async (dataPoints) => {
+    const x1 = dataPoints[0][0];
+    const y1 = dataPoints[0][1];
+    const x2 = dataPoints[1][0];
+    const y2 = dataPoints[1][1];
+
+    const xc = (x1 + x2) / 2;
+    const yc = (y1 + y2) / 2;
+    const xd = (x1 - x2) / 2;
+    const yd = (y1 - y2) / 2;
+
+    const x3 = xc - yd;
+    const y3 = yc + xd;
+    const x4 = xc + yd;
+    const y4 = yc - xd;
+
+    return [dataPoints[0], [x4, y4], dataPoints[1], [x3, y3]];
+}
+
+
+
+  
+
+module.exports = { batchImportNodes, displayNodesByCoordinate, displayNodesBy2Point }

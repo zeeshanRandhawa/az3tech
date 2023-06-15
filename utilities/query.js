@@ -11,6 +11,12 @@ const pool = new Pool({
   // port: 5432,
   // database: 'test-transport'
 
+  // user: 'postgres',
+  // password: '123456',
+  // host: 'localhost',
+  // port: 5432,
+  // database: 'test-local'
+
   user: 'doadmin',
   password: 'AVNS_MHGwE5WNGWUy_wvn_-l',
   host: 'db-postgresql-sfo2-32856-do-user-13737111-0.b.db.ondigitalocean.com',
@@ -43,6 +49,12 @@ const db = pgp({
   // host: 'localhost',
   // port: 5432,
   // database: 'test-transport'
+
+  // user: 'postgres',
+  // password: '123456',
+  // host: 'localhost',
+  // port: 5432,
+  // database: 'test-local'
 
   user: 'doadmin',
   password: 'AVNS_MHGwE5WNGWUy_wvn_-l',
@@ -97,7 +109,7 @@ const queryAll = async (tableName, columnName = '', columnValue = null, paginati
   }
 }
 
-const queryBetweenPoints = async (dataPoints) => {
+const findPointsOfInterestBetweenPolygon = async (dataPoints) => {
   // const pointQuery = `SELECT lat, long FROM nodes WHERE ((lat - ${dataPoints[0][1]})*(${dataPoints[1][0]} - ${dataPoints[0][0]}) - (long - ${dataPoints[0][0]}) * (${dataPoints[1][1]} - ${dataPoints[0][1]})) >= 0 AND ((lat - ${dataPoints[1][1]}) * (${dataPoints[2][0]} - ${dataPoints[1][0]}) - (long - ${dataPoints[1][0]}) * (${dataPoints[2][1]} - ${dataPoints[1][1]})) >= 0 AND ((lat - ${dataPoints[2][1]}) * (${dataPoints[3][0]} - ${dataPoints[2][0]}) - (long - ${dataPoints[2][0]}) * (${dataPoints[3][1]} - ${dataPoints[2][1]})) >= 0 AND ((lat - ${dataPoints[3][1]}) * (${dataPoints[0][0]} - ${dataPoints[3][0]}) - (long - ${dataPoints[3][0]}) * (${dataPoints[0][1]} - ${dataPoints[3][1]})) >= 0`;
   try {
     const pointQuery = `SELECT lat, long FROM nodes WHERE 
@@ -648,5 +660,5 @@ module.exports = {
   queryBatchInsertTransitRoute,
   queryDRoutesFilter,
   queryBatchInsertNodes,
-  queryBetweenPoints
+  findPointsOfInterestBetweenPolygon
 };

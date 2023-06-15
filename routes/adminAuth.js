@@ -20,7 +20,7 @@ const userLogin = async (req, res) => {
             if (!loginFormData.password || (!loginFormData.userEmail && !loginFormData.email) || (!loginFormData.userEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/) && !loginFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))) { // else validate password and email
                 return res.status(401).json({ message: 'Invalid email or password' }); // if email or password not valid return error
             }
-        }else{
+        } else {
             if (!loginFormData.password || !loginFormData.email || !loginFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) { // else validate password and email
                 return res.status(401).json({ message: 'Invalid email or password' }); // if email or password not valid return error
             }
@@ -41,7 +41,7 @@ const userLogin = async (req, res) => {
             if (!(['Admin', 'SuperAdmin'].includes((await queryGetRole(session_token = '', email = loginFormData.userEmail)).data[0].role_type.trim()))) {
                 return res.status(401).json({ message: 'No Admin exist with above email' }); // if user found but is not admin  means credentials wrong
             }
-        }else{
+        } else {
             if (['Admin', 'SuperAdmin'].includes((await queryGetRole(session_token = '', email = loginFormData.email)).data[0].role_type.trim())) {
                 return res.status(401).json({ message: 'No User exist with above email' }); // if user found but is not admin  means credentials wrong
             }
@@ -138,6 +138,14 @@ const userSignUp = async (req, res) => {
         } else if ((await queryAll('users', 'email', siginUpFormData.email)).data.length > 0) {
             res.status(400).json({ message: 'Email already exists' });
         } else {
+            if (!siginUpFormData.image.includes('data:image/')) {
+                if (siginUpFormData.image.startsWith('/9j/')) {
+                    siginUpFormData = { ...siginUpFormData, image: 'data:image/jpeg;base64,'.concat(siginUpFormData.image) };
+                } else {
+                    // if (siginUpFormData.image.startsWith('iVBORw0KGgo')) {
+                    siginUpFormData = { ...siginUpFormData, image: 'data:image/png;base64,'.concat(siginUpFormData.image) };
+                }
+            }
             const queryRes = await queryCreate('users', { email: siginUpFormData.email, password: await hashPassword(siginUpFormData.password), role_id: 3 });
             if (queryRes.status == 200) {
                 const riderCreateRes = await queryCreate('riders', { phone_number: siginUpFormData.countryCode.concat(siginUpFormData.mobileNumber), first_name: siginUpFormData.name, profile_picture: siginUpFormData.image, user_id: queryRes.data.lastval });
