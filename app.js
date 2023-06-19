@@ -21,7 +21,6 @@ app.use(express.static(path.join(__dirname, "public")));
 // app.use(express.raw({ type: '*/*', limit: '100mb' }));
 
 
-
 const { logToPostgres } = require('./utilities/logger');
 // const { readCSVFile, appendDataToCSVFile, updateCSVFile } = require('./fileReader');
 // const { distanceDurationBetweenAllNodes } = require('./n2n');
@@ -31,11 +30,12 @@ const databaseManagement = require('./routes/databaseManagement');
 const { createRiderProfile, searchRiders, patchRider, deleteRider, listRiders, deleteRiderRoute, batchImportRiders, listRiderRoutes, uploadRiderProfilePic, getRRouteTags, filterRRouteByTags, deleteRRouteByTags } = require('./routes/riderAdmin');
 const { listDrivers, createDriverProfile, searchDrivers, patchDriver, deleteDriver, deleteDriverRoute, batchImportDrivers, listDriverRoutes, uploadDriverProfilePic, getDRouteTags, filterDRouteByTags, deleteDRouteByTags } = require('./routes/driverAdmin');
 const { createRiderRoute, filterRRouteByANodeTW, listRRouteNodes } = require('./routes/riderRouteAdmin');
-const { batchImportNodes, displayNodesByCoordinate, displayNodesBy2Point } = require('./routes/nodeAdmin');
+const { batchImportNodes, displayNodesByCoordinate, displayNodesBy2Point, getNode2NodeCalculationStatus } = require('./routes/nodeAdmin');
 const { createDriverRoute, importDriverTransitScheduleRoutes, filterDRouteByDNodeTW, listDRouteNodes } = require('./routes/driverRouteAdmin');
 const { getpageCount } = require('./utilities/utilities');
 const { isAuthenticated, isSuperAdmin } = require('./routes/middleware');
 // const { socketListen } = require('./utilities/socket');
+
 
 
 
@@ -110,14 +110,13 @@ app.get('/api/v1/droutes/filter-ntw', isAuthenticated, filterDRouteByDNodeTW);
 
 app.post('/api/v1/droutes/transit-import', isAuthenticated, isSuperAdmin, upload, importDriverTransitScheduleRoutes)
 
-app.post('/api/v1/nodes/batch-import', upload, batchImportNodes)  // in process
+app.post('/api/v1/nodes/batch-import', isAuthenticated, upload, batchImportNodes);
+app.get('/api/v1/nodes/batch-import/status', isAuthenticated, getNode2NodeCalculationStatus); // implement this
 
 app.get('/api/v1/nodes/display', displayNodesByCoordinate);
 
-
-
-
 app.get('/api/v1/nodes/display/two-point', displayNodesBy2Point);
+
 
 
 

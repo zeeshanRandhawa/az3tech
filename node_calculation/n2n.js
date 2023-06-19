@@ -22,16 +22,18 @@ const axios = require('axios');
 // }
 
 const distanceDurationBetweenAllNodes = async (oldNodes, newNodes) => {
+  // console.log(new Date());
   try {
     const nodePairs = await getAllNodePairs(oldNodes, newNodes);
     let apiUrls = await Promise.all(nodePairs.map(async (pair) => {
       pair.push({ url: await getApiUrls(pair) });
       return pair;
     }));
-    apiUrls = apiUrls.slice(0, 10);
+    // apiUrls = apiUrls.slice(0, 1);
 
     const apiResultData = await Promise.allSettled(apiUrls.map(async (apiUrl) => {
-      await new Promise(resolve => setTimeout(resolve, 150));
+      // console.log('here')
+      // await new Promise(resolve => setTimeout(resolve, 25));
       return await { originNode: apiUrl[0].node_id, destinationNode: apiUrl[1].node_id, url: apiUrl[2].url, result: await fetchDataFromApi(apiUrl[2].url) };
     }));
 
@@ -42,11 +44,20 @@ const distanceDurationBetweenAllNodes = async (oldNodes, newNodes) => {
 
     const parsedData = await parseApiData(apiResultData);
 
+    fs.writeFile('data.json', JSON.stringify(parsedData), (err) => {
+      if (err) {
+        console.error('Error writing file:', err);
+        return;
+      }
 
-    console.log(parsedData)
+      console.log('File saved successfully.');
+    });
+
+    // console.log(parsedData)
   } catch (err) {
     console.error(err);
   }
+  // console.log(new Date());
 }
 
 const getAllNodePairs = async (oldNodes, newNodes) => {
@@ -65,10 +76,10 @@ const getApiUrls = async (nodePair) => {
   const lat1 = nodePair[0].lat;
   const lng2 = nodePair[1].long;
   const lat2 = nodePair[1].lat;
-  return `http://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?steps=true&geometries=geojson&overview=full&annotations=true`;
+  return `http://143.110.152.222:5000/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?steps=true&geometries=geojson&overview=full&annotations=true`;
 }
 
-async function fetchDataFromApi(url, i, maxRetries = 4, retryDelay = 500) {
+async function fetchDataFromApi(url, i, maxRetries = 4, retryDelay = 100) {
   try {
     const response = await axios.get(url);
     r_data = await response.data;
@@ -84,7 +95,7 @@ async function fetchDataFromApi(url, i, maxRetries = 4, retryDelay = 500) {
 }
 
 const parseApiData = async (apiData) => {
-  return await Promise.allSettled(apiData.map(data => {
+  return await Promise.all(apiData.map(data => {
     const distance = data.value.result.routes[0].distance;
     const duration = data.value.result.routes[0].duration;
     const origNodeId = data.value.originNode;

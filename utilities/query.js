@@ -9,7 +9,7 @@ const pool = new Pool({
   // password: '1234',
   // host: 'localhost',
   // port: 5432,
-  // database: 'test-transport'
+  // database: 'STS'
 
   // user: 'postgres',
   // password: '123456',
@@ -48,7 +48,7 @@ const db = pgp({
   // password: '1234',
   // host: 'localhost',
   // port: 5432,
-  // database: 'test-transport'
+  // database: 'STS'
 
   // user: 'postgres',
   // password: '123456',
@@ -553,7 +553,7 @@ const queryBatchInsertTransitRoute = async (batchTransitData) => {
 const queryBatchInsertNodes = async (batchNodeData) => {
   try {
     let failedData = [];
-    // let insertedNodeIds = [];
+    let insertedNodeIds = [];
 
     const columns = Object.keys(batchNodeData[0]).map((str) => str.trim()).filter(str => str != 'arrival_time');
     const setTable = new pgp.helpers.ColumnSet(columns, { table: 'nodes' });
@@ -562,8 +562,8 @@ const queryBatchInsertNodes = async (batchNodeData) => {
       let insertData = pgp.helpers.insert(data, setTable);
       await db.tx(async (t) => {
         try {
-          // insertedNodeIds.push({ node_id: (await t.one(`${insertData} RETURNING node_id`)).node_id, long: data.long, lat: data.lat });
-          await t.none(insertData)
+          insertedNodeIds.push({ node_id: (await t.one(`${insertData} RETURNING node_id`)).node_id, long: data.long, lat: data.lat });
+          // await t.none(insertData)
         } catch (error) {
           failedData.push({ data: data, message: error.message });
         }
@@ -571,8 +571,8 @@ const queryBatchInsertNodes = async (batchNodeData) => {
     }
 
     if (failedData.length === 0) {
-      // return { status: 200, message: 'Bulk data inserted successfully', data: insertedNodeIds };
-      return { status: 200, message: 'Bulk data inserted successfully'};
+      return { status: 200, message: 'Bulk data inserted successfully', data: insertedNodeIds };
+      // return { status: 200, message: 'Bulk data inserted successfully'};
     } else {
       return { status: 500, message: 'Error inserting bulk data', data: failedData };
     }
@@ -583,8 +583,31 @@ const queryBatchInsertNodes = async (batchNodeData) => {
 }
 
 
+
+const queryBatchInsertN2N = async (batchDataN2N) => {
+  try {
+    const columns = Object.keys(batchDataN2N[0]).map((str) => str.trim());
+    const setTable = new pgp.helpers.ColumnSet(columns, { table: 'n2n' });
+
+    const insertData = pgp.helpers.insert(batchDataN2N, setTable);
+
+    await db.tx(async (t) => {
+      try {
+        await t.none(insertData);
+      } catch (error) {
+        // console.log(error)
+        return { status: 500, message: error.message };
+      }
+    });
+  } catch (error) {
+    // console.log(error)
+    // logDebugInfo('error', 'insert_batch_transit_droutes', 'droutes', error.message, error.stack);
+  }
+}
+
+
 const insertNode = async (nodes) => {
-  console.log("in insertNodes")
+  // console.log("in insertNodes")
   const values = nodes.flatMap(node => [
     node.Location.slice(0, 50),
     node.Description.slice(0, 50),
@@ -596,8 +619,8 @@ const insertNode = async (nodes) => {
     node.Lat.slice(0, 50),
   ]);
 
-  console.log("New Node Length:", nodes.length);
-  console.log("New Node:", nodes);
+  // console.log("New Node Length:", nodes.length);
+  // console.log("New Node:", nodes);
   const placeholders = [];
   for (let i = 1; i <= nodes.length; i++) {
     placeholders.push(`($${(i - 1) * 8 + 1}, $${(i - 1) * 8 + 2}, $${(i - 1) * 8 + 3}, $${(i - 1) * 8 + 4}, $${(i - 1) * 8 + 5}, $${(i - 1) * 8 + 6}, $${(i - 1) * 8 + 7}, $${(i - 1) * 8 + 8})`);
@@ -660,5 +683,6 @@ module.exports = {
   queryBatchInsertTransitRoute,
   queryDRoutesFilter,
   queryBatchInsertNodes,
-  findPointsOfInterestBetweenPolygon
+  findPointsOfInterestBetweenPolygon,
+  queryBatchInsertN2N
 };

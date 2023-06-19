@@ -13,6 +13,8 @@ const userLogin = async (req, res) => {
 
         let loginFormData = req.body;
 
+
+        // RS
         if (!loginFormData.email) {
             if (req.headers.cookies && (await queryAll('sessions', 'session_token', req.headers.cookies)).data.length > 0) { //check if cookie is present against user
                 return res.status(200).json({ message: 'Already Authorized' }); // if present return already auth message
@@ -20,32 +22,37 @@ const userLogin = async (req, res) => {
             if (!loginFormData.password || (!loginFormData.userEmail && !loginFormData.email) || (!loginFormData.userEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/) && !loginFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))) { // else validate password and email
                 return res.status(401).json({ message: 'Invalid email or password' }); // if email or password not valid return error
             }
-        } else {
+        } //RE
+        else { // IS
             if (!loginFormData.password || !loginFormData.email || !loginFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) { // else validate password and email
                 return res.status(401).json({ message: 'Invalid email or password' }); // if email or password not valid return error
             }
-        }
+        } //IE
         // else {
 
         // if (!loginFormData.password || !loginFormData.userEmail || !loginFormData.userEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) { // else validate password and email
         //     res.status(401).json({ error: 'Invalid email or password' }); // if email or password not valid return error
         // }
         // else {
+
+        //  R/I S
         const userData = await queryAll('users', 'email', loginFormData.userEmail ? loginFormData.userEmail : loginFormData.email); // query user data
 
         if (userData.status != 200 || userData.data.length == 0) {
             return res.status(401).json({ message: 'Invalid credentials' }); // if no userr found means credentials wrong
 
-        }
-        if (!loginFormData.email) {
+        } // R/I E
+
+        if (!loginFormData.email) { // RS
             if (!(['Admin', 'SuperAdmin'].includes((await queryGetRole(session_token = '', email = loginFormData.userEmail)).data[0].role_type.trim()))) {
                 return res.status(401).json({ message: 'No Admin exist with above email' }); // if user found but is not admin  means credentials wrong
             }
-        } else {
+        } // RE
+         else { // IS
             if (['Admin', 'SuperAdmin'].includes((await queryGetRole(session_token = '', email = loginFormData.email)).data[0].role_type.trim())) {
                 return res.status(401).json({ message: 'No User exist with above email' }); // if user found but is not admin  means credentials wrong
             }
-        }
+        } // IE
         // else {
         bcrypt.compare(loginFormData.password, userData.data[0].password, async function (error, result) { // if correct credentials based on email. compare password hash
             if (result) {
@@ -71,7 +78,6 @@ const userLogin = async (req, res) => {
     }
 }
 
-
 // admin logout endpoint
 const adminLogout = async (req, res) => {
     try {
@@ -92,7 +98,6 @@ const adminLogout = async (req, res) => {
     }
 }
 
-
 // database admin route to check if authenticated
 const isLoggedIn = async (req, res) => {
     try {
@@ -112,7 +117,6 @@ const getRole = async (req, res) => {
         res.status(500).send("Server Error " + error.message)
     }
 }
-
 
 // check if cookie available in database
 const checkIsAuthenticatedSession = async (cookie) => {
