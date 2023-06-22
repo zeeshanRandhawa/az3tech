@@ -27,18 +27,23 @@ const createDriverProfile = async (req, res) => {
 }
 
 
-// search drivers based on filters
+// search drivers based on filter object provided
 const searchDrivers = async (req, res) => {
     try {
-        const searchFilters = req.body.filterList
-        if (!searchFilters || searchFilters.length < 1) { // check if filter is valid
+        const driverName = req.query.name;
+        const pageNumber = req.query.pageNumber;
+        if (!driverName) { // validate if filter data is in correct format
             res.status(400).json({ message: "Invalid Data" })
         } else {
-            const driverList = await queryFilter('drivers', searchFilters); // query data based on filter
-            if (driverList.status == 200) {
-                res.status(200).json({ 'drivers': driverList.data }); // if response is OK return data
+            const driverList = await queryFilter('drivers', driverName, pageNumber); // insert in database
+            if (driverList.status == 200) { // error handling
+                if (driverList.data.length == 0) {
+                    res.status(200).json({ message: "No rider found" });
+                } else {
+                    res.status(200).json({ 'drivers': driverList.data });
+                }
             } else {
-                res.status(driverList.status).json({ message: driverList.data }); //else return errror
+                res.status(driverList.status).json({ message: driverList.data });
             }
         }
     } catch (error) {
@@ -111,8 +116,8 @@ const listDrivers = async (req, res) => {
 const listDriverRoutes = async (req, res) => {
     try {
         const driverId = req.query.driver_id;
-        const RouteTags = (req.query.tagsList!=null && req.query.tagsList!='') ? req.query.tagsList.split(',') : [];
-        
+        const RouteTags = (req.query.tagsList != null && req.query.tagsList != '') ? req.query.tagsList.split(',') : [];
+
         // if (!driverId) { // validate rider id
         //     res.status(400).json({ message: "Invalid Data" })
         // } else {

@@ -9,7 +9,7 @@ const pool = new Pool({
   // password: '1234',
   // host: 'localhost',
   // port: 5432,
-  // database: 'STS'
+  // database: 'test-transport'
 
   // user: 'postgres',
   // password: '123456',
@@ -21,7 +21,7 @@ const pool = new Pool({
   password: 'AVNS_MHGwE5WNGWUy_wvn_-l',
   host: 'db-postgresql-sfo2-32856-do-user-13737111-0.b.db.ondigitalocean.com',
   port: 25060,
-  database: 'local-test',
+  database: 'az3_deployment',
   ssl: {
     rejectUnauthorized: false,
     require: true
@@ -48,7 +48,7 @@ const db = pgp({
   // password: '1234',
   // host: 'localhost',
   // port: 5432,
-  // database: 'STS'
+  // database: 'test-transport'
 
   // user: 'postgres',
   // password: '123456',
@@ -60,7 +60,7 @@ const db = pgp({
   password: 'AVNS_MHGwE5WNGWUy_wvn_-l',
   host: 'db-postgresql-sfo2-32856-do-user-13737111-0.b.db.ondigitalocean.com',
   port: 25060,
-  database: 'local-test',
+  database: 'az3_deployment',
   ssl: {
     rejectUnauthorized: false,
     require: true
@@ -95,6 +95,13 @@ const queryGetRole = async (session_token = '', email = '') => {
 }
 
 
+const countRows = async (tableName) => {
+  const countQuery = `SELECT COUNT(*) FROM "${tableName}"`;
+  const count = await pool.query(countQuery);
+  // console.log(count.rows)
+  return count.rows[0].count;
+}
+
 // generic query to query data from tables
 // it can have one column in where condition
 // for more than one column custom queries are made
@@ -108,6 +115,21 @@ const queryAll = async (tableName, columnName = '', columnValue = null, paginati
     return { status: 500, data: error.message }; // if error return error message
   }
 }
+
+
+const qSetWaypointDistance = async (sessionToken, waypointDistance) => {
+  const email = await queryAll('sessions', 'session_token', sessionToken, null, ['email']);
+  const updatequery = `UPDATE users SET waypoint_distance=${waypointDistance} WHERE email='${email.data[0].email}'`;
+  // console.log(updatequery)
+  await pool.query(updatequery);
+  return { status: 200, data: 'configuration updated' };
+}
+const qGetWaypointDistance = async (sessionToken) => {
+  const email = await queryAll('sessions', 'session_token', sessionToken, null, ['email']);
+  const waypointDistance = await queryAll('users', 'email', email.data[0].email, null, ['waypoint_distance']);
+  return { status: 200, data: waypointDistance.data[0].waypoint_distance };
+}
+
 
 const findPointsOfInterestBetweenPolygon = async (dataPoints) => {
   // const pointQuery = `SELECT lat, long FROM nodes WHERE ((lat - ${dataPoints[0][1]})*(${dataPoints[1][0]} - ${dataPoints[0][0]}) - (long - ${dataPoints[0][0]}) * (${dataPoints[1][1]} - ${dataPoints[0][1]})) >= 0 AND ((lat - ${dataPoints[1][1]}) * (${dataPoints[2][0]} - ${dataPoints[1][0]}) - (long - ${dataPoints[1][0]}) * (${dataPoints[2][1]} - ${dataPoints[1][1]})) >= 0 AND ((lat - ${dataPoints[2][1]}) * (${dataPoints[3][0]} - ${dataPoints[2][0]}) - (long - ${dataPoints[2][0]}) * (${dataPoints[3][1]} - ${dataPoints[2][1]})) >= 0 AND ((lat - ${dataPoints[3][1]}) * (${dataPoints[0][0]} - ${dataPoints[3][0]}) - (long - ${dataPoints[3][0]}) * (${dataPoints[0][1]} - ${dataPoints[3][1]})) >= 0`;
@@ -239,10 +261,10 @@ const queryCreate = async (tableName, bioData) => {
 }
 
 // return data based on filters provided for riders or drivers
-const queryFilter = async (tableName, riderSearchFilters) => {
+const queryFilter = async (tableName, name, pageNumber) => {
   try {
-    const searchQuery = await makeSearchFilterQuery(tableName, riderSearchFilters); // process filter query
-    const qRes = await pool.query(searchQuery); // execute query
+    // const searchQuery = await makeSearchFilterQuery(tableName, riderSearchFilters); // process filter query
+    const qRes = await pool.query(`SELECT * FROM "${tableName}" WHERE first_name ILIKE '%${name}%' OR last_name ILIKE '%${name}%' OR (first_name || ' ' || last_name) ILIKE '%${name}%' LIMIT 10 OFFSET ${(pageNumber - 1) * 10}`); // execute query
     return { status: 200, data: qRes.rows }; // if OK return data
   }
   catch (error) {
@@ -454,9 +476,14 @@ const queryInsertNode = async (node_type, nodeData) => {
 }
 
 
-const queryTableCount = async (tableName, id, tagsList) => {
+const queryTableCount = async (tableName, id, tagsList, name) => {
   try {
-    const query = `SELECT COUNT(*) FROM "${tableName}"${id != null ? tableName == 'rroutes' ? ` WHERE rider_id=${id}` : tableName == 'droutenodes' ? ` WHERE droute_id=${id}` : tableName == 'rroutenodes' ? ` WHERE rroute_id=${id}` : ` WHERE driver_id=${id}` : ''}${tagsList != null ? ` ${id != null ? `AND` : `WHERE`} ${tableName == 'rroutes' ? 'r' : 'd'}route_dbm_tag IN (${tagsList.map(tag => `\'${tag}\'`).join(',')})` : ''}`;
+    let query = null;
+    if (['riders', 'drivers'].includes(tableName) && name != null) {
+      query = `SELECT COUNT(*) FROM "${tableName}" WHERE first_name ILIKE '%${name}%' OR last_name ILIKE '%${name}%' OR (first_name || ' ' || last_name) ILIKE '%${name}%'`;
+    } else {
+      query = `SELECT COUNT(*) FROM "${tableName}"${id != null ? tableName == 'rroutes' ? ` WHERE rider_id=${id}` : tableName == 'droutenodes' ? ` WHERE droute_id=${id}` : tableName == 'rroutenodes' ? ` WHERE rroute_id=${id}` : ` WHERE driver_id=${id}` : ''}${tagsList != null ? ` ${id != null ? `AND` : `WHERE`} ${tableName == 'rroutes' ? 'r' : 'd'}route_dbm_tag IN (${tagsList.map(tag => `\'${tag}\'`).join(',')})` : ''}`;
+    }
     const countRes = await pool.query(query);
 
     return { status: 200, data: countRes.rows[0] };
@@ -684,5 +711,8 @@ module.exports = {
   queryDRoutesFilter,
   queryBatchInsertNodes,
   findPointsOfInterestBetweenPolygon,
-  queryBatchInsertN2N
+  queryBatchInsertN2N,
+  qSetWaypointDistance,
+  qGetWaypointDistance,
+  countRows
 };

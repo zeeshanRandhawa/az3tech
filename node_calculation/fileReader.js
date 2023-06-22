@@ -54,7 +54,7 @@ async function updateCSVFile(filePath) {
           if (err) {
             reject(err);
           } else {
-            console.log('CSV file updated successfully!');
+            // console.log('CSV file updated successfully!');
             resolve();
           }
         });
@@ -101,7 +101,7 @@ function appendDataToCSVFile(filePath, data) {
       if (err) {
         reject(err);
       } else {
-        console.log('Data added to CSV file successfully!');
+        // console.log('Data added to CSV file successfully!');
         resolve();
       }
     });

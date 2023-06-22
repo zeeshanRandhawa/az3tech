@@ -1,9 +1,21 @@
-const fs = require('fs');
+const { readFile, writeFile } = require('node:fs/promises');
 const axios = require('axios');
 const { queryBatchInsertN2N } = require('./query');
 
-const distanceDurationBetweenAllNodes = async (oldNodes, newNodes) => {
-  console.log(new Date());
+
+const distanceDurationBetweenAllNodes = async () => {
+  let oldNodes = null;
+  let newNodes = null;
+
+  try {
+    let contents = await readFile('./utilities/uploadfiles/n2ndata.json', { encoding: 'utf8' });
+    contents = JSON.parse(contents);
+    oldNodes = contents.old;
+    newNodes = contents.new
+  } catch (err) {
+    console.error(err.message);
+  }
+  // console.log(new Date());
   try {
     process.send('status:creating node pairs');
     const nodePairs = await getAllNodePairs(oldNodes, newNodes);
@@ -14,7 +26,7 @@ const distanceDurationBetweenAllNodes = async (oldNodes, newNodes) => {
       return pair;
     }));
 
-    apiUrls = apiUrls.slice(0, 100);
+    // apiUrls = apiUrls.slice(0, 25);
 
     process.send('status:getting distance duration of node to node pair');
     const apiResultData = await Promise.allSettled(apiUrls.map(async (apiUrl) => {
@@ -32,13 +44,9 @@ const distanceDurationBetweenAllNodes = async (oldNodes, newNodes) => {
     process.send('status:inserting batch data in node to node table');
     await queryBatchInsertN2N(parsedData);
 
-    // fs.writeFile('../../data.json', JSON.stringify(parsedData), (err) => {
-    //   if (err) {
-    //     console.error('Error writing file:', err);
-    //     return;
-    //   }
-    //   console.log('File saved successfully.');
-    // });
+    // process.send('status:completed');
+
+    await writeFile('./utilities/uploadfiles/n2ndata.json', '', { encoding: 'utf8' });
   } catch (err) {
     console.error(err);
   }
@@ -61,7 +69,7 @@ const getApiUrls = async (nodePair) => {
   const lat1 = nodePair[0].lat;
   const lng2 = nodePair[1].long;
   const lat2 = nodePair[1].lat;
-  return `http://143.110.152.222:5000/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?steps=true&geometries=geojson&overview=full&annotations=true`;
+  return `http://143.110.152.222:5000/route/v1/car/${lng1},${lat1};${lng2},${lat2}?steps=true&geometries=geojson&overview=full&annotations=true`;
 }
 
 async function fetchDataFromApi(url, i, maxRetries = 4, retryDelay = 100) {
@@ -91,8 +99,10 @@ const parseApiData = async (apiData) => {
 
 
 
-const [, , oldNodes, newNodes] = process.argv;
 
-console.log(JSON.parse(newNodes));
+// console.log(oldNodes);
 
-distanceDurationBetweenAllNodes(JSON.parse(oldNodes), JSON.parse(newNodes));
+// const [, , oldNodes, newNodes] = process.argv;
+
+
+distanceDurationBetweenAllNodes();

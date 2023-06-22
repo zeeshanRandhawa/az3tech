@@ -24,7 +24,7 @@ const socketListen = async (server) => {
         }
         socket.on("disconnect", () => {
             adminCurrentSessionSocketList['somekey'] = adminCurrentSessionSocketList['somekey'].filter(s => s.id != socket.id);
-            console.log(adminCurrentSessionSocketList['somekey'].length);
+            // console.log(adminCurrentSessionSocketList['somekey'].length);
         });
         // console.log(adminCurrentSessionSocketList['somekey'].length);
         // console.log('connected');

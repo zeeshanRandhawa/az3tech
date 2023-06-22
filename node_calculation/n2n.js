@@ -50,7 +50,7 @@ const distanceDurationBetweenAllNodes = async (oldNodes, newNodes) => {
         return;
       }
 
-      console.log('File saved successfully.');
+      // console.log('File saved successfully.');
     });
 
     // console.log(parsedData)

@@ -10,10 +10,11 @@ const haversine = require('haversine-distance');
 const getpageCount = async (req, res) => {
   try {
     const routeTags = (req.query.tagsList != null && req.query.tagsList != '') ? req.query.tagsList.split(',') : null;
+    const searchName = (req.query.name != null && req.query.name != '') ? req.query.name : null;
     if (!req.query.tableName) {
       return res.status(400).json({ message: 'Invalid Data' });
     } else {
-      const countRes = await queryTableCount(req.query.tableName, req.query.id, routeTags);
+      const countRes = await queryTableCount(req.query.tableName, req.query.id, routeTags, searchName);
       if (countRes.status == 200) {
         res.status(200).json({ "pageCount": countRes.data });
       } else {
@@ -41,9 +42,9 @@ const hashPassword = (password) => {
 };
 
 
-const getRouteInfo = async (pointA, pointB, maxRetries = 4, retryDelay = 500) => {
+const getRouteInfo = async (pointA, pointB, maxRetries = 4, retryDelay = 100) => {
   try {
-    url = `http://router.project-osrm.org/route/v1/driving/${pointA[0]},${pointA[1]};${pointB[0]},${pointB[1]}?steps=true&geometries=geojson&overview=full&annotations=true`;
+    url = `http://143.110.152.222:5000/route/v1/car/${pointA[0]},${pointA[1]};${pointB[0]},${pointB[1]}?steps=true&geometries=geojson&overview=full&annotations=true`;
     const response = await axios.get(url);
     r_data = await response.data;
     return r_data;
@@ -89,130 +90,132 @@ const calculateDistance = (pointA, pointB) => {
 
 
 
-  function hasSignificantCurve(coordinates) {
-    // Calculate the distances between consecutive points
-    const distances = [];
-    
-    for (let i = 1; i < coordinates.length; i++) {
-      // const distance = geolib.getDistance({latitude: coordinates[i - 1][1], longitude: coordinates[i - 1][0]}, {latitude: coordinates[i][1], longitude: coordinates[i][0]});
-      const bearing = geolib.getRhumbLineBearing({latitude: coordinates[i - 1][1], longitude: coordinates[i - 1][0]}, {latitude: coordinates[i][1], longitude: coordinates[i][0]})
-      distances.push(bearing);
-    }
-  
-    // Calculate the standard deviation of the distances
-    const mean = distances.reduce((sum, distance) => sum + distance, 0) / distances.length;
-    const variance = distances.reduce((sum, distance) => sum + Math.pow(distance - mean, 2), 0) / distances.length;
-    const standardDeviation = Math.sqrt(variance);
-  
-    // Define a threshold for significant curve detection
-    const threshold = 2; // Adjust this value according to your needs
-  
-    // Determine if the line has a significant curve
-    // console.log(standardDeviation)
-    return standardDeviation > threshold;
+function hasSignificantCurve(coordinates) {
+  // Calculate the distances between consecutive points
+  const distances = [];
+
+  for (let i = 1; i < coordinates.length; i++) {
+    // const distance = geolib.getDistance({latitude: coordinates[i - 1][1], longitude: coordinates[i - 1][0]}, {latitude: coordinates[i][1], longitude: coordinates[i][0]});
+    const bearing = geolib.getRhumbLineBearing({ latitude: coordinates[i - 1][1], longitude: coordinates[i - 1][0] }, { latitude: coordinates[i][1], longitude: coordinates[i][0] })
+    distances.push(bearing);
   }
-  
-  // Example usa
 
-  const getDistances = (lineStart, lineEnd, nodePoint, curve, allPoints) =>{
+  // Calculate the standard deviation of the distances
+  const mean = distances.reduce((sum, distance) => sum + distance, 0) / distances.length;
+  const variance = distances.reduce((sum, distance) => sum + Math.pow(distance - mean, 2), 0) / distances.length;
+  const standardDeviation = Math.sqrt(variance);
 
-    if(curve){
-      
-      let smallest = ""
-      allPoints.forEach(point => {
-        
-        let thisDistance = geolib.getDistance({latitude: point[1], longitude: point[0]}, {latitude: nodePoint.lat, longitude: nodePoint.long})
-      
-        if(smallest == ""){
-          
-          smallest = thisDistance;
-        }
-        else{
-          smallest = thisDistance<=smallest? thisDistance : smallest;
-        }
-      });
+  // Define a threshold for significant curve detection
+  const threshold = 2; // Adjust this value according to your needs
+
+  // Determine if the line has a significant curve
+  // console.log(standardDeviation)
+  return standardDeviation > threshold;
+}
+
+// Example usa
+
+const getDistances = (lineStart, lineEnd, nodePoint, curve, allPoints) => {
+
+  if (curve) {
+
+    let smallest = ""
+    allPoints.forEach(point => {
+
+      let thisDistance = geolib.getDistance({ latitude: point[1], longitude: point[0] }, { latitude: nodePoint.lat, longitude: nodePoint.long })
+
+      if (smallest == "") {
+
+        smallest = thisDistance;
+      }
+      else {
+        smallest = thisDistance <= smallest ? thisDistance : smallest;
+      }
+    });
 
 
-      const result = {
-        distance: smallest,
-        intercepted: true
-      };
-      return result
-    }
+    const result = {
+      distance: smallest,
+      intercepted: true
+    };
+    return result
+  }
 
-    let A = { latitude: lineStart[1], longitude: lineStart[0] }
-    let B = { latitude: lineEnd[1], longitude: lineEnd[0] }
-    let point = { latitude: nodePoint.lat, longitude: nodePoint.long }
+  let A = { latitude: lineStart[1], longitude: lineStart[0] }
+  let B = { latitude: lineEnd[1], longitude: lineEnd[0] }
+  let point = { latitude: nodePoint.lat, longitude: nodePoint.long }
 
-    let distance = geolib.getDistanceFromLine(
-      point,
-      A,
-      B
-    );
+  let distance = geolib.getDistanceFromLine(
+    point,
+    A,
+    B
+  );
 
-      const result = {
-        distance: distance,
-        intercepted: true
-      };
+  const result = {
+    distance: distance,
+    intercepted: true
+  };
 
   return result
-  }
-
-  
-
-  function findParallelLines(dataPoints) {
-    const A = dataPoints[0]
-    const B = dataPoints[1]
-    // Convert latitude and longitude to radians
-    const lat_A = math.unit(dataPoints[0][1], 'deg').to('rad').value;
-    const lon_A = math.unit(dataPoints[0][0], 'deg').to('rad').value;
-    const lat_B = math.unit(dataPoints[1][1], 'deg').to('rad').value;
-    const lon_B = math.unit(dataPoints[1][0], 'deg').to('rad').value;
-  
-    // Calculate the angle of line AB
-    const d_lon = lon_B - lon_A;
-    const y = math.sin(d_lon) * math.cos(lat_B);
-    const x = math.cos(lat_A) * math.sin(lat_B) - math.sin(lat_A) * math.cos(lat_B) * math.cos(d_lon);
-    
-    
-    const angle = Math.atan2(y, x);
-    const L = calculateDistance({lat: toRadians(A[1]), long: toRadians(A[0])}, {lat: toRadians(B[1]), long: toRadians(B[0])} )/4
-    // Calculate the perpendicular offset
-    const offset = L / (6371 * 1000); // 6371 km is the average radius of the Earth
-    
-    // Calculate the coordinates of the parallel lines
-    const lat_offset = offset * Math.cos(angle);
-    const lon_offset = offset * Math.sin(angle);
-    
-    const parallel_line_1 = [
-      [A[1] - lat_offset, A[0] + lon_offset],
-      [B[1] - lat_offset, B[0] + lon_offset]
-    ];
-    
-    const parallel_line_2 = [
-      [A[1] + lat_offset, A[0] - lon_offset],
-      [B[1] + lat_offset, B[0] - lon_offset]
-    ];
-  
-    // Convert back to degrees
-    const parallel_line_1_deg = parallel_line_1.map(coord => [
-      math.unit(coord[0], 'rad').to('deg').value,
-      math.unit(coord[1], 'rad').to('deg').value
-    ]);
-    const parallel_line_2_deg = parallel_line_2.map(coord => [
-      math.unit(coord[0], 'rad').to('deg').value,
-      math.unit(coord[1], 'rad').to('deg').value
-    ]);
-
-    
-    // return [parallel_line_1_deg, parallel_line_2_deg];
-    return [ [parallel_line_1_deg[0][1], parallel_line_1_deg[0][0]], [parallel_line_1_deg[1][1], parallel_line_1_deg[1][0]], [parallel_line_2_deg[0][1], parallel_line_2_deg[0][0]], [parallel_line_2_deg[1][1], parallel_line_2_deg[1][0]]]
-  }
-  
+}
 
 
 
-module.exports = { getpageCount, hashPassword, getRouteInfo, findParallelLines , getDistances, hasSignificantCurve};
+function findParallelLines(dataPoints) {
+  const A = dataPoints[0]
+  const B = dataPoints[1]
+  // Convert latitude and longitude to radians
+  const lat_A = math.unit(dataPoints[0][1], 'deg').to('rad').value;
+  const lon_A = math.unit(dataPoints[0][0], 'deg').to('rad').value;
+  const lat_B = math.unit(dataPoints[1][1], 'deg').to('rad').value;
+  const lon_B = math.unit(dataPoints[1][0], 'deg').to('rad').value;
+
+  // Calculate the angle of line AB
+  const d_lon = lon_B - lon_A;
+  const y = math.sin(d_lon) * math.cos(lat_B);
+  const x = math.cos(lat_A) * math.sin(lat_B) - math.sin(lat_A) * math.cos(lat_B) * math.cos(d_lon);
+
+
+  const angle = Math.atan2(y, x);
+  const L = calculateDistance({ lat: toRadians(A[1]), long: toRadians(A[0]) }, { lat: toRadians(B[1]), long: toRadians(B[0]) }) / 4
+  // Calculate the perpendicular offset
+  const offset = L / (6371 * 1000); // 6371 km is the average radius of the Earth
+
+  // Calculate the coordinates of the parallel lines
+  const lat_offset = offset * Math.cos(angle);
+  const lon_offset = offset * Math.sin(angle);
+
+  const parallel_line_1 = [
+    [A[1] - lat_offset, A[0] + lon_offset],
+    [B[1] - lat_offset, B[0] + lon_offset]
+  ];
+
+  const parallel_line_2 = [
+    [A[1] + lat_offset, A[0] - lon_offset],
+    [B[1] + lat_offset, B[0] - lon_offset]
+  ];
+
+  // Convert back to degrees
+  const parallel_line_1_deg = parallel_line_1.map(coord => [
+    math.unit(coord[0], 'rad').to('deg').value,
+    math.unit(coord[1], 'rad').to('deg').value
+  ]);
+  const parallel_line_2_deg = parallel_line_2.map(coord => [
+    math.unit(coord[0], 'rad').to('deg').value,
+    math.unit(coord[1], 'rad').to('deg').value
+  ]);
+
+
+  // return [parallel_line_1_deg, parallel_line_2_deg];
+  return [[parallel_line_1_deg[0][1], parallel_line_1_deg[0][0]], [parallel_line_1_deg[1][1], parallel_line_1_deg[1][0]], [parallel_line_2_deg[0][1], parallel_line_2_deg[0][0]], [parallel_line_2_deg[1][1], parallel_line_2_deg[1][0]]]
+}
+
+function calculateDistanceBetweenPoints(A,B){
+  return geolib.getDistance(A, B)
+}
+
+
+module.exports = { getpageCount, hashPassword, getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints };
 
 // 37.79103509151187, -122.42789800130387
 // 37.74041824562184, -122.46978337728044

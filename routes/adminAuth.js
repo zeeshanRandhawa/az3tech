@@ -37,7 +37,7 @@ const userLogin = async (req, res) => {
 
         //  R/I S
         const userData = await queryAll('users', 'email', loginFormData.userEmail ? loginFormData.userEmail : loginFormData.email); // query user data
-
+        // console.log(userData)
         if (userData.status != 200 || userData.data.length == 0) {
             return res.status(401).json({ message: 'Invalid credentials' }); // if no userr found means credentials wrong
 
@@ -48,12 +48,13 @@ const userLogin = async (req, res) => {
                 return res.status(401).json({ message: 'No Admin exist with above email' }); // if user found but is not admin  means credentials wrong
             }
         } // RE
-         else { // IS
+        else { // IS
             if (['Admin', 'SuperAdmin'].includes((await queryGetRole(session_token = '', email = loginFormData.email)).data[0].role_type.trim())) {
                 return res.status(401).json({ message: 'No User exist with above email' }); // if user found but is not admin  means credentials wrong
             }
         } // IE
         // else {
+        // console.log(loginFormData.password, userData.data[0].password)
         bcrypt.compare(loginFormData.password, userData.data[0].password, async function (error, result) { // if correct credentials based on email. compare password hash
             if (result) {
                 const session_token = await (crypto.randomBytes(32)).toString('hex'); // generate new session cooki (need optimization check for duplicate cookie)

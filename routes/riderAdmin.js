@@ -33,13 +33,18 @@ const createRiderProfile = async (req, res) => {
 // search riders based on filter object provided
 const searchRiders = async (req, res) => {
     try {
-        const searchFilters = req.body.filterList
-        if (!searchFilters || searchFilters.length < 1) { // validate if filter data is in correct format
+        const riderName = req.query.name;
+        const pageNumber = req.query.pageNumber;
+        if (!riderName) { // validate if filter data is in correct format
             res.status(400).json({ message: "Invalid Data" })
         } else {
-            const riderList = await queryFilter('riders', searchFilters); // insert in database
+            const riderList = await queryFilter('riders', riderName, pageNumber); // insert in database
             if (riderList.status == 200) { // error handling
-                res.status(200).json({ 'riders': riderList.data });
+                if (riderList.data.length == 0) {
+                    res.status(200).json({ message: "No rider found" });
+                } else {
+                    res.status(200).json({ 'riders': riderList.data });
+                }
             } else {
                 res.status(riderList.status).json({ message: riderList.data });
             }
@@ -114,7 +119,7 @@ const listRiders = async (req, res) => {
 const listRiderRoutes = async (req, res) => {
     try {
         const riderId = req.query.rider_id;
-        const RouteTags = (req.query.tagsList!=null && req.query.tagsList!='') ? req.query.tagsList.split(',') : [];
+        const RouteTags = (req.query.tagsList != null && req.query.tagsList != '') ? req.query.tagsList.split(',') : [];
         // if (!riderId) { // validate rider id
         //     res.status(400).json({ message: "Invalid Data" })
         // } else {
