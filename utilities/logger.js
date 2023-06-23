@@ -6,20 +6,20 @@ const pool = new Pool({
     // host: 'localhost',
     // port: 5432,
     // database: 'test-transport'
-    user: 'postgres',
-    password: '123456',
-    host: 'localhost',
-    port: 5432,
-    database: 'test-local'
-    // user: 'doadmin',
-    // password: 'AVNS_MHGwE5WNGWUy_wvn_-l',
-    // host: 'db-postgresql-sfo2-32856-do-user-13737111-0.b.db.ondigitalocean.com',
-    // port: 25060,
-    // database: 'local-test',
-    // ssl: {
-    //   rejectUnauthorized: false,
-    //   require: true
-    // }
+    // user: 'postgres',
+    // password: '123456',
+    // host: 'localhost',
+    // port: 5432,
+    // database: 'test-local'
+    user: 'doadmin',
+    password: 'AVNS_MHGwE5WNGWUy_wvn_-l',
+    host: 'db-postgresql-sfo2-32856-do-user-13737111-0.b.db.ondigitalocean.com',
+    port: 25060,
+    database: 'az3_deployment',
+    ssl: {
+      rejectUnauthorized: false,
+      require: true
+    }
 });
 
 const queryInsertLog = async (logEntry) => {

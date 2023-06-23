@@ -26,16 +26,20 @@ const createDriverRoute = async (req, res) => {
 
 
 // take file buffer
-const prepareBulkData = async (fileBuffer, scheduled_wd) => {
+const prepareBulkData = async (fileBuffer, scheduled_wd, schedule_start, schedule_end) => {
     try {
         const results = []; // list to store file data structure
         await fileBuffer
             .toString() // convert buffer to string
-            .split('\r\n') // split each line of string
+            .split('\n') // split each line of string
             .slice(1) // trunc first line as it is header containing columns
             .forEach((line) => {
                 const [droute_dbm_tag, droute_name, origin_node, destination_node, arrival_time, departure_time, driver_id, capacity] = line.split(','); // for each line split strig by , delimeter
-                results.push({ droute_dbm_tag: droute_dbm_tag, droute_name: droute_name, origin_node: origin_node, destination_node: destination_node, arrival_time: arrival_time, departure_time: departure_time, driver_id: driver_id, capacity: capacity, fixed_route: 1, scheduled_weekdays: scheduled_wd });
+                if (scheduled_wd == '') {
+                    results.push({ droute_dbm_tag: droute_dbm_tag, droute_name: droute_name, origin_node: origin_node, destination_node: destination_node, arrival_time: arrival_time, departure_time: departure_time, driver_id: driver_id, capacity: capacity, fixed_route: 1, schedule_start: schedule_start, schedule_end: schedule_end });
+                } else {
+                    results.push({ droute_dbm_tag: droute_dbm_tag, droute_name: droute_name, origin_node: origin_node, destination_node: destination_node, arrival_time: arrival_time, departure_time: departure_time, driver_id: driver_id, capacity: capacity, fixed_route: 1, scheduled_weekdays: scheduled_wd });
+                }
             }); // push the data as dict in list
         return { status: 200, data: results }; //return data
     } catch (error) {
@@ -48,7 +52,9 @@ const prepareBulkData = async (fileBuffer, scheduled_wd) => {
 
 const importDriverTransitScheduleRoutes = async (req, res) => {
     try {
-        if (!req.body.scheduled_weekdays) {
+        // console.log(typeof (req.body.scheduled_weekdays), req.body.scheduled_weekdays);
+
+        if (!req.body.scheduled_weekdays && !req.body.scheduled_start && !req.body.scheduled_end) {
             return res.status(400).json({ message: 'Invalid Data' });
         }
         if (!req.files[0]) { // validate if file uploaded
@@ -59,14 +65,15 @@ const importDriverTransitScheduleRoutes = async (req, res) => {
         }
         const header = req.files[0].buffer
             .toString() // convert buffer to string
-            .split('\r\n') // split each line of string
+            .split('\n') // split each line of string
             .slice(0, 1)[0] // trunc first line as it is header containing columns)
             .split(',');
+
         if (header.length != 8 ||
             (header.filter(col_name => !['droute_dbm_tag', 'droute_name', 'origin_node', 'destination_node', 'arrival_time', 'departure_time', 'driver_id', 'capacity'].includes(col_name))).length != 0) {
             return res.status(400).json({ message: 'Invalid column length' });
         }
-        const batchTransitData = await prepareBulkData(req.files[0].buffer, req.body.scheduled_weekdays); // prepare data to insert
+        const batchTransitData = await prepareBulkData(req.files[0].buffer, req.body.scheduled_weekdays, req.body.scheduled_start, req.body.scheduled_end); // prepare data to insert
 
         if (batchTransitData.status == 200) {
             const retRes = await queryBatchInsertTransitRoute(batchTransitData.data); // execute batch query if data prepared

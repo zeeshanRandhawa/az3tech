@@ -21,7 +21,6 @@ app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
 
 
-
 const server = http.createServer(app);
 
 const { userLogin, adminLogout, isLoggedIn, getRole, userSignUp } = require('./routes/adminAuth');
@@ -116,8 +115,6 @@ app.get('/api/v1/nodes', nodeAdmin.getAllNodes)
 app.get('/api/v1/nodes/display/two-point', nodeAdmin.displayNodesBy2Point);
 app.get('/api/v1/nodes/download', nodeAdmin.downloadNodesCSV)
 app.post('/api/v1/nodes/nearest',nodeAdmin.getNearestNode)
-
-
 
 app.use((req, res, next) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));

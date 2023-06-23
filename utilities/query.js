@@ -552,18 +552,19 @@ const queryBatchInsertTransitRoute = async (batchTransitData) => {
     const columns = Object.keys(batchTransitData[0]).map((str) => str.trim()).filter(str => str != 'arrival_time');
     const setTable = new pgp.helpers.ColumnSet(columns, { table: 'droutes' });
 
-    for (const data of batchTransitData) {
-      let insertData = pgp.helpers.insert(data, setTable);
-      await db.tx(async (t) => {
+    await db.tx(async (t) => {
+      for (const data of batchTransitData) {
+        let insertData = pgp.helpers.insert(data, setTable);
         try {
           const droute_id = (await t.one(`${insertData} RETURNING droute_id`)).droute_id;
           await t.none(`INSERT INTO "droutenodes" (droute_id, outb_driver_id, node_id, departure_time, capacity) VALUES(${droute_id}, ${data.driver_id}, ${data.origin_node}, \'${data.departure_time}\', ${data.capacity})`);
-          await t.one(`INSERT INTO "droutenodes" (droute_id, outb_driver_id, node_id, arrival_time, capacity) VALUES(${droute_id}, ${data.driver_id}, ${data.destination_node}, \'${data.arrival_time}\', ${data.capacity})`);
+          await t.none(`INSERT INTO "droutenodes" (droute_id, outb_driver_id, node_id, arrival_time, capacity) VALUES(${droute_id}, ${data.driver_id}, ${data.destination_node}, \'${data.arrival_time}\', ${data.capacity})`);
         } catch (error) {
+          console.log('in error', error);
           failedData.push({ data: data, message: error.message });
         }
-      });
-    }
+      }
+    });
 
     if (failedData.length === 0) {
       return { status: 200, message: 'Bulk data inserted successfully' };
