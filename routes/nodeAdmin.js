@@ -20,30 +20,34 @@ class NodeAdmin {
     }
 
     initializeSocket() {
-        this.io.on('connect', (socket) => {
-            // console.log('connected');
-            socket.on('sessiontoken', async (message) => {
-                // console.log('message', message);
-                const email = await queryAll('sessions', 'session_token', message, null, ['email']);
-                if (email.data[0].email in this.processList) {
-                    this.processList[email.data[0].email].sockets.push(socket);
-                } else {
-                    // this.processList[email.data[0].email] = { message: "", childProcess: null, operationType: "", status: "", sockets: [socket] }
-                    this.processList[email.data[0].email] = { message: '', chileProcess: null, op_type: '', status: '', sockets: [socket] };
-                }
-                // socket.emit('sessiontokenreceivestatus', 'done');
-                // console.log(this.processList);
-            });
+        try {
+            this.io.on('connect', (socket) => {
+                // console.log('connected');
+                socket.on('sessiontoken', async (message) => {
+                    // console.log('message', message);
+                    const email = await queryAll('sessions', 'session_token', message, null, ['email']);
+                    if (email.data[0].email in this.processList) {
+                        this.processList[email.data[0].email].sockets.push(socket);
+                    } else {
+                        // this.processList[email.data[0].email] = { message: "", childProcess: null, operationType: "", status: "", sockets: [socket] }
+                        this.processList[email.data[0].email] = { message: '', chileProcess: null, op_type: '', status: '', sockets: [socket] };
+                    }
+                    // socket.emit('sessiontokenreceivestatus', 'done');
+                    // console.log(this.processList);
+                });
 
-            socket.on('disconnect', () => {
-                // console.log('socket closed');
-                for (let key in this.processList) {
-                    this.processList[key].sockets = this.processList[key].sockets.filter(sckt => sckt.id != socket.id);
-                }
-                // console.log(this.processList);
+                socket.on('disconnect', () => {
+                    // console.log('socket closed');
+                    for (let key in this.processList) {
+                        this.processList[key].sockets = this.processList[key].sockets.filter(sckt => sckt.id != socket.id);
+                    }
+                    // console.log(this.processList);
 
+                });
             });
-        });
+        } catch (error) {
+            // console.log(error);
+        }
     }
 
     getNode2NodeCalculationStatus = async (req, res) => {
@@ -55,72 +59,84 @@ class NodeAdmin {
                 res.status(200).json({ message: 'completed' });
             }
         } catch (error) {
+            // console.log(error);
             res.status(200).json({ message: 'completed' });
         }
     }
 
     startChildProcess() {
-        const forked = fork('./utilities/worker.js');
+        try {
+            const forked = fork('./utilities/worker.js');
 
-        forked.on('close', (code) => {
-            const currentPid = forked.pid;
+            forked.on('close', (code) => {
+                const currentPid = forked.pid;
 
-            let keyToDelete = null;
-            for (let key in this.processList) {
-                if (this.processList[key].childProcess.pid == currentPid) {
-                    keyToDelete = key;
-                    this.processList[key].sockets.forEach((sckt) => {
-                        sckt.emit('uploadStatus', { 'message': 'completed' });
-                    });
-                    // this.processList[key].message = message.split(':')[1];
-                    // this.io.sockets.emit("uploadStatus", { 'message': message.split(':')[1] });
-                }
-            }
-            if (keyToDelete != null) {
-                delete this.processList[keyToDelete];
-            }
-            // this.processList = this.processList.filter(proces => proces.childProcess.pid != currentPid);
-            // this.io.sockets.emit("uploadStatus", { 'message': 'completed' });
-
-        });
-
-        forked.on('error', (err) => {
-        });
-
-        forked.on('message', (message) => {
-            const currentPid = forked.pid;
-            if (message.split(':')[0] == 'status') {
+                let keyToDelete = null;
                 for (let key in this.processList) {
-                    // console.log('check it', this.processList)
                     if (this.processList[key].childProcess.pid == currentPid) {
+                        keyToDelete = key;
                         this.processList[key].sockets.forEach((sckt) => {
-                            sckt.emit('uploadStatus', { 'message': message.split(':')[1] });
+                            sckt.emit('uploadStatus', { 'message': 'completed' });
                         });
-                        this.processList[key].message = message.split(':')[1];
+                        // this.processList[key].message = message.split(':')[1];
                         // this.io.sockets.emit("uploadStatus", { 'message': message.split(':')[1] });
                     }
                 }
-            }
-        });
+                if (keyToDelete != null) {
+                    delete this.processList[keyToDelete];
+                }
+                // this.processList = this.processList.filter(proces => proces.childProcess.pid != currentPid);
+                // this.io.sockets.emit("uploadStatus", { 'message': 'completed' });
 
-        return forked;
+            });
+
+            forked.on('error', (err) => {
+            });
+
+            forked.on('message', (message) => {
+                const currentPid = forked.pid;
+                if (message.split(':')[0] == 'status') {
+                    for (let key in this.processList) {
+                        // console.log('check it', this.processList)
+                        if (this.processList[key].childProcess.pid == currentPid) {
+                            // console.log(message.split(':')[1]);
+                            this.processList[key].sockets.forEach((sckt) => {
+                                sckt.emit('uploadStatus', { 'message': message.split(':')[1] });
+                            });
+                            this.processList[key].message = message.split(':')[1];
+                            // this.io.sockets.emit("uploadStatus", { 'message': message.split(':')[1] });
+                        }
+                    }
+                }
+            });
+
+
+            return forked;
+        } catch (error) {
+            // console.log(error);
+        }
     }
 
     isProcessRunning = async (token, op_type) => {
-        let flag = false;
-        const email = await queryAll('sessions', 'session_token', token, null, ['email']);
-        // console.log('asdsasad', email);
-        // console.log(this.processList);
+        try {
+            let flag = false;
+            const email = await queryAll('sessions', 'session_token', token, null, ['email']);
+            // console.log('asdsasad', email);
+            // console.log(this.processList);
 
-        for (let key in this.processList) {
-            // console.log(key)
-            if (key == email.data[0].email) {
-                if (this.processList[key].op_type == op_type && (this.processList[key].status != 'complete' || this.processList[key].status != 'error')) {
-                    flag = true
+            for (let key in this.processList) {
+                // console.log(key)
+                if (key == email.data[0].email) {
+                    if (this.processList[key].op_type == op_type && (this.processList[key].status != 'complete' || this.processList[key].status != 'error')) {
+                        flag = true
+                    }
                 }
             }
+            return flag;
+        } catch (error) {
+            // console.log(error);
+
         }
-        return flag;
     }
 
     setWayPointDistance = async (req, res) => {
@@ -200,6 +216,9 @@ class NodeAdmin {
 
                 const email = await queryAll('sessions', 'session_token', req.headers.cookies, null, ['email']);
 
+                // console.log('batch', email);
+                // console.log(this.processList);
+
                 this.processList[email.data[0].email].childProcess = childP;
                 this.processList[email.data[0].email].status = 'running'
                 //  = { childProcess: childP, status: 'running', ...this.processList[email.data[0].email] };
@@ -234,7 +253,12 @@ class NodeAdmin {
                 const nodesData = await findPointsOfInterestBetweenPolygon(dataPoints);
 
                 if (nodesData.status == 200) {
-                    res.status(200).json({ nodesData: nodesData.data, totalCount: await countRows('nodes'), retrievedNodes: nodesData.data.length });
+                    res.status(200).json({
+                        nodesData: nodesData.data.map((node) => {
+                            node.description = node.description.trim();
+                            return node;
+                        }), totalCount: await countRows('nodes'), retrievedNodes: nodesData.data.length
+                    });
                 } else {
                     res.sendStatus(500).json({ message: nodesData.data });
                 }
@@ -324,6 +348,7 @@ class NodeAdmin {
         })
 
     }
+
     makeIntermediateNodeSet = (intermediateNodes) => {
         intermediateNodes = intermediateNodes.filter(node => node.distance < 50);
 
@@ -403,25 +428,63 @@ class NodeAdmin {
         res.send(csvContent);
     }
 
-    getNearestNode = async (req,res) =>{
+    getNearestNode = async (req, res) => {
         let searchCoordinates = req.body.searchCoordinates;
-
+        // console.log(searchCoordinates)
         const nodeList = await queryAll('nodes', '', null, req.query.pageNumber, null);
-        let smallest = {distance:"", coordinates:{}}
-        nodeList.data.forEach((element)=>{
-            let distance = calculateDistanceBetweenPoints({latitude:element.lat, longitude:element.long}, {latitude: searchCoordinates.lat, longitude: searchCoordinates.long})
-            console.log(distance)
-            if(smallest.distance ==""){
+        let smallest = { distance: "", coordinates: {} }
+        nodeList.data.some((element) => {
+            let distance = calculateDistanceBetweenPoints({ latitude: element.lat, longitude: element.long }, { latitude: searchCoordinates.lat, longitude: searchCoordinates.long })
+            if (distance == 0) {
+                // console.log(distance, " ", { lat: element.lat, long: element.long })
                 smallest.distance = distance;
-                smallest.coordinates = {lat:element.lat, long: element.long}
+                smallest.coordinates = { lat: element.lat, long: element.long }
+                return true; // Break the loop
             }
-            else if(distance<= smallest.distance){
+            else if (smallest.distance == "") {
                 smallest.distance = distance;
-                smallest.coordinates = {lat:element.lat, long: element.long}            
+                smallest.coordinates = { lat: element.lat, long: element.long }
             }
-        })
+            else if (distance <= smallest.distance) {
+                smallest.distance = distance;
+                smallest.coordinates = { lat: element.lat, long: element.long }
+            }
+        });
         res.status(200).json(smallest);
     }
-}
 
+    getAllStates = async (req, res) => {
+        try {
+            let statesList = await queryAll('nodes', '', null, null, ['state_province AS state'], true);
+            // statesList = statesList.data.map(state => state.state);
+
+            statesList = statesList.data.filter(state => state.state != null).map((state) => {
+                state.state = state.state.trim();
+                return state
+            });
+            res.status(200).json({ stateList: statesList });
+        } catch (error) {
+            res.status(500).json({ message: "Server Error " + error.message });
+        }
+    }
+
+    getStateCityNodes = async (req, res) => {
+        try {
+            if (!req.query.state || req.query.state == '') {
+                res.send(400).json({ message: 'Invalid data' });
+            } else {
+                let stateCityNodeCount = await queryAll('nodes', 'state_province', req.query.state, null, ['city', 'COUNT(node_id) AS nodes'], false, ['city']);
+                res.status(stateCityNodeCount.status).json({
+                    stateCityNodeCount: stateCityNodeCount.data.map((stateCityNodeCount) => {
+                        stateCityNodeCount.city = stateCityNodeCount.city.trim();
+                        return stateCityNodeCount;
+                    })
+                });
+            }
+        } catch (error) {
+            // console.log(error);
+            res.status(500).json({ message: "Server Error " + error.message });
+        }
+    }
+}
 module.exports = NodeAdmin;

@@ -15,7 +15,7 @@ const pool = new Pool({
     password: 'AVNS_MHGwE5WNGWUy_wvn_-l',
     host: 'db-postgresql-sfo2-32856-do-user-13737111-0.b.db.ondigitalocean.com',
     port: 25060,
-    database: 'az3_deployment',
+    database: 'local-test',
     ssl: {
       rejectUnauthorized: false,
       require: true

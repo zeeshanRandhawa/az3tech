@@ -105,10 +105,10 @@ const countRows = async (tableName) => {
 // generic query to query data from tables
 // it can have one column in where condition
 // for more than one column custom queries are made
-const queryAll = async (tableName, columnName = '', columnValue = null, pagination = null, columns = null) => {
+const queryAll = async (tableName, columnName = '', columnValue = null, pagination = null, columns = null, distinct = false, groupBy = null) => {
   try {
     //make query depends on data type also
-    const query = `SELECT ${columns == null ? `*` : columns.map(col => col).join(',')} FROM "${tableName}"${columnName !== '' ? ' WHERE '.concat(columnName).concat(typeof (columnValue) == 'object' ? ' IN' : '=').concat(typeof (columnValue) == 'string' ? `'${columnValue}'` : typeof (columnValue) == 'object' ? ' ('.concat(columnValue.map(route => `\'${route}\'`).join(', ')).concat(')') : columnValue) : ''}${pagination != null ? ` LIMIT 10 OFFSET ${(pagination - 1) * 10}` : ''}`;
+    const query = `SELECT ${distinct ? `DISTINCT` : ``} ${columns == null ? `*` : columns.map(col => col).join(',')} FROM "${tableName}"${columnName !== '' ? ' WHERE '.concat(columnName).concat(typeof (columnValue) == 'object' ? ' IN' : '=').concat(typeof (columnValue) == 'string' ? `'${columnValue}'` : typeof (columnValue) == 'object' ? ' ('.concat(columnValue.map(route => `\'${route}\'`).join(', ')).concat(')') : columnValue) : ''} ${groupBy == null ? `` : `GROUP BY `.concat(groupBy.map(col => col).join(','))}${pagination != null ? ` LIMIT 10 OFFSET ${(pagination - 1) * 10}` : ''}`;
     const data = await pool.query(query); // execute query
     return { status: 200, data: data.rows } // return data
   } catch (error) {
@@ -134,7 +134,7 @@ const qGetWaypointDistance = async (sessionToken) => {
 const findPointsOfInterestBetweenPolygon = async (dataPoints) => {
   // const pointQuery = `SELECT lat, long FROM nodes WHERE ((lat - ${dataPoints[0][1]})*(${dataPoints[1][0]} - ${dataPoints[0][0]}) - (long - ${dataPoints[0][0]}) * (${dataPoints[1][1]} - ${dataPoints[0][1]})) >= 0 AND ((lat - ${dataPoints[1][1]}) * (${dataPoints[2][0]} - ${dataPoints[1][0]}) - (long - ${dataPoints[1][0]}) * (${dataPoints[2][1]} - ${dataPoints[1][1]})) >= 0 AND ((lat - ${dataPoints[2][1]}) * (${dataPoints[3][0]} - ${dataPoints[2][0]}) - (long - ${dataPoints[2][0]}) * (${dataPoints[3][1]} - ${dataPoints[2][1]})) >= 0 AND ((lat - ${dataPoints[3][1]}) * (${dataPoints[0][0]} - ${dataPoints[3][0]}) - (long - ${dataPoints[3][0]}) * (${dataPoints[0][1]} - ${dataPoints[3][1]})) >= 0`;
   try {
-    const pointQuery = `SELECT lat, long FROM nodes WHERE 
+    const pointQuery = `SELECT lat, long, description FROM nodes WHERE 
     (((${dataPoints[1][0]} - ${dataPoints[0][0]}) * (long - ${dataPoints[0][0]})) + ((${dataPoints[1][1]} - ${dataPoints[0][1]}) * (lat - ${dataPoints[0][1]}))) >= 0
      AND (((${dataPoints[1][0]} - ${dataPoints[0][0]}) * (long - ${dataPoints[0][0]})) + ((${dataPoints[1][1]} - ${dataPoints[0][1]}) * (lat - ${dataPoints[0][1]}))) <= (((${dataPoints[1][0]} - ${dataPoints[0][0]}) * (${dataPoints[1][0]} - ${dataPoints[0][0]})) + ((${dataPoints[1][1]} - ${dataPoints[0][1]}) * (${dataPoints[1][1]} - ${dataPoints[0][1]})))
       AND (((${dataPoints[2][0]} - ${dataPoints[1][0]}) * (long - ${dataPoints[1][0]})) + ((${dataPoints[2][1]} - ${dataPoints[1][1]}) * (lat - ${dataPoints[1][1]}))) >= 0
@@ -560,7 +560,7 @@ const queryBatchInsertTransitRoute = async (batchTransitData) => {
           await t.none(`INSERT INTO "droutenodes" (droute_id, outb_driver_id, node_id, departure_time, capacity) VALUES(${droute_id}, ${data.driver_id}, ${data.origin_node}, \'${data.departure_time}\', ${data.capacity})`);
           await t.none(`INSERT INTO "droutenodes" (droute_id, outb_driver_id, node_id, arrival_time, capacity) VALUES(${droute_id}, ${data.driver_id}, ${data.destination_node}, \'${data.arrival_time}\', ${data.capacity})`);
         } catch (error) {
-          console.log('in error', error);
+          // console.log('in error', error);
           failedData.push({ data: data, message: error.message });
         }
       }

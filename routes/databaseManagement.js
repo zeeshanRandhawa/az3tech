@@ -1,6 +1,6 @@
 const { logDebugInfo } = require('../utilities/logger');
 const { queryTablesName, queryTableRows, queryTableUsage, purgeTable, truncFilteredData } = require('../utilities/query');
-const { isAuthenticated, isSuperAdmin } = require('./middleware');
+const { isAuthenticated, isAdmin } = require('./middleware');
 
 const express = require('express'); //main package for server
 const databaseManagement = express.Router();
@@ -50,7 +50,7 @@ databaseManagement.get('/api/v1/database/table-stats', isAuthenticated, async (r
 
 
 // purge/drop tables based on list provided 
-databaseManagement.post('/api/v1/database/purge-tables', isAuthenticated, isSuperAdmin, async (req, res) => {
+databaseManagement.post('/api/v1/database/purge-tables', isAuthenticated, isAdmin, async (req, res) => {
     try {
         const purgeList = req.body.purgeTableList;
         if (!purgeList || purgeList.length < 1 || !purgeList[0]) { // validate purge table list 
@@ -71,7 +71,7 @@ databaseManagement.post('/api/v1/database/purge-tables', isAuthenticated, isSupe
 
 
 // generic filter to purge either riders or driver routes
-databaseManagement.post('/api/v1/truncate/selected-filter', isAuthenticated, isSuperAdmin, async (req, res) => {
+databaseManagement.post('/api/v1/truncate/selected-filter', isAuthenticated, isAdmin, async (req, res) => {
     try {
         const purgeList = req.body.Data.filterList;
         const tableName = req.body.Data.tableName;

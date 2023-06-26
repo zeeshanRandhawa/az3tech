@@ -25,18 +25,18 @@ const isAuthenticated = async (req, res, next) => {
 
 // check if user role is admin or super admin
 // if role is not super admin it will return 403
-const isSuperAdmin = async (req, res, next) => {
+const isAdmin = async (req, res, next) => {
   try {
-    if (['SuperAdmin'].includes((await queryGetRole(req.headers.cookies)).data[0].role_type.trim())) {
+    if (['SuperAdmin', 'Admin'].includes((await queryGetRole(req.headers.cookies)).data[0].role_type.trim())) {
       next();
     } else {
-      res.status(403).send('Only Super Admin can perform this operation');
+      res.status(403).send('Only Admin can perform this operation');
     }
   } catch (error) {
-    logDebugInfo('error', 'is_super_admin_middleware', 'users/roles', error.message, error.stack)
+    logDebugInfo('error', 'is_admin_middleware', 'users/roles', error.message, error.stack)
     res.status(500).send("Server Error " + error.message)
   }
 };
 
 
-module.exports = { isAuthenticated, isSuperAdmin };
+module.exports = { isAuthenticated, isAdmin };
