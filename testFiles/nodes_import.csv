@@ -1,0 +1,21 @@
+location,description,address,city,state_province,zip_postal_code,transit_time,lat,long
+Golden Gate Bridge,Golden Gate Bridge,Golden Gate Bridge, San Francisco, California,94129,10,37.8199,-122.4783
+Alcatraz Island,Alcatraz Island,Alcatraz Island, San Francisco, California,94133,15,37.8267,-122.4233
+Fisherman's Wharf,Fisherman's Wharf,Fisherman's Wharf, San Francisco, California,94133,5,37.8080,-122.4177
+Union Square,Union Square,Union Square, San Francisco, California,94108,10,37.7887,-122.4076
+Lombard Street,Lombard Street,Lombard Street, San Francisco, California,94109,8,37.8021,-122.4189
+Chinatown,Chinatown,Chinatown, San Francisco, California,94108,6,37.7941,-122.4078
+Palace of Fine Arts,Palace of Fine Arts,Palace of Fine Arts, San Francisco, California,94123,12,37.8024,-122.4481
+Cable Car Museum,Cable Car Museum,Cable Car Museum, San Francisco, California,94108,7,37.7947,-122.4116
+Exploratorium,Exploratorium,Exploratorium, San Francisco, California,94111,10,37.8015,-122.3976
+Coit Tower,Coit Tower,Coit Tower, San Francisco, California,94133,9,37.8024,-122.4058
+Golden Gate Park,Golden Gate Park,Golden Gate Park, San Francisco, California,94121,15,37.7694,-122.4862
+Pier 39,Pier 39,Pier 39, San Francisco, California,94133,5,37.8087,-122.4098
+The Castro,The Castro,The Castro, San Francisco, California,94114,10,37.7625,-122.4344
+Painted Ladies,Painted Ladies,Painted Ladies, San Francisco, California,94117,8,37.7763,-122.4325
+AT&T Park,AT&T Park,AT&T Park, San Francisco, California,94107,10,37.7786,-122.3893
+California Academy of Sciences,California Academy of Sciences,California Academy of Sciences, San Francisco, California,94118,12,37.7699,-122.4661
+The Presidio,The Presidio,The Presidio, San Francisco, California,94129,15,37.7989,-122.4662
+Japanese Tea Garden,Japanese Tea Garden,Japanese Tea Garden, San Francisco, California,94118,9,37.7700,-122.4703
+Oracle Park,Oracle Park,Oracle Park, San Francisco, California,94107,10,37.7785,-122.3892
+Twin Peaks,Twin Peaks,Twin Peaks, San Francisco, California,94114,8,37.7549,-122.4477

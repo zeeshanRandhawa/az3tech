@@ -105,10 +105,10 @@ const countRows = async (tableName) => {
 // generic query to query data from tables
 // it can have one column in where condition
 // for more than one column custom queries are made
-const queryAll = async (tableName, columnName = '', columnValue = null, pagination = null, columns = null, distinct = false, groupBy = null) => {
+const queryAll = async (tableName, columnName = '', columnValue = null, pagination = null, columns = null, distinct = false, groupBy = null, customWhere = '') => {
   try {
     //make query depends on data type also
-    const query = `SELECT ${distinct ? `DISTINCT` : ``} ${columns == null ? `*` : columns.map(col => col).join(',')} FROM "${tableName}"${columnName !== '' ? ' WHERE '.concat(columnName).concat(typeof (columnValue) == 'object' ? ' IN' : '=').concat(typeof (columnValue) == 'string' ? `'${columnValue}'` : typeof (columnValue) == 'object' ? ' ('.concat(columnValue.map(route => `\'${route}\'`).join(', ')).concat(')') : columnValue) : ''} ${groupBy == null ? `` : `GROUP BY `.concat(groupBy.map(col => col).join(','))}${pagination != null ? ` LIMIT 10 OFFSET ${(pagination - 1) * 10}` : ''}`;
+    const query = `SELECT ${distinct ? `DISTINCT` : ``} ${columns == null ? `*` : columns.map(col => col).join(',')} FROM "${tableName}"${columnName !== '' ? ' WHERE '.concat(columnName).concat(typeof (columnValue) == 'object' ? ' IN' : '=').concat(typeof (columnValue) == 'string' ? `'${columnValue}'` : typeof (columnValue) == 'object' ? ' ('.concat(columnValue.map(route => `\'${route}\'`).join(', ')).concat(')') : columnValue) : ''} ${customWhere} ${groupBy == null ? `` : `GROUP BY `.concat(groupBy.map(col => col).join(','))}${pagination != null ? ` LIMIT 10 OFFSET ${(pagination - 1) * 10}` : ''}`;
     const data = await pool.query(query); // execute query
     return { status: 200, data: data.rows } // return data
   } catch (error) {
@@ -134,7 +134,7 @@ const qGetWaypointDistance = async (sessionToken) => {
 const findPointsOfInterestBetweenPolygon = async (dataPoints) => {
   // const pointQuery = `SELECT lat, long FROM nodes WHERE ((lat - ${dataPoints[0][1]})*(${dataPoints[1][0]} - ${dataPoints[0][0]}) - (long - ${dataPoints[0][0]}) * (${dataPoints[1][1]} - ${dataPoints[0][1]})) >= 0 AND ((lat - ${dataPoints[1][1]}) * (${dataPoints[2][0]} - ${dataPoints[1][0]}) - (long - ${dataPoints[1][0]}) * (${dataPoints[2][1]} - ${dataPoints[1][1]})) >= 0 AND ((lat - ${dataPoints[2][1]}) * (${dataPoints[3][0]} - ${dataPoints[2][0]}) - (long - ${dataPoints[2][0]}) * (${dataPoints[3][1]} - ${dataPoints[2][1]})) >= 0 AND ((lat - ${dataPoints[3][1]}) * (${dataPoints[0][0]} - ${dataPoints[3][0]}) - (long - ${dataPoints[3][0]}) * (${dataPoints[0][1]} - ${dataPoints[3][1]})) >= 0`;
   try {
-    const pointQuery = `SELECT lat, long, description FROM nodes WHERE 
+    const pointQuery = `SELECT node_id, lat, long, description FROM nodes WHERE 
     (((${dataPoints[1][0]} - ${dataPoints[0][0]}) * (long - ${dataPoints[0][0]})) + ((${dataPoints[1][1]} - ${dataPoints[0][1]}) * (lat - ${dataPoints[0][1]}))) >= 0
      AND (((${dataPoints[1][0]} - ${dataPoints[0][0]}) * (long - ${dataPoints[0][0]})) + ((${dataPoints[1][1]} - ${dataPoints[0][1]}) * (lat - ${dataPoints[0][1]}))) <= (((${dataPoints[1][0]} - ${dataPoints[0][0]}) * (${dataPoints[1][0]} - ${dataPoints[0][0]})) + ((${dataPoints[1][1]} - ${dataPoints[0][1]}) * (${dataPoints[1][1]} - ${dataPoints[0][1]})))
       AND (((${dataPoints[2][0]} - ${dataPoints[1][0]}) * (long - ${dataPoints[1][0]})) + ((${dataPoints[2][1]} - ${dataPoints[1][1]}) * (lat - ${dataPoints[1][1]}))) >= 0
@@ -434,13 +434,13 @@ const queryInsertRiderRoute = async (riderRouteData) => {
   try {
     await pool.query('BEGIN');
 
-    let qres = await queryInsertNode('origin', { "origin_address": riderRouteData.origin_address, "origin_city": riderRouteData.origin_city, "origin_state_province": riderRouteData.origin_state_province, "origin_zip_postal_code": riderRouteData.origin_zip_postal_code });
-    origin_node_id = (await pool.query(`SELECT LASTVAL()`)).rows[0].lastval  // if data inserted get last row id. It is persistant it will give correct id even if more rows are inserted in other sessions
+    let origin_node_id = await queryInsertNode('origin', { "origin_address": riderRouteData.origin_address, "origin_city": riderRouteData.origin_city, "origin_state_province": riderRouteData.origin_state_province, "origin_zip_postal_code": riderRouteData.origin_zip_postal_code, origin_lat: riderRouteData.origin_lat, origin_long: riderRouteData.origin_long });
+    // origin_node_id = (await pool.query(`SELECT LASTVAL()`)).rows[0].lastval  // if data inserted get last row id. It is persistant it will give correct id even if more rows are inserted in other sessions
 
-    qres = await queryInsertNode('destination', { "destination_address": riderRouteData.destination_address, "destination_city": riderRouteData.destination_city, "destination_state_province": riderRouteData.destination_state_province, "destination_zip_postal_code": riderRouteData.destination_zip_postal_code });
-    destination_node_id = (await pool.query(`SELECT LASTVAL()`)).rows[0].lastval  // if data inserted get last row id. It is persistant it will give correct id even if more rows are inserted in other sessions
+    let destination_node_id = await queryInsertNode('destination', { "destination_address": riderRouteData.destination_address, "destination_city": riderRouteData.destination_city, "destination_state_province": riderRouteData.destination_state_province, "destination_zip_postal_code": riderRouteData.destination_zip_postal_code, destination_lat: riderRouteData.destination_lat, destination_long: riderRouteData.destination_long });
+    // destination_node_id = (await pool.query(`SELECT LASTVAL()`)).rows[0].lastval  // if data inserted get last row id. It is persistant it will give correct id even if more rows are inserted in other sessions
 
-    const insertQuery = `INSERT INTO "rroutes" (rider_id, origin_node, destination_node, departure_time, time_flexibility, rroute_dbm_tag, status) VALUES(\'${riderRouteData.rider_id}\', ${origin_node_id}, ${destination_node_id}, \'${riderRouteData.departure_time}\', ${riderRouteData.time_flexibility}, \'${riderRouteData.rroute_dbm_tag}\', \'REQUESTED\')`;
+    const insertQuery = `INSERT INTO "rroutes" (rider_id, origin_node, destination_node, departure_time, time_flexibility, rroute_dbm_tag, status) VALUES(\'${riderRouteData.rider_id}\', ${origin_node_id.node_id}, ${destination_node_id.node_id}, \'${riderRouteData.departure_time}\', ${riderRouteData.time_flexibility}, \'${riderRouteData.rroute_dbm_tag}\', \'REQUESTED\')`;
     await pool.query(insertQuery);
     await pool.query('COMMIT');
     return { status: 201 };
@@ -450,6 +450,19 @@ const queryInsertRiderRoute = async (riderRouteData) => {
     return { status: 500, data: error.message };
   }
 }
+
+
+const queryBulkInsertRiderRoute = async (riderRouteData) => {
+  try {
+    const insertQuery = `INSERT INTO "rroutes" (rider_id, origin_node, destination_node, departure_time, time_flexibility, rroute_dbm_tag, status) VALUES(\'${riderRouteData.rider_id}\', ${riderRouteData.origin_node}, ${riderRouteData.destination_node}, \'${riderRouteData.departure_time}\', ${riderRouteData.time_flexibility}, \'${riderRouteData.rroute_dbm_tag}\', \'${riderRouteData.status}\')`;
+    await pool.query(insertQuery);
+    return { status: 201 };
+  } catch (error) {
+    return { status: 500, data: error.message };
+  }
+}
+
+
 
 const queryInsertDriverRoute = async (driverRouteData) => {
   try {
@@ -465,9 +478,12 @@ const queryInsertDriverRoute = async (driverRouteData) => {
 
 const queryInsertNode = async (node_type, nodeData) => {
   try {
-    const insertQuery = `INSERT INTO "nodes" (${Object.keys(nodeData).map(d_key => `${d_key.split(node_type.concat('_'))[1]}`).join(',')}) VALUES (${Object.keys(nodeData).map(d_key => `\'${nodeData[d_key]}\'`).join(',')})`
-    await pool.query(insertQuery);
-    return { status: 200 };
+    const insertQuery = `INSERT INTO "nodes" (${Object.keys(nodeData).map(d_key => `${d_key.split(node_type.concat('_'))[1]}`).join(',')}) VALUES (${Object.keys(nodeData).map(d_key => {
+      return ['origin_lat', 'origin_long', 'destination_lat', 'destination_long'].includes(d_key) ? `${nodeData[d_key]}` : `\'${nodeData[d_key]}\'`
+    }).join(',')
+      }) RETURNING node_id`
+    const node_id = await pool.query(insertQuery);
+    return { status: 200, node_id: node_id.rows[0].node_id };
   }
   catch (error) {
     logDebugInfo('error', 'create_node', 'nodes', error.message, error.stack);
@@ -501,6 +517,10 @@ const queryRRoutesFilter = async (filterData) => {
     let searchRes = (await pool.query(searchQuery)).rows;
 
     searchRes = await Promise.all(searchRes.map(async (rrouteData) => {
+
+      rrouteData.origin_node = (await pool.query(`SELECT lat, long FROM nodes WHERE node_id=${rrouteData.origin_node}`)).rows[0];
+      rrouteData.destination_node = (await pool.query(`SELECT lat, long FROM nodes WHERE node_id=${rrouteData.destination_node}`)).rows[0];
+
       let rNodesRes = (await pool.query(`SELECT droute_id, node_id, permutation_id, arrival_time, departure_time, rank, cum_distance, cum_time, status from rroutenodes WHERE rroute_id=${rrouteData.rroute_id} AND rider_id=${rrouteData.rider_id}`)).rows;
 
       rNodesRes = await Promise.all(rNodesRes.map(async (rrouteNodeData) => {
@@ -513,6 +533,7 @@ const queryRRoutesFilter = async (filterData) => {
     return { status: 200, data: searchRes };
   }
   catch (error) {
+    // console.log(error);
     logDebugInfo('error', 'filter_routes', 'rroutes', error.message, error.stack);
     return { status: 500, data: error.message };
   }
@@ -525,6 +546,9 @@ const queryDRoutesFilter = async (filterData) => {
     let searchRes = (await pool.query(searchQuery)).rows;
 
     searchRes = await Promise.all(searchRes.map(async (drouteData) => {
+      drouteData.origin_node = (await pool.query(`SELECT lat, long FROM nodes WHERE node_id=${drouteData.origin_node}`)).rows[0];
+      drouteData.destination_node = (await pool.query(`SELECT lat, long FROM nodes WHERE node_id=${drouteData.destination_node}`)).rows[0];
+
       let rNodesRes = (await pool.query(`SELECT droute_id, node_id, permutation_id, arrival_time, departure_time, rank, cum_distance, cum_time,capacity_used, status from droutenodes WHERE droute_id=${drouteData.droute_id} AND outb_driver_id=${drouteData.driver_id} AND arrival_time>=\'${filterData.startTimeWindow}\' AND arrival_time<=\'${filterData.endTimeWindow}\'`)).rows;
       if (rNodesRes.length > 0) {
         rNodesRes = await Promise.all(rNodesRes.map(async (drouteNodeData) => {
@@ -539,6 +563,7 @@ const queryDRoutesFilter = async (filterData) => {
     return { status: 200, data: searchRes.filter(obj => Object.keys(obj).length != 0) };
   }
   catch (error) {
+    // console.log(error)
     logDebugInfo('error', 'filter_routes', 'rroutes', error.message, error.stack);
     return { status: 500, data: error.message };
   }
@@ -590,9 +615,15 @@ const queryBatchInsertNodes = async (batchNodeData) => {
       let insertData = pgp.helpers.insert(data, setTable);
       await db.tx(async (t) => {
         try {
-          insertedNodeIds.push({ node_id: (await t.one(`${insertData} RETURNING node_id`)).node_id, long: data.long, lat: data.lat });
+          // if (data.long != null && data.lat != null) {
+            insertedNodeIds.push({ node_id: (await t.one(`${insertData} RETURNING node_id`)).node_id, long: data.long, lat: data.lat });
+          // } else {
+            // t.none(insertData);
+          // }
           // await t.none(insertData)
         } catch (error) {
+          console.log(error);
+          // console.log(error)
           failedData.push({ data: data, message: error.message });
         }
       });
@@ -715,5 +746,6 @@ module.exports = {
   queryBatchInsertN2N,
   qSetWaypointDistance,
   qGetWaypointDistance,
-  countRows
+  countRows,
+  queryBulkInsertRiderRoute
 };

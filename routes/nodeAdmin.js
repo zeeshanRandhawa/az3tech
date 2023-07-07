@@ -1,16 +1,10 @@
 
-const { queryBatchInsertNodes, findPointsOfInterestBetweenPolygon, queryAll, qSetWaypointDistance, qGetWaypointDistance, countRows } = require('../utilities/query');
-const { logDebugInfo } = require('../utilities/logger');
+const { findPointsOfInterestBetweenPolygon, queryAll, qSetWaypointDistance, qGetWaypointDistance, countRows } = require('../utilities/query');
 const { getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints } = require('../utilities/utilities')
+const { logDebugInfo } = require('../utilities/logger');
 const { fork } = require('child_process');
 const fs = require('node:fs/promises');
-const { forEach } = require('mathjs');
 const createCsvWriter = require('csv-writer').createObjectCsvStringifier;
-
-
-// user_identifier(email): { message: "", childProcess: childP, op_type: 'batchInsertNodes', status: 'running', sockets: [] }
-
-
 
 class NodeAdmin {
     constructor(io) {
@@ -164,24 +158,6 @@ class NodeAdmin {
         }
     }
 
-    prepareBulkData = async (fileBuffer) => {
-        try {
-            const results = []; // list to store file data structure
-            await fileBuffer
-                .toString() // convert buffer to string
-                .split('\n') // split each line of string
-                .slice(1) // trunc first line as it is header containing columns
-                .forEach((line) => {
-                    const [location, description, address, city, state_province, zip_postal_code, transit_time, lat, long] = line.split(','); // for each line split strig by , delimeter
-                    results.push({ location: location, description: description, address: address, city: city, state_province: state_province, zip_postal_code: zip_postal_code, transit_time: transit_time, long: long, lat: lat });
-                }); // push the data as dict in list
-            return { status: 200, data: results }; //return data
-        } catch (error) {
-            logDebugInfo('error', 'prepare_bulk_data', '', error.message, error.stack);
-            return { status: 500, message: "Server Error " + error.message };
-        }
-    }
-
     batchImportNodes = async (req, res) => {
         try {
             if (await this.isProcessRunning(req.headers.cookies, 'batchInsertNodes')) {
@@ -199,40 +175,23 @@ class NodeAdmin {
                 .slice(0, 1)[0] // trunc first line as it is header containing columns)
                 .split(',');
 
-            if (header.length != 9 ||
-                (header.filter(col_name => !['location', 'description', 'address', 'city', 'state_province', 'zip_postal_code', 'transit_time', 'long', 'lat'].includes(col_name))).length != 0) {
+            if (header.length != 7 ||
+                (header.filter(col_name => !['location', 'description', 'address', 'city', 'state_province', 'zip_postal_code', 'transit_time'].includes(col_name))).length != 0) {
                 return res.status(400).json({ message: 'Invalid column length' });
             }
-            const nodesData = await queryAll('nodes', '', null, null, ['node_id', 'long', 'lat']);
+            const nodesData = await queryAll('nodes', '', null, null, ['node_id', 'long', 'lat'], false, null, 'WHERE lat IS NOT NULL AND long IS NOT NULL');
 
-            const batchNodeData = await this.prepareBulkData(req.files[0].buffer); // prepare data to insert
+            await this.writeJsonToFile(JSON.stringify({ 'old': nodesData.data, 'newToInsert': req.files[0].buffer.toString().split('\n').slice(1) }));
 
-            if (batchNodeData.status == 200) {
-                const retRes = await queryBatchInsertNodes(batchNodeData.data); // execute batch query if data prepared
+            const childP = this.startChildProcess();
 
-                await this.writeJsonToFile(JSON.stringify({ 'old': nodesData.data, 'new': retRes.data }));
+            const email = await queryAll('sessions', 'session_token', req.headers.cookies, null, ['email']);
 
-                const childP = this.startChildProcess();
+            this.processList[email.data[0].email].childProcess = childP;
+            this.processList[email.data[0].email].status = 'running'
 
-                const email = await queryAll('sessions', 'session_token', req.headers.cookies, null, ['email']);
-
-                // console.log('batch', email);
-                // console.log(this.processList);
-
-                this.processList[email.data[0].email].childProcess = childP;
-                this.processList[email.data[0].email].status = 'running'
-                //  = { childProcess: childP, status: 'running', ...this.processList[email.data[0].email] };
-
-                if (retRes.status != 500) {
-                    res.sendStatus(retRes.status);//.json({ data: retRes.data }); // if no error occured then return 200
-                } else {
-                    res.status(retRes.status).json({ message: retRes.data ? retRes.data : null }); // else return log file
-                }
-            } else {
-                res.status(batchNodeData.status).json({ message: batchNodeData.message }); // batch data processing failed return error
-            }
+            res.sendStatus(200);
         } catch (error) {
-            // console.log(error);
             logDebugInfo('error', 'batch_node_insert', 'nodes', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }
@@ -255,7 +214,9 @@ class NodeAdmin {
                 if (nodesData.status == 200) {
                     res.status(200).json({
                         nodesData: nodesData.data.map((node) => {
-                            node.description = node.description.trim();
+                            if (node.description) {
+                                node.description = node.description.trim();
+                            }
                             return node;
                         }), totalCount: await countRows('nodes'), retrievedNodes: nodesData.data.length
                     });
@@ -264,6 +225,7 @@ class NodeAdmin {
                 }
             }
         } catch (error) {
+            console.log(error);
             logDebugInfo('error', 'batch_node_insert_with_n2n_calculation', 'nodes/n2n', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }
@@ -304,8 +266,6 @@ class NodeAdmin {
                         let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
                         let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
                         let allPoints = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates
-
-
 
                         waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
 

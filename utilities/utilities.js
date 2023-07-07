@@ -210,12 +210,32 @@ function findParallelLines(dataPoints) {
   return [[parallel_line_1_deg[0][1], parallel_line_1_deg[0][0]], [parallel_line_1_deg[1][1], parallel_line_1_deg[1][0]], [parallel_line_2_deg[0][1], parallel_line_2_deg[0][0]], [parallel_line_2_deg[1][1], parallel_line_2_deg[1][0]]]
 }
 
-function calculateDistanceBetweenPoints(A,B){
+function calculateDistanceBetweenPoints(A, B) {
   return geolib.getDistance(A, B)
 }
 
 
-module.exports = { getpageCount, hashPassword, getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints };
+async function fetchCoordinatesDataFromApi(url, i, retryDelay) {
+  try {
+    const response = await axios.get(url);
+    if (await response.status == 200) {
+      // console.log("success", i)
+      r_data = await response.data;
+      if (r_data.length > 0) {
+        return { lat: await r_data[0].lat, long: await r_data[0].lon };
+      }
+      return { lat: null, long: null };
+    } else {
+      throw new Error();
+    }
+  } catch (error) {
+    // console.log("error", i)
+    await new Promise(resolve => setTimeout(resolve, retryDelay));
+    return await fetchDataFromApi(url, i, retryDelay + 100);
+  }
+}
+
+module.exports = { getpageCount, hashPassword, getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints, fetchCoordinatesDataFromApi };
 
 // 37.79103509151187, -122.42789800130387
 // 37.74041824562184, -122.46978337728044

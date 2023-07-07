@@ -1,3 +1,3 @@
 rider_id,origin_address,origin_city,origin_state_province,origin_zip_postal_code,destination_address,destination_city,destination_state_province,destination_zip_postal_code,departure_time,time_flexibility,rroute_dbm_tag
-32182,Random Text1,Word1,Word1 Word2,12345,Random Text2,Word3,Word3 Word4,67890,2023-05-01 09:30:00,3,DataSet_X
-32182,Random Text2,Word2,Word2 Word3,12345,Random Text4,Word5,Word4 Word5,67890,2023-05-01 015:11:07,1,DataSet_X
+1,1057 Eastshore Hwy,Word1,CA,12345,267 E. Campbell Avenue,Word3,CA,67890,2023-05-01 09:30:00,3,DataSet_X
+2,1364 Park Street,Word2,CA,12345,2504 Somersville Rd,Word5,CA,67890,2023-05-01 015:11:07,1,DataSet_X

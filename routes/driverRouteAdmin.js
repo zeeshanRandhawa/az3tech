@@ -1,6 +1,7 @@
 
 const { queryInsertDriverRoute, queryBatchInsertTransitRoute, queryDRoutesFilter, queryAll } = require('../utilities/query');
 const { logDebugInfo } = require('../utilities/logger');
+const { getRouteInfo } = require('../utilities/utilities')
 
 const createDriverRoute = async (req, res) => {
     try {
@@ -94,17 +95,35 @@ const importDriverTransitScheduleRoutes = async (req, res) => {
 
 const filterDRouteByDNodeTW = async (req, res) => {
     try {
-        if (!req.query.nodeId || !req.query.nodeStartArrivalTime || !req.query.nodeEndDepartureTime) {
+        if (!req.query.nodeId || !req.query.nodeStartArrivalTime || !req.query.nodeEndArrivalTime) {
             return res.status(400).json({ message: 'Invalid Data' });
         } else {
-            const qRes = await queryDRoutesFilter({ "nodeId": req.query.nodeId, "startTimeWindow": req.query.nodeStartArrivalTime, "endTimeWindow": req.query.nodeEndDepartureTime }); // query routes with generic function filter by tags
+            const qRes = await queryDRoutesFilter({ "nodeId": req.query.nodeId, "startTimeWindow": req.query.nodeStartArrivalTime, "endTimeWindow": req.query.nodeEndArrivalTime }); // query routes with generic function filter by tags
+
+            for (let rroute of qRes.data) {
+                const routeInfo = await getRouteInfo([rroute.origin_node.long, rroute.origin_node.lat], [rroute.destination_node.long, rroute.destination_node.lat]);
+                let waypointNodes = [];
+                for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length - 1; i++) {
+                    let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
+                    let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
+                    waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
+                }
+                rroute.WaypointsGIS = waypointNodes;
+                rroute.geometry = routeInfo.routes[0].geometry.coordinates;
+            }
+
             if (qRes.status == 200) {
-                res.status(qRes.status).json({ message: qRes.data });
+                if (qRes.data.length == 0) {
+                    res.status(qRes.status).json({ message: "No data found" });
+                } else {
+                    res.status(qRes.status).json({ routeData: qRes.data });
+                }
             } else {
                 res.status(qRes.status).json({ message: qRes.data }); // error handling
             }
         }
     } catch (error) {
+        // console.log(error)
         logDebugInfo('error', 'filter_droutes_tw', 'driver_route', error.message, error.stack);
         res.status(500).json({ message: "Server Error " + error.message });
     }

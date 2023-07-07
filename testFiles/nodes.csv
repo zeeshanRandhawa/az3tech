@@ -1,21 +1,10 @@
-location,description,address,city,state_province,zip_postal_code,transit_time,lat,long
-Place1,apple,The sky is,New York,banana,123456,5,37.76848643112439,-122.47757043917582
-Place2,orange,A dog barks,London,grape,789012,8,37.73932920633607,-122.48651336379484
-Place3,pear,A cat purrs,Paris,kiwi,345678,3,37.70073286317774,-122.45388997829745
-Place4,banana,The sun shines,Tokyo,mango,901234,2,37.70291836063431,-122.49073352065439
-Place5,grape,A bird flies,Berlin,pineapple,567890,10,37.779086649127194,-122.42353635167063
-Place6,apple,A fish swims,Madrid,lemon,123456,7,37.69381986489223,-122.45342661584256
-Place7,orange,A tree grows,Rome,peach,789012,1,37.720541312359494,-122.40694053593317
-Place8,pear,A flower blooms,Seoul,watermelon,345678,11,37.79970599494761,-122.41594051740506
-Place9,banana,A river flows,Moscow,coconut,901234,6,37.76975242396229,-122.4366051626678
-Place10,grape,A mountain stands,Beijing,avocado,567890,4,37.761199876377944,-122.49090388989318
-Place11,apple,A cloud floats,Sydney,plum,123456,9,37.719787540324646,-122.49362784037736
-Place12,orange,A fire burns,Toronto,kiwi,789012,3,37.72347238770196,-122.4776669014385
-Place13,pear,A star twinkles,Vienna,peach,345678,7,37.71835779476422,-122.44910788568635
-Place14,banana,A wave crashes,Athens,apple,901234,5,37.75381925422636,-122.43768385970048
-Place15,grape,A bridge spans,Prague,orange,567890,8,37.73439023767669,-122.41329567770389
-Place16,apple,A road winds,Budapest,pear,123456,2,37.70518979797228,-122.45032314821816
-Place17,orange,A book reads,Stockholm,banana,789012,11,37.762423854360925,-122.42352066326154
-Place18,pear,A door opens,Copenhagen,grape,345678,6,37.705258235897816,-122.45439402902007
-Place19,banana,A mountain climbs,Oslo,watermelon,901234,1,37.77690526637404,-122.46422999510591
-Place20,grape,A cloud thunders,Helsinki,coconut,567890,10,37.75687059869257,-122.41893268871877
+location,description,address,city,state_province,zip_postal_code,transit_time
+USA,State of USA,four barrel coffee,New York,CA,123456,5
+USA,State of USA,four barrel coffee,New York,CA,123456,5
+USA,State of USA,four barrel coffee,New York,CA,123456,5
+USA,State of USA,four barrel coffee,New York,CA,123456,5
+USA,State of USA,four barrel coffee,New York,CA,123456,5
+USA,State of USA,four barrel coffee,New York,CA,123456,5
+USA,State of USA,four barrel coffee,New York,CA,123456,5
+USA,State of USA,four barrel coffee,New York,CA,123456,5
+USA,State of USA,four barrel coffee,New York,CA,123456,5

@@ -27,11 +27,12 @@ const { userLogin, adminLogout, isLoggedIn, getRole, userSignUp } = require('./r
 const databaseManagement = require('./routes/databaseManagement');
 const { createRiderProfile, searchRiders, patchRider, deleteRider, listRiders, deleteRiderRoute, batchImportRiders, listRiderRoutes, uploadRiderProfilePic, getRRouteTags, filterRRouteByTags, deleteRRouteByTags } = require('./routes/riderAdmin');
 const { listDrivers, createDriverProfile, searchDrivers, patchDriver, deleteDriver, deleteDriverRoute, batchImportDrivers, listDriverRoutes, uploadDriverProfilePic, getDRouteTags, filterDRouteByTags, deleteDRouteByTags } = require('./routes/driverAdmin');
-const { createRiderRoute, filterRRouteByANodeTW, listRRouteNodes } = require('./routes/riderRouteAdmin');
+const { createRiderRoute, filterRRouteByANodeTW, listRRouteNodes, bulkImportRiderRoutes } = require('./routes/riderRouteAdmin');
 const { createDriverRoute, importDriverTransitScheduleRoutes, filterDRouteByDNodeTW, listDRouteNodes } = require('./routes/driverRouteAdmin');
 const { getpageCount } = require('./utilities/utilities');
 const { isAuthenticated, isAdmin } = require('./routes/middleware');
 const NodeAdmin = require('./routes/nodeAdmin')
+
 
 
 const nodeAdmin = new NodeAdmin(new Server(server, {
@@ -76,6 +77,7 @@ app.delete('/api/v1/driver/droutes', isAuthenticated, deleteDriverRoute);// dele
 
 app.post('/api/v1/rider/batchimport', isAuthenticated, upload, batchImportRiders); // batch import riders using csv file
 app.post('/api/v1/driver/batchimport', isAuthenticated, upload, batchImportDrivers);// batch import drivers using csv file
+app.post('/api/v1/rroutes/bulkimport', upload, bulkImportRiderRoutes);
 
 app.post('/api/v1/rider/route', isAuthenticated, createRiderRoute); // batch import riders using csv file
 app.post('/api/v1/driver/route', isAuthenticated, createDriverRoute);// batch import drivers using csv file
@@ -114,10 +116,11 @@ app.get('/api/v1/nodes', isAuthenticated, nodeAdmin.getAllNodes)
 
 app.get('/api/v1/nodes/display/two-point', isAuthenticated, nodeAdmin.displayNodesBy2Point);
 app.get('/api/v1/nodes/download', isAuthenticated, nodeAdmin.downloadNodesCSV)
-app.post('/api/v1/nodes/nearest',  nodeAdmin.getNearestNode)
+app.post('/api/v1/nodes/nearest', nodeAdmin.getNearestNode)
 
-app.get('/api/v1/nodes/states/getsates',  nodeAdmin.getAllStates);
-app.get('/api/v1/nodes/state/getcitynodes',  nodeAdmin.getStateCityNodes);
+app.get('/api/v1/nodes/states/getsates', nodeAdmin.getAllStates);
+app.get('/api/v1/nodes/state/getcitynodes', nodeAdmin.getStateCityNodes);
+
 
 app.use((req, res, next) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
