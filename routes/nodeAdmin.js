@@ -24,7 +24,7 @@ class NodeAdmin {
                         this.processList[email.data[0].email].sockets.push(socket);
                     } else {
                         // this.processList[email.data[0].email] = { message: "", childProcess: null, operationType: "", status: "", sockets: [socket] }
-                        this.processList[email.data[0].email] = { message: '', chileProcess: null, op_type: '', status: '', sockets: [socket] };
+                        this.processList[email.data[0].email] = { message: '', childProcess: null, op_type: '', status: '', sockets: [socket] };
                     }
                     // socket.emit('sessiontokenreceivestatus', 'done');
                     // console.log(this.processList);
@@ -175,22 +175,38 @@ class NodeAdmin {
                 .slice(0, 1)[0] // trunc first line as it is header containing columns)
                 .split(',');
 
-            if (header.length != 7 ||
-                (header.filter(col_name => !['location', 'description', 'address', 'city', 'state_province', 'zip_postal_code', 'transit_time'].includes(col_name))).length != 0) {
+            if (header.length != 9 ||
+                (header.filter(col_name => !['location', 'description', 'address', 'city', 'state_province', 'zip_postal_code', 'transit_time', 'lat', 'long'].includes(col_name))).length != 0) {
                 return res.status(400).json({ message: 'Invalid column length' });
             }
             const nodesData = await queryAll('nodes', '', null, null, ['node_id', 'long', 'lat'], false, null, 'WHERE lat IS NOT NULL AND long IS NOT NULL');
 
             await this.writeJsonToFile(JSON.stringify({ 'old': nodesData.data, 'newToInsert': req.files[0].buffer.toString().split('\n').slice(1) }));
 
-            const childP = this.startChildProcess();
 
             const email = await queryAll('sessions', 'session_token', req.headers.cookies, null, ['email']);
-
+            const childP = this.startChildProcess();
+            if (email.data[0].email in this.processList) {
+                this.processList[email.data[0].email].childProcess = childP;
+                this.processList[email.data[0].email].status = 'running'
+            } else {
+                this.processList[email.data[0].email] = { message: '', childProcess: childP, op_type: '', status: 'running', sockets: [] };
+            }
+            // console.log("main", this.processList)
+            // console.log(email.data[0].email)
             this.processList[email.data[0].email].childProcess = childP;
             this.processList[email.data[0].email].status = 'running'
-
+            // console.log(this.processList);
             res.sendStatus(200);
+
+            // const childP = this.startChildProcess();
+
+            // const email = await queryAll('sessions', 'session_token', req.headers.cookies, null, ['email']);
+
+            // this.processList[email.data[0].email].childProcess = childP;
+            // this.processList[email.data[0].email].status = 'running'
+
+            // res.sendStatus(200);
         } catch (error) {
             logDebugInfo('error', 'batch_node_insert', 'nodes', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });

@@ -34,7 +34,6 @@ const { isAuthenticated, isAdmin } = require('./routes/middleware');
 const NodeAdmin = require('./routes/nodeAdmin')
 
 
-
 const nodeAdmin = new NodeAdmin(new Server(server, {
   cors: {
     origin: "*", // Change this to the appropriate origin(s) you want to allow

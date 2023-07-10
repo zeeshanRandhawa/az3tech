@@ -189,9 +189,13 @@ const queryTableUsage = async (tableName) => {
 // drop specific table if table dropped return OK
 const purgeTable = async (tableName) => {
   try {
-    await pool.query(`DROP TABLE "${tableName}" RESTRICT`);
+    await pool.query('BEGIN');
+    await pool.query(`DELETE FROM "${tableName}"`);
+    await pool.query('COMMIT');
     return { status: 200 };
   } catch (error) {
+    // console.log(error);
+    await pool.query('ROLLBACK');
     logDebugInfo('error', 'purge_table', tableName, error.message, error.stack);
     return { status: 400, data: error.message };
   }
@@ -615,20 +619,18 @@ const queryBatchInsertNodes = async (batchNodeData) => {
       let insertData = pgp.helpers.insert(data, setTable);
       await db.tx(async (t) => {
         try {
-          // if (data.long != null && data.lat != null) {
+          if (data.long != null && data.lat != null) {
             insertedNodeIds.push({ node_id: (await t.one(`${insertData} RETURNING node_id`)).node_id, long: data.long, lat: data.lat });
-          // } else {
-            // t.none(insertData);
-          // }
+          } else {
+            t.none(insertData);
+          }
           // await t.none(insertData)
         } catch (error) {
-          console.log(error);
           // console.log(error)
           failedData.push({ data: data, message: error.message });
         }
       });
     }
-
     if (failedData.length === 0) {
       return { status: 200, message: 'Bulk data inserted successfully', data: insertedNodeIds };
       // return { status: 200, message: 'Bulk data inserted successfully'};
@@ -647,19 +649,26 @@ const queryBatchInsertN2N = async (batchDataN2N) => {
   try {
     const columns = Object.keys(batchDataN2N[0]).map((str) => str.trim());
     const setTable = new pgp.helpers.ColumnSet(columns, { table: 'n2n' });
-
-    const insertData = pgp.helpers.insert(batchDataN2N, setTable);
-
-    await db.tx(async (t) => {
-      try {
-        await t.none(insertData);
-      } catch (error) {
-        // console.log(error)
-        return { status: 500, message: error.message };
-      }
-    });
+    for (const data of batchDataN2N) {
+      let insertData = pgp.helpers.insert(data, setTable);
+      await db.tx(async (t) => {
+        try {
+          await t.none(insertData);
+        } catch (error) {
+        }
+      });
+    }
+    // console.log(insertData)
+    // await db.tx(async (t) => {
+    // try {
+    //   await db.none(insertData);
+    // } catch (error) {
+    //   console.log(error)
+    //   return { status: 500, message: error.message };
+    // }
+    // });
   } catch (error) {
-    // console.log(error)
+    // console.log(error.message)
     // logDebugInfo('error', 'insert_batch_transit_droutes', 'droutes', error.message, error.stack);
   }
 }

@@ -231,7 +231,7 @@ async function fetchCoordinatesDataFromApi(url, i, retryDelay) {
   } catch (error) {
     // console.log("error", i)
     await new Promise(resolve => setTimeout(resolve, retryDelay));
-    return await fetchDataFromApi(url, i, retryDelay + 100);
+    return await fetchCoordinatesDataFromApi(url, i, retryDelay + 100);
   }
 }
 

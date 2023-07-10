@@ -83,7 +83,7 @@ const getAllNodePairs = async (oldNodes, newNodes) => {
     for (let j = 0; j < newNodes.length; j++) {
       if (i != j) {
         pairs.push([newNodes[i], newNodes[j]]);
-        pairs.push([newNodes[j], newNodes[i]]);
+        // pairs.push([newNodes[j], newNodes[i]]);
       }
     }
   }
@@ -117,9 +117,14 @@ const prepareBulkData = async (fileData) => {
     let i = 0;
     const results = [];
     for (let line of fileData) {
-      const [location, description, address, city, state_province, zip_postal_code, transit_time] = line.split(',');
-      let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(address.trim().concat(' ').concat(state_province.trim()))}&format=json&addressdetails=1`, i, 25);
-      results.push({ location: location, description: description, address: address, city: city, state_province: state_province, zip_postal_code: zip_postal_code, transit_time: transit_time, long: latLong.long, lat: latLong.lat });
+      const [location, description, address, city, state_province, zip_postal_code, transit_time, lat, long] = line.split(',');
+      if (!lat || !long) {
+        let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(address.trim().concat(' ').concat(state_province.trim()))}&format=json&addressdetails=1`, i, 25);
+        results.push({ location: location, description: description, address: address, city: city, state_province: state_province, zip_postal_code: zip_postal_code, transit_time: transit_time, long: latLong.long, lat: latLong.lat });
+      } else {
+        // let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(address.trim().concat(' ').concat(state_province.trim()))}&format=json&addressdetails=1`, i, 25);
+        results.push({ location: location, description: description, address: address, city: city, state_province: state_province, zip_postal_code: zip_postal_code, transit_time: transit_time, long: long, lat: lat });
+      }
       i = i + 1;
     };
 
