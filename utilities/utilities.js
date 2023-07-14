@@ -90,6 +90,20 @@ const calculateDistance = (pointA, pointB) => {
 
 
 
+
+const formatNodeData = (nodesData, waypointDistance) => {
+  return nodesData.map((node) => {
+    if (!('isWaypoint' in node)) {
+      node = { 'isWaypoint': false, 'distance': 0, ...node };
+    } else if (node.distance > waypointDistance) {
+      node.distance = 0;
+      node.isWaypoint = false;
+    }
+    return node;
+  })
+};
+
+
 function hasSignificantCurve(coordinates) {
   // Calculate the distances between consecutive points
   const distances = [];
@@ -235,7 +249,7 @@ async function fetchCoordinatesDataFromApi(url, i, retryDelay) {
   }
 }
 
-module.exports = { getpageCount, hashPassword, getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints, fetchCoordinatesDataFromApi };
+module.exports = { getpageCount, formatNodeData, hashPassword, getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints, fetchCoordinatesDataFromApi };
 
 // 37.79103509151187, -122.42789800130387
 // 37.74041824562184, -122.46978337728044

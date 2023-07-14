@@ -1,6 +1,6 @@
 
 const { findPointsOfInterestBetweenPolygon, queryAll, qSetWaypointDistance, qGetWaypointDistance, countRows } = require('../utilities/query');
-const { getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints } = require('../utilities/utilities')
+const { getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints, formatNodeData } = require('../utilities/utilities')
 const { logDebugInfo } = require('../utilities/logger');
 const { fork } = require('child_process');
 const fs = require('node:fs/promises');
@@ -175,8 +175,8 @@ class NodeAdmin {
                 .slice(0, 1)[0] // trunc first line as it is header containing columns)
                 .split(',');
 
-            if (header.length != 9 ||
-                (header.filter(col_name => !['location', 'description', 'address', 'city', 'state_province', 'zip_postal_code', 'transit_time', 'lat', 'long'].includes(col_name))).length != 0) {
+            if (header.length != 7 ||
+                (header.filter(col_name => !['location', 'description', 'address', 'city', 'state_province', 'zip_postal_code', 'transit_time'].includes(col_name))).length != 0) {
                 return res.status(400).json({ message: 'Invalid column length' });
             }
             const nodesData = await queryAll('nodes', '', null, null, ['node_id', 'long', 'lat'], false, null, 'WHERE lat IS NOT NULL AND long IS NOT NULL');
@@ -192,21 +192,11 @@ class NodeAdmin {
             } else {
                 this.processList[email.data[0].email] = { message: '', childProcess: childP, op_type: '', status: 'running', sockets: [] };
             }
-            // console.log("main", this.processList)
-            // console.log(email.data[0].email)
+
             this.processList[email.data[0].email].childProcess = childP;
             this.processList[email.data[0].email].status = 'running'
-            // console.log(this.processList);
+
             res.sendStatus(200);
-
-            // const childP = this.startChildProcess();
-
-            // const email = await queryAll('sessions', 'session_token', req.headers.cookies, null, ['email']);
-
-            // this.processList[email.data[0].email].childProcess = childP;
-            // this.processList[email.data[0].email].status = 'running'
-
-            // res.sendStatus(200);
         } catch (error) {
             logDebugInfo('error', 'batch_node_insert', 'nodes', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
@@ -241,7 +231,7 @@ class NodeAdmin {
                 }
             }
         } catch (error) {
-            console.log(error);
+            // console.log(error);
             logDebugInfo('error', 'batch_node_insert_with_n2n_calculation', 'nodes/n2n', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }
@@ -302,7 +292,7 @@ class NodeAdmin {
 
                 }
 
-                nodesData = this.formatNodeData(nodesData.data, (await qGetWaypointDistance(req.headers.cookies)).data);
+                nodesData = formatNodeData(nodesData.data, (await qGetWaypointDistance(req.headers.cookies)).data);
 
                 res.status(200).json({ "intermediateNodes": nodesData, "osrmRoute": routeInfo, "GISWaypoints": waypointNodes })
             }
@@ -310,19 +300,6 @@ class NodeAdmin {
             logDebugInfo('error', 'batch_node_insert_with_n2n_calculation', 'nodes/n2n', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }
-    }
-
-    formatNodeData = (nodesData, waypointDistance) => {
-        return nodesData.map((node) => {
-            if (!('isWaypoint' in node)) {
-                node = { 'isWaypoint': false, 'distance': 0, ...node };
-            } else if (node.distance > waypointDistance) {
-                node.distance = 0;
-                node.isWaypoint = false;
-            }
-            return node;
-        })
-
     }
 
     makeIntermediateNodeSet = (intermediateNodes) => {
@@ -405,28 +382,34 @@ class NodeAdmin {
     }
 
     getNearestNode = async (req, res) => {
-        let searchCoordinates = req.body.searchCoordinates;
-        // console.log(searchCoordinates)
-        const nodeList = await queryAll('nodes', '', null, req.query.pageNumber, null);
-        let smallest = { distance: "", coordinates: {} }
-        nodeList.data.some((element) => {
-            let distance = calculateDistanceBetweenPoints({ latitude: element.lat, longitude: element.long }, { latitude: searchCoordinates.lat, longitude: searchCoordinates.long })
-            if (distance == 0) {
-                // console.log(distance, " ", { lat: element.lat, long: element.long })
-                smallest.distance = distance;
-                smallest.coordinates = { lat: element.lat, long: element.long }
-                return true; // Break the loop
-            }
-            else if (smallest.distance == "") {
-                smallest.distance = distance;
-                smallest.coordinates = { lat: element.lat, long: element.long }
-            }
-            else if (distance <= smallest.distance) {
-                smallest.distance = distance;
-                smallest.coordinates = { lat: element.lat, long: element.long }
-            }
-        });
-        res.status(200).json(smallest);
+        try {
+            console.log("here")
+            let searchCoordinates = req.body.searchCoordinates;
+            // console.log(searchCoordinates)
+            const nodeList = await queryAll('nodes', '', null, req.query.pageNumber, null);
+            let smallest = { distance: "", coordinates: {} }
+            nodeList.data.some((element) => {
+                if (!element.lat || !element.long) { } else {
+                    let distance = calculateDistanceBetweenPoints({ latitude: element.lat, longitude: element.long }, { latitude: searchCoordinates.lat, longitude: searchCoordinates.long })
+                    if (distance == 0) {
+                        // console.log(distance, " ", { lat: element.lat, long: element.long })
+                        smallest.distance = distance;
+                        smallest.coordinates = { lat: element.lat, long: element.long }
+                        return true; // Break the loop
+                    }
+                    else if (smallest.distance == "") {
+                        smallest.distance = distance;
+                        smallest.coordinates = { lat: element.lat, long: element.long }
+                    }
+                    else if (distance <= smallest.distance) {
+                        smallest.distance = distance;
+                        smallest.coordinates = { lat: element.lat, long: element.long }
+                    }
+                }
+            });
+            res.status(200).json(smallest);
+        } catch (error) {
+        }
     }
 
     getAllStates = async (req, res) => {

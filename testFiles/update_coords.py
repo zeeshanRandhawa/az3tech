@@ -104,8 +104,21 @@ def get_accurate_lat_longs():
                 # continue
 
             if(len(data) < 1):
-                print("Skipping as not found")
-                continue
+                print("checking again as not found")
+                url = "https://geocode.maps.co/search?q="+text+"%20"+row[4].strip().replace(" ","%20")+"%20"+row[5]
+                print(url)
+                response = requests.get(url)
+                
+                data = response.json()
+                if(len(data) > 1):
+                    print("length greater ", (row[8],row[7]))
+                    closest = find_closest(data,row[2])
+                    # continue
+
+                if(len(data) < 1):
+                    print("skipping as not found")
+                    continue
+                
             data = data[0]
 
             if data['lon'] != row[8] or row[7] != data['lat']:
@@ -117,7 +130,7 @@ def get_accurate_lat_longs():
 
 
     return rows
-#get_accurate_lat_longs()
+get_accurate_lat_longs()
 with open("comparisons.csv","r") as r:
     reader = csv.reader(r,  delimiter=',')
 

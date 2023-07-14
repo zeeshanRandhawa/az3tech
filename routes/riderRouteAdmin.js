@@ -1,7 +1,7 @@
 
-const { queryInsertRiderRoute, queryBulkInsertRiderRoute, queryRRoutesFilter, queryAll } = require('../utilities/query');
+const { queryInsertRiderRoute, queryBulkInsertRiderRoute, queryRRoutesFilter, queryAll, findPointsOfInterestBetweenPolygon, qGetWaypointDistance } = require('../utilities/query');
 const { logDebugInfo } = require('../utilities/logger');
-const { getRouteInfo } = require('../utilities/utilities')
+const { getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, formatNodeData } = require('../utilities/utilities')
 
 const axios = require('axios');
 const querystring = require('querystring');
@@ -35,7 +35,6 @@ const createRiderRoute = async (req, res) => {
     }
 }
 
-
 const filterRRouteByANodeTW = async (req, res) => {
     try {
         if (!req.query.nodeId || !req.query.nodeStartDepartureTime || !req.query.nodeEndDepartureTime) {
@@ -44,13 +43,58 @@ const filterRRouteByANodeTW = async (req, res) => {
             const qRes = await queryRRoutesFilter({ "nodeId": req.query.nodeId, "startTimeWindow": req.query.nodeStartDepartureTime, "endTimeWindow": req.query.nodeEndDepartureTime }); // query routes with generic function filter by tags
 
             for (let rroute of qRes.data) {
-                const routeInfo = await getRouteInfo([rroute.origin_node.long, rroute.origin_node.lat], [rroute.destination_node.long, rroute.destination_node.lat]);
+
                 let waypointNodes = [];
-                for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length - 1; i++) {
-                    let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
-                    let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
-                    waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
+                let dataPoints = [];
+                dataPoints.push([rroute.origin_node.long, rroute.origin_node.lat]);
+                dataPoints.push([rroute.destination_node.long, rroute.destination_node.lat]);
+
+                // calculate edges of square polygon
+                // takes two long;lat points
+                // return 4 points of polygon
+                let source = dataPoints[0];
+                let destination = dataPoints[1];
+                dataPoints = findParallelLines(dataPoints);
+
+                // return nodes of interest in polygon
+                let nodesData = await findPointsOfInterestBetweenPolygon(dataPoints);
+
+                //gets osrm route complete details
+                let routeInfo = await getRouteInfo(source, destination);
+                let inter = []
+
+                // const routeInfo = await getRouteInfo([rroute.origin_node.long, rroute.origin_node.lat], [rroute.destination_node.long, rroute.destination_node.lat]);
+                for (let j = 0; j < nodesData.data.length; j++) {
+
+                    for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length - 1; i++) {
+
+                        let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
+                        let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
+                        waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
+
+                        let allPoints = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates
+
+                        let calculatedintermediateNode = getDistances(waypointStart, waypointEnd, nodesData.data[j], hasSignificantCurve(allPoints), allPoints);
+
+                        if (calculatedintermediateNode.intercepted == true) {
+                            inter.push(calculatedintermediateNode)
+                            if (Object.keys(nodesData.data[j]).includes('isWaypoint')) {
+                                if (nodesData.data[j].distance > calculatedintermediateNode.distance) {
+                                    nodesData.data[j].distance = calculatedintermediateNode.distance;
+                                }
+                            } else {
+                                nodesData.data[j] = { 'isWaypoint': true, 'distance': calculatedintermediateNode.distance, ...nodesData.data[j] };
+                            }
+                        }
+
+                    }
                 }
+                let intermediateNodes = formatNodeData(nodesData.data, (await qGetWaypointDistance(req.headers.cookies)).data).map((wp_node) => {
+                    if (wp_node.isWaypoint) {
+                        return wp_node;
+                    }
+                }).filter(Boolean);
+                rroute.intermediateNodes = intermediateNodes;
                 rroute.WaypointsGIS = waypointNodes;
                 rroute.geometry = routeInfo.routes[0].geometry.coordinates;
             }
@@ -71,7 +115,6 @@ const filterRRouteByANodeTW = async (req, res) => {
     }
 }
 
-
 const listRRouteNodes = async (req, res) => {
     try {
         if (!req.query.routeId) {
@@ -89,7 +132,6 @@ const listRRouteNodes = async (req, res) => {
         res.status(500).json({ message: "Server Error " + error.message });
     }
 }
-
 
 prepareBulkData = async (fileBuffer) => {
     try {
@@ -163,10 +205,7 @@ const bulkImportRiderRoutes = async (req, res) => {
     }
 }
 
-
 // https://nominatim.openstreetmap.org/search/?q=3225%20Danville%20Boulevard%20Alamo%20california&format=json&addressdetails=1
-
-
 
 const generateUniformRandomTime = (meanTime, sigmaTime, datasetCount) => {
 
@@ -193,8 +232,5 @@ const generateUniformRandomTime = (meanTime, sigmaTime, datasetCount) => {
     }
     return randomDatetimes;
 }
-
-
-
 
 module.exports = { createRiderRoute, filterRRouteByANodeTW, listRRouteNodes, bulkImportRiderRoutes };

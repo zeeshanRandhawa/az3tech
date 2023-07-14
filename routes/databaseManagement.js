@@ -48,7 +48,6 @@ databaseManagement.get('/api/v1/database/table-stats', isAuthenticated, async (r
 
 });
 
-
 // purge/drop tables based on list provided 
 databaseManagement.post('/api/v1/database/purge-tables', isAuthenticated, isAdmin, async (req, res) => {
     try {
@@ -68,7 +67,6 @@ databaseManagement.post('/api/v1/database/purge-tables', isAuthenticated, isAdmi
         res.status(500).json({ message: "Server Error " + error.message });
     }
 });
-
 
 // generic filter to purge either riders or driver routes
 databaseManagement.post('/api/v1/truncate/selected-filter', isAuthenticated, isAdmin, async (req, res) => {
@@ -92,7 +90,6 @@ databaseManagement.post('/api/v1/truncate/selected-filter', isAuthenticated, isA
         res.status(500).json({ message: "Server Error " + error.message });
     }
 });
-
 
 // module.exports = { getAllTablesStats, purgeSelected, purgeByFilter };
 module.exports = databaseManagement;

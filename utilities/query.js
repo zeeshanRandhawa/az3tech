@@ -189,8 +189,18 @@ const queryTableUsage = async (tableName) => {
 // drop specific table if table dropped return OK
 const purgeTable = async (tableName) => {
   try {
+    if (['sessions', 'users', 'roles'].includes(tableName)) {
+      return { status: 400, data: "Cannot delete primary table" };
+    }
     await pool.query('BEGIN');
-    await pool.query(`DELETE FROM "${tableName}"`);
+    if (tableName === "riders") {
+      await pool.query(`DELETE FROM"${tableName}"`);
+    }
+    await pool.query(`TRUNCATE TABLE "${tableName}" CASCADE`);
+
+    // if (!['droutenodes', 'rroutenodes'].includes(tableName)) {
+    //   await pool.query(`SELECT setval('${tableName}_${tableName.slice(0, -1)}_id_seq', coalesce(max(${tableName.slice(0, -1)}_id), 1), false) FROM "${tableName}";`)
+    // }
     await pool.query('COMMIT');
     return { status: 200 };
   } catch (error) {

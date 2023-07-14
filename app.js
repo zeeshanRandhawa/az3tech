@@ -120,7 +120,6 @@ app.post('/api/v1/nodes/nearest', nodeAdmin.getNearestNode)
 app.get('/api/v1/nodes/states/getsates', nodeAdmin.getAllStates);
 app.get('/api/v1/nodes/state/getcitynodes', nodeAdmin.getStateCityNodes);
 
-
 app.use((req, res, next) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
