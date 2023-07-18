@@ -1,5 +1,5 @@
 
-const { queryInsertRiderRoute, queryBulkInsertRiderRoute, queryRRoutesFilter, queryAll, findPointsOfInterestBetweenPolygon, qGetWaypointDistance } = require('../utilities/query');
+const { queryInsertRiderRoute, queryBulkInsertRiderRoute, queryRRoutesFilter, queryAll, findPointsOfInterestBetweenPolygon, qGetWaypointDistance, updateRouteIntermediateNodes } = require('../utilities/query');
 const { logDebugInfo } = require('../utilities/logger');
 const { getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, formatNodeData } = require('../utilities/utilities')
 
@@ -94,6 +94,11 @@ const filterRRouteByANodeTW = async (req, res) => {
                         return wp_node;
                     }
                 }).filter(Boolean);
+
+                rroute.intermediate_nodes_list = intermediateNodes.map(iNode => iNode.node_id).join(',');
+
+                await updateRouteIntermediateNodes('rroutes', rroute.intermediate_nodes_list, rroute.rroute_id);
+
                 rroute.intermediateNodes = intermediateNodes;
                 rroute.WaypointsGIS = waypointNodes;
                 rroute.geometry = routeInfo.routes[0].geometry.coordinates;

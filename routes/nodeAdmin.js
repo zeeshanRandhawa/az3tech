@@ -4,7 +4,10 @@ const { getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calc
 const { logDebugInfo } = require('../utilities/logger');
 const { fork } = require('child_process');
 const fs = require('node:fs/promises');
+const fss = require('fs');
 const createCsvWriter = require('csv-writer').createObjectCsvStringifier;
+const path = require('path');
+const archiver = require('archiver');
 
 class NodeAdmin {
     constructor(io) {
@@ -443,6 +446,56 @@ class NodeAdmin {
         } catch (error) {
             // console.log(error);
             res.status(500).json({ message: "Server Error " + error.message });
+        }
+    }
+
+
+    getLogsList = async (req, res) => {
+        fs.readdir("./utilities/logfiles/")
+            .then((files) => {
+                // Filter out any non-CSV files if needed
+                const csvFiles = files.filter((file) => path.extname(file) === '.csv');
+                return res.status(200).json({ fileNameList: csvFiles })
+            })
+            .catch((err) => {
+                console.error('Error reading directory:', err);
+            });
+    }
+
+    downloadLogFile = async (req, res) => {
+        try {
+            fss.readdir("./utilities/logfiles/", (err, files) => {
+                if (err) {
+
+                    res.status(500).send('Internal Server Error');
+                    return;
+                }
+                let csvFiles;
+
+                if (req.query.logFileName === "allFiles") {
+                    csvFiles = files.filter((file) => path.extname(file) === '.csv');
+                } else {
+                    csvFiles = files.filter((file) => path.extname(file) === '.csv' && path.basename(file) === req.query.logFileName);
+                }
+                if (csvFiles.length === 0) {
+
+                    res.status(404).send('No CSV files found in the directory');
+                    return;
+                }
+
+                res.setHeader('Content-Type', 'application/zip');
+                res.setHeader('Content-Disposition', 'attachment; filename="logfiles.zip"');
+
+                const zip = archiver('zip');
+                zip.pipe(res);
+                csvFiles.forEach((file) => {
+                    const filePath = path.join("./utilities/logfiles/", file);
+                    zip.append(fss.createReadStream(filePath), { name: file });
+                });
+                zip.finalize();
+            });
+        } catch (error) {
+            console.log(error)
         }
     }
 }

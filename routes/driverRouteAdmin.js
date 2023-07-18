@@ -1,7 +1,7 @@
 
-const { queryInsertDriverRoute, queryBatchInsertTransitRoute, queryDRoutesFilter, queryAll } = require('../utilities/query');
+const { queryInsertDriverRoute, queryBatchInsertTransitRoute, queryDRoutesFilter, queryAll, findPointsOfInterestBetweenPolygon, qGetWaypointDistance, updateRouteIntermediateNodes } = require('../utilities/query');
 const { logDebugInfo } = require('../utilities/logger');
-const { getRouteInfo } = require('../utilities/utilities')
+const { getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, formatNodeData } = require('../utilities/utilities')
 
 const createDriverRoute = async (req, res) => {
     try {
@@ -100,16 +100,79 @@ const filterDRouteByDNodeTW = async (req, res) => {
         } else {
             const qRes = await queryDRoutesFilter({ "nodeId": req.query.nodeId, "startTimeWindow": req.query.nodeStartArrivalTime, "endTimeWindow": req.query.nodeEndArrivalTime }); // query routes with generic function filter by tags
 
-            for (let rroute of qRes.data) {
-                const routeInfo = await getRouteInfo([rroute.origin_node.long, rroute.origin_node.lat], [rroute.destination_node.long, rroute.destination_node.lat]);
+            // for (let rroute of qRes.data) {
+            //     const routeInfo = await getRouteInfo([rroute.origin_node.long, rroute.origin_node.lat], [rroute.destination_node.long, rroute.destination_node.lat]);
+            //     let waypointNodes = [];
+            //     for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length - 1; i++) {
+            //         let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
+            //         let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
+            //         waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
+            //     }
+            //     rroute.WaypointsGIS = waypointNodes;
+            //     rroute.geometry = routeInfo.routes[0].geometry.coordinates;
+            // }
+
+
+            for (let droute of qRes.data) {
+
                 let waypointNodes = [];
-                for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length - 1; i++) {
-                    let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
-                    let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
-                    waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
+                let dataPoints = [];
+                dataPoints.push([droute.origin_node.long, droute.origin_node.lat]);
+                dataPoints.push([droute.destination_node.long, droute.destination_node.lat]);
+
+                // calculate edges of square polygon
+                // takes two long;lat points
+                // return 4 points of polygon
+                let source = dataPoints[0];
+                let destination = dataPoints[1];
+                dataPoints = findParallelLines(dataPoints);
+
+                // return nodes of interest in polygon
+                let nodesData = await findPointsOfInterestBetweenPolygon(dataPoints);
+
+                //gets osrm route complete details
+                let routeInfo = await getRouteInfo(source, destination);
+                let inter = []
+
+                // const routeInfo = await getRouteInfo([droute.origin_node.long, droute.origin_node.lat], [droute.destination_node.long, droute.destination_node.lat]);
+                for (let j = 0; j < nodesData.data.length; j++) {
+
+                    for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length - 1; i++) {
+
+                        let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
+                        let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
+                        waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
+
+                        let allPoints = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates
+
+                        let calculatedintermediateNode = getDistances(waypointStart, waypointEnd, nodesData.data[j], hasSignificantCurve(allPoints), allPoints);
+
+                        if (calculatedintermediateNode.intercepted == true) {
+                            inter.push(calculatedintermediateNode)
+                            if (Object.keys(nodesData.data[j]).includes('isWaypoint')) {
+                                if (nodesData.data[j].distance > calculatedintermediateNode.distance) {
+                                    nodesData.data[j].distance = calculatedintermediateNode.distance;
+                                }
+                            } else {
+                                nodesData.data[j] = { 'isWaypoint': true, 'distance': calculatedintermediateNode.distance, ...nodesData.data[j] };
+                            }
+                        }
+
+                    }
                 }
-                rroute.WaypointsGIS = waypointNodes;
-                rroute.geometry = routeInfo.routes[0].geometry.coordinates;
+                let intermediateNodes = formatNodeData(nodesData.data, (await qGetWaypointDistance(req.headers.cookies)).data).map((wp_node) => {
+                    if (wp_node.isWaypoint) {
+                        return wp_node;
+                    }
+                }).filter(Boolean);
+
+                droute.intermediate_nodes_list = intermediateNodes.map(iNode => iNode.node_id).join(',');
+
+                await updateRouteIntermediateNodes('droutes', droute.intermediate_nodes_list, droute.droute_id);
+
+                droute.intermediateNodes = intermediateNodes;
+                droute.WaypointsGIS = waypointNodes;
+                droute.geometry = routeInfo.routes[0].geometry.coordinates;
             }
 
             if (qRes.status == 200) {

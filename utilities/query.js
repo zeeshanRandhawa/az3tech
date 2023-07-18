@@ -134,7 +134,7 @@ const qGetWaypointDistance = async (sessionToken) => {
 const findPointsOfInterestBetweenPolygon = async (dataPoints) => {
   // const pointQuery = `SELECT lat, long FROM nodes WHERE ((lat - ${dataPoints[0][1]})*(${dataPoints[1][0]} - ${dataPoints[0][0]}) - (long - ${dataPoints[0][0]}) * (${dataPoints[1][1]} - ${dataPoints[0][1]})) >= 0 AND ((lat - ${dataPoints[1][1]}) * (${dataPoints[2][0]} - ${dataPoints[1][0]}) - (long - ${dataPoints[1][0]}) * (${dataPoints[2][1]} - ${dataPoints[1][1]})) >= 0 AND ((lat - ${dataPoints[2][1]}) * (${dataPoints[3][0]} - ${dataPoints[2][0]}) - (long - ${dataPoints[2][0]}) * (${dataPoints[3][1]} - ${dataPoints[2][1]})) >= 0 AND ((lat - ${dataPoints[3][1]}) * (${dataPoints[0][0]} - ${dataPoints[3][0]}) - (long - ${dataPoints[3][0]}) * (${dataPoints[0][1]} - ${dataPoints[3][1]})) >= 0`;
   try {
-    const pointQuery = `SELECT node_id, lat, long, description FROM nodes WHERE 
+    const pointQuery = `SELECT node_id, lat, long, description, location  FROM nodes WHERE 
     (((${dataPoints[1][0]} - ${dataPoints[0][0]}) * (long - ${dataPoints[0][0]})) + ((${dataPoints[1][1]} - ${dataPoints[0][1]}) * (lat - ${dataPoints[0][1]}))) >= 0
      AND (((${dataPoints[1][0]} - ${dataPoints[0][0]}) * (long - ${dataPoints[0][0]})) + ((${dataPoints[1][1]} - ${dataPoints[0][1]}) * (lat - ${dataPoints[0][1]}))) <= (((${dataPoints[1][0]} - ${dataPoints[0][0]}) * (${dataPoints[1][0]} - ${dataPoints[0][0]})) + ((${dataPoints[1][1]} - ${dataPoints[0][1]}) * (${dataPoints[1][1]} - ${dataPoints[0][1]})))
       AND (((${dataPoints[2][0]} - ${dataPoints[1][0]}) * (long - ${dataPoints[1][0]})) + ((${dataPoints[2][1]} - ${dataPoints[1][1]}) * (lat - ${dataPoints[1][1]}))) >= 0
@@ -386,6 +386,18 @@ const queryInsertSessionCookie = async (sessionCookie = '', user_email) => {
 }
 
 
+const updateRouteIntermediateNodes = async (tableName, intermediateNodes, route_id) => {
+  try {
+    const query = `UPDATE ${tableName} SET intermediate_nodes_list='${intermediateNodes}' WHERE ${tableName.slice(0, -1)}_id=${route_id}`;
+    // console.log(query);
+    await pool.query(query);
+    return { status: 200 };
+  } catch (error) {
+    logDebugInfo('error', 'update_route_intermediate nodes', '', error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
 const queryRemoveSessionCookie = async (sessionCookie) => {
   try {
     const query = `DELETE FROM "sessions" WHERE session_token='${sessionCookie}'`;
@@ -556,7 +568,7 @@ const queryRRoutesFilter = async (filterData) => {
 
 const queryDRoutesFilter = async (filterData) => {
   try {
-    const searchQuery = `SELECT * FROM "droutes" WHERE destination_node=${filterData.nodeId}`;
+    let searchQuery = `SELECT * FROM "droutes" WHERE destination_node=${filterData.nodeId}`;
     let searchRes = (await pool.query(searchQuery)).rows;
 
     searchRes = await Promise.all(searchRes.map(async (drouteData) => {
@@ -574,7 +586,33 @@ const queryDRoutesFilter = async (filterData) => {
         return {};
       }
     }));
-    return { status: 200, data: searchRes.filter(obj => Object.keys(obj).length != 0) };
+    searchRes = searchRes.filter(obj => Object.keys(obj).length != 0);
+
+    let intersecting_routes = (await pool.query(`SELECT droute_id, node_id,outb_driver_id, permutation_id, arrival_time, departure_time, rank, cum_distance, cum_time,capacity_used, status from droutenodes WHERE ((arrival_time>=\'${filterData.startTimeWindow}\' AND arrival_time<=\'${filterData.endTimeWindow}\') OR (departure_time>=\'${filterData.startTimeWindow}\' AND departure_time<=\'${filterData.endTimeWindow}\'))`)).rows;
+    intersecting_routes = (await Promise.all(intersecting_routes.map(async (iRoute) => {
+      for (let drouteData of searchRes) {
+        if (iRoute.outb_driver_id == drouteData.driver_id && iRoute.droute_id == drouteData.droute_id) {
+          return;
+        }
+      }
+      let nodesRes = (await pool.query(`SELECT lat, long from nodes WHERE node_id=${iRoute.node_id}`)).rows;
+
+      iRoute = { ...iRoute, cordinates: nodesRes };
+
+      searchQuery = `SELECT * FROM "droutes" WHERE droute_id=${iRoute.droute_id} AND driver_id=${iRoute.outb_driver_id}`;
+
+      let searchRess = (await pool.query(searchQuery)).rows;
+
+      if (searchRess.length == 0) {
+        return;
+      } else {
+        searchRess[0].route_nodes = [iRoute];
+        searchRess[0].origin_node = (await pool.query(`SELECT lat, long FROM nodes WHERE node_id=${searchRess[0].origin_node}`)).rows[0];
+        searchRess[0].destination_node = (await pool.query(`SELECT lat, long FROM nodes WHERE node_id=${searchRess[0].destination_node}`)).rows[0];
+      }
+      return searchRess[0]
+    }))).filter(Boolean);
+    return { status: 200, data: intersecting_routes.concat(searchRes) };
   }
   catch (error) {
     // console.log(error)
@@ -766,5 +804,6 @@ module.exports = {
   qSetWaypointDistance,
   qGetWaypointDistance,
   countRows,
-  queryBulkInsertRiderRoute
+  queryBulkInsertRiderRoute,
+  updateRouteIntermediateNodes
 };

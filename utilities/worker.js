@@ -3,6 +3,8 @@ const axios = require('axios');
 const querystring = require('querystring');
 const { fetchCoordinatesDataFromApi } = require('../utilities/utilities')
 const { queryBatchInsertN2N, queryBatchInsertNodes } = require('./query');
+const createCsvWriter = require('csv-writer').createObjectCsvStringifier;
+
 
 
 
@@ -118,22 +120,42 @@ async function fetchDataFromApi(url, i, j, retryDelay) {
 
 const prepareBulkData = async (fileData) => {
   try {
+    let failedNodes = [];
     let i = 0;
     const results = [];
     for (let line of fileData) {
       if (line.trim() !== '') {
-        // const [location, description, address, city, state_province, zip_postal_code, transit_time, lat, long] = line.split(',');
         const [location, description, address, city, state_province, zip_postal_code, transit_time] = line.split(',');
-        // if (!lat || !long) {
-        let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(address.trim().concat(' ').concat(state_province.trim()))}&format=json&addressdetails=1`, i, 25);
-        results.push({ location: location, description: description, address: address, city: city, state_province: state_province, zip_postal_code: zip_postal_code, transit_time: transit_time, long: latLong.long, lat: latLong.lat });
-        // } else {
-        //   // let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(address.trim().concat(' ').concat(state_province.trim()))}&format=json&addressdetails=1`, i, 25);
-        //   results.push({ location: location, description: description, address: address, city: city, state_province: state_province, zip_postal_code: zip_postal_code, transit_time: transit_time, long: long, lat: lat });
-        // }
+        let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(address.trim().concat(' ').concat(city.trim()))}&format=json&addressdetails=1`, i, 25);
+        if (!latLong.long || !latLong.lat) {
+          failedNodes.push({ location: location, description: description, address: address, city: city, state_province: state_province, zip_postal_code: zip_postal_code, transit_time: transit_time });
+        } else {
+          results.push({ location: location, description: description, address: address, city: city, state_province: state_province, zip_postal_code: zip_postal_code, transit_time: transit_time, long: latLong.long, lat: latLong.lat });
+        }
         i = i + 1;
       }
     };
+    try {
+      if (failedNodes.length) {
+        const csvStringifier = createCsvWriter({
+          header: [
+            { id: 'location', title: 'Location' },
+            { id: 'description', title: 'Description' },
+            { id: 'address', title: 'Address' },
+            { id: 'city', title: 'City' },
+            { id: 'state_province', title: 'State/Province' },
+            { id: 'zip_postal_code', title: 'Postal Code' },
+            { id: 'transit_time', title: 'Transit Time' }
+          ],
+        });
+
+        const csvContent = csvStringifier.getHeaderString() + csvStringifier.stringifyRecords(failedNodes);
+
+        await writeFile(`./utilities/logfiles/${new Date().toLocaleString().replace(/[/.,\s:]/g, '_')}_node.csv`, csvContent, { encoding: 'utf8' });
+      }
+    } catch (error) {
+      console.log(error)
+    }
 
     return { status: 200, data: results };
   } catch (error) {

@@ -11,6 +11,8 @@ const { Server } = require("socket.io");
 
 const app = express();
 
+app.use(helmet());
+app.use(compression());
 app.use(cookieParser());
 //app.use(express.json());
 //app.use(express.json({ limit: '200mb' }));
@@ -75,8 +77,10 @@ app.delete('/api/v1/rider/rroutes', isAuthenticated, deleteRiderRoute); // delet
 app.delete('/api/v1/driver/droutes', isAuthenticated, deleteDriverRoute);// delete driver route by droute_id
 
 app.post('/api/v1/rider/batchimport', isAuthenticated, upload, batchImportRiders); // batch import riders using csv file
-app.post('/api/v1/driver/batchimport', isAuthenticated, upload, batchImportDrivers);// batch import drivers using csv file
 app.post('/api/v1/rroutes/bulkimport', upload, bulkImportRiderRoutes);
+
+
+app.post('/api/v1/driver/batchimport', isAuthenticated, upload, batchImportDrivers);// batch import drivers using csv file
 
 app.post('/api/v1/rider/route', isAuthenticated, createRiderRoute); // batch import riders using csv file
 app.post('/api/v1/driver/route', isAuthenticated, createDriverRoute);// batch import drivers using csv file
@@ -108,6 +112,11 @@ app.get('/api/v1/droutes/filter-ntw', isAuthenticated, filterDRouteByDNodeTW);
 app.post('/api/v1/droutes/transit-import', isAuthenticated, upload, importDriverTransitScheduleRoutes)
 
 app.post('/api/v1/nodes/batch-import', isAuthenticated, upload, nodeAdmin.batchImportNodes);
+app.get('/api/v1/nodes/batch/logs/namelist', nodeAdmin.getLogsList);
+// app.delete('/api/v1/nodes/batch/log', nodeAdmin.downloadLogFile);
+app.get('/api/v1/nodes/batch/log/download', nodeAdmin.downloadLogFile);
+
+
 app.get('/api/v1/nodes/batch-import/status', isAuthenticated, nodeAdmin.getNode2NodeCalculationStatus); // implement this
 
 app.get('/api/v1/nodes/display', isAuthenticated, nodeAdmin.displayNodesByCoordinate);
