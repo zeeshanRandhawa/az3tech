@@ -1,17 +1,18 @@
 const express = require('express'); //main package for server
-const cors = require('cors'); // remove this line when deploying toserver
-const multer = require('multer'); // used to get and process file stream in batch import request
-const upload = multer().any();
-const cookieParser = require('cookie-parser');  // set cookies for front end 
 const http = require('http');
-const path = require('path');
 const { Server } = require("socket.io");
-
-
+const multer = require('multer'); // used to get and process file stream in batch import request
+const storage = multer.memoryStorage();
+const upload = multer({ storage }).any();
+const cors = require('cors'); // remove this line when deploying toserver
+// const helmet = require('helmet');
+const compression = require('compression')
+const cookieParser = require('cookie-parser');  // set cookies for front end 
+// const path = require('path');
 
 const app = express();
 
-app.use(helmet());
+// app.use(helmet());
 app.use(compression());
 app.use(cookieParser());
 //app.use(express.json());
