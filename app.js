@@ -123,6 +123,10 @@ app.get('/api/v1/nodes/batch-import/status', isAuthenticated, nodeAdmin.getNode2
 app.get('/api/v1/nodes/display', isAuthenticated, nodeAdmin.displayNodesByCoordinate);
 app.get('/api/v1/nodes', isAuthenticated, nodeAdmin.getAllNodes)
 
+app.delete('/api/v1/nodes/:nodeId', nodeAdmin.deleteNodeById);
+app.post('/api/v1/nodes', nodeAdmin.createNode);
+app.patch('/api/v1/nodes/:nodeId', nodeAdmin.updateNode);
+
 app.get('/api/v1/nodes/display/two-point', isAuthenticated, nodeAdmin.displayNodesBy2Point);
 app.get('/api/v1/nodes/download', isAuthenticated, nodeAdmin.downloadNodesCSV)
 app.post('/api/v1/nodes/nearest', nodeAdmin.getNearestNode)

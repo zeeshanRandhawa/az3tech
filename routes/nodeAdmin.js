@@ -1,6 +1,6 @@
 
-const { findPointsOfInterestBetweenPolygon, queryAll, qSetWaypointDistance, qGetWaypointDistance, countRows } = require('../utilities/query');
-const { getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints, formatNodeData } = require('../utilities/utilities')
+const { findPointsOfInterestBetweenPolygon, queryAll, qSetWaypointDistance, qGetWaypointDistance, countRows, deleteWhereById, queryCreate, modifyProfile } = require('../utilities/query');
+const { getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints, formatNodeData, fetchCoordinatesDataFromApi } = require('../utilities/utilities')
 const { logDebugInfo } = require('../utilities/logger');
 const { fork } = require('child_process');
 const fs = require('node:fs/promises');
@@ -8,6 +8,8 @@ const fss = require('fs');
 const createCsvWriter = require('csv-writer').createObjectCsvStringifier;
 const path = require('path');
 const archiver = require('archiver');
+const querystring = require('querystring');
+
 
 class NodeAdmin {
     constructor(io) {
@@ -39,8 +41,19 @@ class NodeAdmin {
                         this.processList[key].sockets = this.processList[key].sockets.filter(sckt => sckt.id != socket.id);
                     }
                     // console.log(this.processList);
+                });
+
+                socket.on("Check Status", async (message) => {
+
+                    const email = await queryAll('sessions', 'session_token', message, null, ['email']);
+
+                    if (email.data[0].email in this.processList) {
+                        let currentStatus = this.processList[email.data[0].email].message
+                        socket.emit("uploadStatus", { 'message': currentStatus })
+                    }
 
                 });
+
             });
         } catch (error) {
             // console.log(error);
@@ -344,13 +357,14 @@ class NodeAdmin {
 
     getAllNodes = async (req, res) => {
         try {
-            const nodeList = await queryAll('nodes', '', null, req.query.pageNumber, null);
+            const nodeList = await queryAll('nodes', '', null, req.query.pageNumber, null, false, null, '', "node_id");
             if (nodeList.status == 200) {
                 res.status(200).json({ "nodes": nodeList.data }); // if response is OK return data
             } else {
                 res.status(nodeList.status).json({ message: nodeList.data }); // else return error
             }
         } catch (error) {
+            // console.log(error)
             logDebugInfo('error', 'list_nodes', 'nodes', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }
@@ -386,7 +400,7 @@ class NodeAdmin {
 
     getNearestNode = async (req, res) => {
         try {
-            console.log("here")
+            // console.log("here")
             let searchCoordinates = req.body.searchCoordinates;
             // console.log(searchCoordinates)
             const nodeList = await queryAll('nodes', '', null, req.query.pageNumber, null);
@@ -458,7 +472,7 @@ class NodeAdmin {
                 return res.status(200).json({ fileNameList: csvFiles })
             })
             .catch((err) => {
-                console.error('Error reading directory:', err);
+                // console.error('Error reading directory:', err);
             });
     }
 
@@ -495,7 +509,107 @@ class NodeAdmin {
                 zip.finalize();
             });
         } catch (error) {
-            console.log(error)
+            // console.log(error)
+        }
+    }
+
+    deleteNodeById = async (req, res) => {
+        const nodeId = req.params.nodeId;
+        try {
+            if (!nodeId) { // validate route id 
+                res.status(400).json({ message: "Invalid Data" }) // return if error
+            } else {
+                const retRes = await deleteWhereById('nodes', nodeId); // execute fetch query
+
+                if (retRes.status != 400) {
+                    res.status(retRes.status).json({ message: retRes.message }); // if no error occured return Ok
+                } else {
+                    res.status(retRes.status).json({ message: retRes.data }); // return error
+                }
+            }
+        } catch (error) {
+            logDebugInfo('error', 'delete_node', 'nodes', error.message, error.stack);
+            res.status(500).json({ message: "Server Error " + error.message });
+        }
+    }
+
+    createNode = async (req, res) => {
+        try {
+            const nodeData = req.body;
+
+            if (Object.keys(nodeData).length < 7 || !nodeData.address || !nodeData.city || !nodeData.state_province) {
+                res.status(400).json({ message: "Invalid data" });
+            } else {
+
+                let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(nodeData.address.trim().concat(' ').concat(nodeData.city.trim()).concat(', ').concat(nodeData.state_province.trim()))}&format=json&addressdetails=1`, 0, 25);
+
+                if (!latLong.lat || !latLong.long) {
+                    res.status(400).json({ message: "Invalid address or city" });
+                } else {
+                    nodeData.lat = latLong.lat;
+                    nodeData.long = latLong.long;
+
+                    Object.keys(nodeData).forEach((data) => {
+                        if (nodeData[data] == '') {
+                            nodeData[data] = null
+                        }
+                    });
+
+                    const retResult = await queryCreate("nodes", nodeData); // insert data in databse
+                    if (retResult.status == 200) { // error handling
+                        res.status(201).json({ message: "Node created successfully" });
+                    } else {
+                        res.status(retResult.status).json({ message: retResult.data });
+                    }
+                }
+            }
+        } catch (error) {
+            // console.log(error);
+            logDebugInfo('error', 'create_rider_profile', 'riders', error.message, error.stack);
+            res.status(500).json({ message: "Server Error " + error.message });
+        }
+    }
+
+    updateNode = async (req, res) => {
+        try {
+            const nodeId = req.params.nodeId;
+            const nodeData = req.body;
+
+            if (!nodeId || !nodeData || Object.keys(nodeData).length < 7 || !nodeData.address || !nodeData.city || !nodeData.state_province) { // validate filters and user id if invalid return error
+                res.status(400).json({ message: "Invalid Data" })
+            } else {
+                const oldNodeData = await queryAll("nodes", "node_id", nodeId, null, null, false, null, '');
+
+                if (oldNodeData.data.length == 0) {
+                    res.status(404).json({ message: "Node does not exist" });
+                } else {
+                    if (oldNodeData.data[0].address != nodeData.address || oldNodeData.data[0].city != nodeData.city) {
+                        let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(nodeData.address.trim().concat(' ').concat(nodeData.city.trim()).concat(', ').concat(nodeData.state_province.trim()))}&format=json&addressdetails=1`, 0, 25);
+
+                        if (!latLong.lat || !latLong.long) {
+                            return res.status(400).json({ message: "Unable to update. Invalid address or city" });
+                        } else {
+                            nodeData.lat = latLong.lat;
+                            nodeData.long = latLong.long;
+                        }
+                    }
+                    Object.keys(nodeData).forEach((data) => {
+                        if (nodeData[data] == '') {
+                            nodeData[data] = null
+                        }
+                    });
+                    const retRes = await modifyProfile('nodes', nodeId, nodeData); // execute patch query
+                    if (retRes.status == 200) {
+                        res.status(200).json({ mesage: "Node updated" }); // if OK return status
+                    } else {
+                        res.status(retRes.status).json({ message: retRes.data }); //else return error
+                    }
+                }
+            }
+        } catch (error) {
+            // console.log(error)
+            logDebugInfo('error', 'update_node', 'nodes', error.message, error.stack);
+            res.status(500).json({ message: "Server Error " + error.message });
         }
     }
 }

@@ -3,7 +3,7 @@ const moment = require('moment');
 require('moment-timezone');
 
 const { logDebugInfo } = require('../utilities/logger');
-const { queryAll, queryCreate, queryFilter, modifyProfile, queryRemove, purgeRoutes, queryBatchInsert, queryInsertPic, queryDistinctRoutes, queryDeleteRoutesByTag } = require('../utilities/query');
+const { queryAll, queryCreate, queryFilter, modifyProfile, queryRemove, deleteWhereById, queryBatchInsert, queryInsertPic, queryDistinctRoutes, queryDeleteRoutesByTag } = require('../utilities/query');
 
 
 // create driver profile
@@ -21,6 +21,7 @@ const createDriverProfile = async (req, res) => {
             }
         }
     } catch (error) {
+        // console.log(error)
         logDebugInfo('error', 'create_driver_profile', 'drivers', error.message, error.stack);
         res.status(500).json({ message: "Server Error " + error.message });
     }
@@ -219,7 +220,7 @@ const deleteDriverRoute = async (req, res) => {
         if (!dRouteId) {  // validate route id 
             res.status(400).json({ message: "Invalid Data" }) // return if error
         } else {
-            const retRes = await purgeRoutes('droutes', dRouteId); // execute fetch query
+            const retRes = await deleteWhereById('droutes', dRouteId); // execute fetch query
 
             if (retRes.status != 400) {
                 res.sendStatus(retRes.status);  // if no error occured return Ok

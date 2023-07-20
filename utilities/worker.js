@@ -3,6 +3,7 @@ const axios = require('axios');
 const querystring = require('querystring');
 const { fetchCoordinatesDataFromApi } = require('../utilities/utilities')
 const { queryBatchInsertN2N, queryBatchInsertNodes } = require('./query');
+const { error } = require('node:console');
 const createCsvWriter = require('csv-writer').createObjectCsvStringifier;
 
 
@@ -73,6 +74,7 @@ const distanceDurationBetweenAllNodes = async () => {
 
     // console.log((new Date()) - start);
   } catch (err) {
+    console.log(error)
     process.send('status:Error');
   }
 }
@@ -126,7 +128,8 @@ const prepareBulkData = async (fileData) => {
     for (let line of fileData) {
       if (line.trim() !== '') {
         const [location, description, address, city, state_province, zip_postal_code, transit_time] = line.split(',');
-        let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(address.trim().concat(' ').concat(city.trim()))}&format=json&addressdetails=1`, i, 25);
+        // console.log(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(address.trim().concat(', ').concat(city.trim()).concat(', ').concat(state_province.trim()))}&format=json&addressdetails=1`);
+        let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(address.trim().concat(', ').concat(city.trim()).concat(', ').concat(state_province.trim()))}&format=json&addressdetails=1`, i, 25);
         if (!latLong.long || !latLong.lat) {
           failedNodes.push({ location: location, description: description, address: address, city: city, state_province: state_province, zip_postal_code: zip_postal_code, transit_time: transit_time });
         } else {
@@ -159,6 +162,8 @@ const prepareBulkData = async (fileData) => {
 
     return { status: 200, data: results };
   } catch (error) {
+    console.log(error)
+
     return { status: 500, message: "Server Error " + error.message };
   }
 }

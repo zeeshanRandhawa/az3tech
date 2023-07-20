@@ -249,6 +249,31 @@ async function fetchCoordinatesDataFromApi(url, i, retryDelay) {
   }
 }
 
+
+
+async function fetchCoordinatesDataFromApiGMap(address, i, retryDelay) {
+  try {
+    const baseUrl = "https://maps.googleapis.com/maps/api/geocode/json";
+    const params = {
+      address: address,
+      key: "AIzaSyAlcoiLrtWjyilkky2rKqhnRLiN7v3eZM0",
+    };
+
+    const response = await axios.get(baseUrl, { params });
+    const data = response.data;
+    if (data.status === "OK") {
+      const location = data.results[0].geometry.location;
+      return { lat: location.lat, long: location.lng };
+    } else {
+      throw new Error();
+    }
+  } catch (error) {
+    // console.log("error", i)
+    await new Promise(resolve => setTimeout(resolve, retryDelay));
+    return await fetchCoordinatesDataFromApiGMap(address, i, retryDelay + 100);
+  }
+}
+
 module.exports = { getpageCount, formatNodeData, hashPassword, getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints, fetchCoordinatesDataFromApi };
 
 // 37.79103509151187, -122.42789800130387

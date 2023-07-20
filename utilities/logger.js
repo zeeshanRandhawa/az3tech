@@ -5,12 +5,14 @@ const pool = new Pool({
     // password: '1234',
     // host: 'localhost',
     // port: 5432,
-    // database: 'test-transport'
+    //database: 'test-transport'
+
     // user: 'postgres',
     // password: '123456',
     // host: 'localhost',
     // port: 5432,
-    // database: 'test-local'
+    // database: 'test-transport'
+    
     user: 'doadmin',
     password: 'AVNS_MHGwE5WNGWUy_wvn_-l',
     host: 'db-postgresql-sfo2-32856-do-user-13737111-0.b.db.ondigitalocean.com',

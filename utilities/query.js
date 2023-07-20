@@ -15,7 +15,7 @@ const pool = new Pool({
   // password: '123456',
   // host: 'localhost',
   // port: 5432,
-  // database: 'test-local'
+  // database: 'test-transport'
 
   user: 'doadmin',
   password: 'AVNS_MHGwE5WNGWUy_wvn_-l',
@@ -54,7 +54,7 @@ const db = pgp({
   // password: '123456',
   // host: 'localhost',
   // port: 5432,
-  // database: 'test-local'
+  // database: 'test-transport'
 
   user: 'doadmin',
   password: 'AVNS_MHGwE5WNGWUy_wvn_-l',
@@ -105,13 +105,14 @@ const countRows = async (tableName) => {
 // generic query to query data from tables
 // it can have one column in where condition
 // for more than one column custom queries are made
-const queryAll = async (tableName, columnName = '', columnValue = null, pagination = null, columns = null, distinct = false, groupBy = null, customWhere = '') => {
+const queryAll = async (tableName, columnName = '', columnValue = null, pagination = null, columns = null, distinct = false, groupBy = null, customWhere = '', orderBY = null) => {
   try {
     //make query depends on data type also
-    const query = `SELECT ${distinct ? `DISTINCT` : ``} ${columns == null ? `*` : columns.map(col => col).join(',')} FROM "${tableName}"${columnName !== '' ? ' WHERE '.concat(columnName).concat(typeof (columnValue) == 'object' ? ' IN' : '=').concat(typeof (columnValue) == 'string' ? `'${columnValue}'` : typeof (columnValue) == 'object' ? ' ('.concat(columnValue.map(route => `\'${route}\'`).join(', ')).concat(')') : columnValue) : ''} ${customWhere} ${groupBy == null ? `` : `GROUP BY `.concat(groupBy.map(col => col).join(','))}${pagination != null ? ` LIMIT 10 OFFSET ${(pagination - 1) * 10}` : ''}`;
+    const query = `SELECT ${distinct ? `DISTINCT` : ``} ${columns == null ? `*` : columns.map(col => col).join(',')} FROM "${tableName}"${columnName !== '' ? ' WHERE '.concat(columnName).concat(typeof (columnValue) == 'object' ? ' IN' : '=').concat(typeof (columnValue) == 'string' ? `'${columnValue}'` : typeof (columnValue) == 'object' ? ' ('.concat(columnValue.map(route => `\'${route}\'`).join(', ')).concat(')') : columnValue) : ''} ${customWhere} ${groupBy == null ? `` : `GROUP BY `.concat(groupBy.map(col => col).join(','))}${orderBY != null ? ` ORDER BY ${orderBY} ASC ` : ''}${pagination != null ? ` LIMIT 10 OFFSET ${(pagination - 1) * 10}` : ''}`;
     const data = await pool.query(query); // execute query
     return { status: 200, data: data.rows } // return data
   } catch (error) {
+    // console.log(error)
     return { status: 500, data: error.message }; // if error return error message
   }
 }
@@ -269,6 +270,7 @@ const queryCreate = async (tableName, bioData) => {
     return { status: 200, data: qRes.rows[0] };
   }
   catch (error) {
+    // console.log(error)
     logDebugInfo('error', 'create_entity', tableName, error.message, error.stack);
     return { status: 500, data: error.message };
   }
@@ -295,13 +297,14 @@ const makeSearchFilterQuery = async (tableName, SearchFilters) => {
 
 
 // update rider or driver 
-const modifyProfile = async (tableName, userId, userDetails) => {
+const modifyProfile = async (tableName, id, details) => {
   try {
-    const modifyQuery = await makeUpdateQuery(tableName, userId, userDetails); // process update query
+    const modifyQuery = await makeUpdateQuery(tableName, id, details); // process update query
     await pool.query(modifyQuery); //execute modify patch query
-    return { status: 204 };
+    return { status: 200 };
   }
   catch (error) {
+    // console.log(error)
     logDebugInfo('error', 'update_profile_query', tableName, error.message, error.stack);
     return { status: 400, data: error.message };
   }
@@ -313,6 +316,7 @@ const makeUpdateQuery = async (tableName, uniqueId, details) => { // slicing tab
     const query = `UPDATE "${tableName}" SET ${Object.keys(details).map(column_key => `${column_key}=`.concat(details[column_key] != null ? `'${details[column_key]}'` : 'NULL'))} WHERE ${tableName.slice(0, -1)}_id=${uniqueId}`;
     return query;
   } catch (error) {
+    // console.log(error)
     logDebugInfo('error', 'make_update_profile_query', tableName, error.message, error.stack);
     return ''
   }
@@ -361,11 +365,11 @@ const queryRemove = async (tableName, uniqueId) => {
 }
 
 
-const purgeRoutes = async (tableName, routeId) => {
+const deleteWhereById = async (tableName, routeId) => {
   try {
     const delQuery = `DELETE FROM "${tableName}" WHERE ${tableName.slice(0, -1)}_id=${routeId}`;
     const qRes = await pool.query(delQuery);
-    return qRes.rowCount === 0 ? { status: 204 } : { status: 200 };
+    return qRes.rowCount === 0 ? { status: 404, message: "Node does not exists" } : { status: 200, message: "Node removed" };
   }
   catch (error) {
     logDebugInfo('error', 'purge_routes_by_id', tableName, error.message, error.stack);
@@ -783,7 +787,7 @@ module.exports = {
   modifyProfile,
   queryRemove,
   queryAll,
-  purgeRoutes,
+  deleteWhereById,
   queryBatchInsert,
   queryInsertSessionCookie,
   queryRemoveExpiredSessions,

@@ -170,7 +170,9 @@ const filterDRouteByDNodeTW = async (req, res) => {
 
                 await updateRouteIntermediateNodes('droutes', droute.intermediate_nodes_list, droute.droute_id);
 
-                droute.intermediateNodes = intermediateNodes;
+                droute.intermediateNodes = droute.intermediateNodes = intermediateNodes.filter((iNode) => {
+                    return (droute.origin_node.lat != iNode.lat && droute.origin_node.long != iNode.long) && (droute.destination_node.lat != iNode.lat && droute.destination_node.long != iNode.long)
+                });
                 droute.WaypointsGIS = waypointNodes;
                 droute.geometry = routeInfo.routes[0].geometry.coordinates;
             }

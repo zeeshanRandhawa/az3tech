@@ -13,12 +13,12 @@ const createRiderRoute = async (req, res) => {
         } else {
             const riderRouteData = req.body.row;
 
-            let originLatLong = await axios.get(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(riderRouteData.origin_address.trim().concat(' ').concat(riderRouteData.origin_state_province.trim()))}&format=json&addressdetails=1`)
+            let originLatLong = await axios.get(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape((riderRouteData.origin_address.trim()).concat(', ').concat(riderRouteData.origin_city.trim()).concat(', ').concat(riderRouteData.origin_state_province.trim()))}&format=json&addressdetails=1`)
             riderRouteData.origin_lat = originLatLong.data.length > 0 ? originLatLong.data[0].lat : null;
             riderRouteData.origin_long = originLatLong.data.length > 0 ? originLatLong.data[0].lon : null;
 
             await new Promise(resolve => setTimeout(resolve, 50));
-            let destinationLatLong = await axios.get(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(riderRouteData.destination_address.trim().concat(' ').concat(riderRouteData.destination_state_province.trim()))}&format=json&addressdetails=1`)
+            let destinationLatLong = await axios.get(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape((riderRouteData.destination_address.trim()).concat(', ').concat(riderRouteData.destination_city.trim()).concat(', ').concat(riderRouteData.destination_state_province.trim()))}&format=json&addressdetails=1`)
             riderRouteData.destination_lat = destinationLatLong.data.length > 0 ? destinationLatLong.data[0].lat : null;
             riderRouteData.destination_long = destinationLatLong.data.length > 0 ? destinationLatLong.data[0].lon : null;
 
@@ -99,7 +99,13 @@ const filterRRouteByANodeTW = async (req, res) => {
 
                 await updateRouteIntermediateNodes('rroutes', rroute.intermediate_nodes_list, rroute.rroute_id);
 
-                rroute.intermediateNodes = intermediateNodes;
+
+                rroute.intermediateNodes = intermediateNodes.filter((iNode) => {
+                    return (rroute.origin_node.lat != iNode.lat && rroute.origin_node.long != iNode.long) && (rroute.destination_node.lat != iNode.lat && rroute.destination_node.long != iNode.long)
+                });
+
+                // console.log(rroute.intermediateNodes)
+
                 rroute.WaypointsGIS = waypointNodes;
                 rroute.geometry = routeInfo.routes[0].geometry.coordinates;
             }
@@ -114,7 +120,7 @@ const filterRRouteByANodeTW = async (req, res) => {
             }
         }
     } catch (error) {
-        console.log(error)
+        // console.log(error)
         logDebugInfo('error', 'filter_rroutes_tw', 'rider_route', error.message, error.stack);
         res.status(500).json({ message: "Server Error " + error.message });
     }
@@ -151,7 +157,7 @@ prepareBulkData = async (fileBuffer) => {
             }); // push the data as dict in list
         return { status: 200, data: results }; //return data
     } catch (error) {
-        console.log(error)
+        // console.log(error)
         logDebugInfo('error', 'prepare_bulk_data', '', error.message, error.stack);
         return { status: 500, message: "Server Error " + error.message };
     }
@@ -206,7 +212,7 @@ const bulkImportRiderRoutes = async (req, res) => {
         }
         return res.sendStatus(200);
     } catch (error) {
-        console.log(error);
+        // console.log(error);
     }
 }
 

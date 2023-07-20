@@ -6,7 +6,7 @@ const moment = require('moment');
 require('moment-timezone');
 
 const { logDebugInfo } = require('../utilities/logger');
-const { queryCreate, queryFilter, modifyProfile, queryRemove, queryAll, purgeRoutes, queryBatchInsert, queryInsertPic, queryDistinctRoutes, queryDeleteRoutesByTag } = require('../utilities/query');
+const { queryCreate, queryFilter, modifyProfile, queryRemove, queryAll, deleteWhereById, queryBatchInsert, queryInsertPic, queryDistinctRoutes, queryDeleteRoutesByTag } = require('../utilities/query');
 
 
 // create rider profile takes rider details as dict object and inserts into database
@@ -158,7 +158,7 @@ const deleteRiderRoute = async (req, res) => {
         if (!rRouteId) { // validate route id 
             res.status(400).json({ message: "Invalid Data" }) // return if error
         } else {
-            const retRes = await purgeRoutes('rroutes', rRouteId); // execute fetch query
+            const retRes = await deleteWhereById('rroutes', rRouteId); // execute fetch query
 
             if (retRes.status != 400) {
                 res.sendStatus(retRes.status); // if no error occured return Ok
