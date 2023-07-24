@@ -463,7 +463,6 @@ class NodeAdmin {
         }
     }
 
-
     getLogsList = async (req, res) => {
         fs.readdir("./utilities/logfiles/")
             .then((files) => {

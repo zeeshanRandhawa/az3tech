@@ -31,11 +31,10 @@ const databaseManagement = require('./routes/databaseManagement');
 const { createRiderProfile, searchRiders, patchRider, deleteRider, listRiders, deleteRiderRoute, batchImportRiders, listRiderRoutes, uploadRiderProfilePic, getRRouteTags, filterRRouteByTags, deleteRRouteByTags } = require('./routes/riderAdmin');
 const { listDrivers, createDriverProfile, searchDrivers, patchDriver, deleteDriver, deleteDriverRoute, batchImportDrivers, listDriverRoutes, uploadDriverProfilePic, getDRouteTags, filterDRouteByTags, deleteDRouteByTags } = require('./routes/driverAdmin');
 const { createRiderRoute, filterRRouteByANodeTW, listRRouteNodes, bulkImportRiderRoutes } = require('./routes/riderRouteAdmin');
-const { createDriverRoute, importDriverTransitScheduleRoutes, filterDRouteByDNodeTW, listDRouteNodes } = require('./routes/driverRouteAdmin');
+const { batchImportDriverRoutes, importDriverTransitScheduleRoutes, filterDRouteByDNodeTW, listDRouteNodes } = require('./routes/driverRouteAdmin');
 const { getpageCount } = require('./utilities/utilities');
 const { isAuthenticated, isAdmin } = require('./routes/middleware');
 const NodeAdmin = require('./routes/nodeAdmin')
-
 
 const nodeAdmin = new NodeAdmin(new Server(server, {
   cors: {
@@ -84,7 +83,7 @@ app.post('/api/v1/rroutes/bulkimport', upload, bulkImportRiderRoutes);
 app.post('/api/v1/driver/batchimport', isAuthenticated, upload, batchImportDrivers);// batch import drivers using csv file
 
 app.post('/api/v1/rider/route', isAuthenticated, createRiderRoute); // batch import riders using csv file
-app.post('/api/v1/driver/route', isAuthenticated, createDriverRoute);// batch import drivers using csv file
+app.post('/api/v1/driver/route/import/batch', isAuthenticated, upload, batchImportDriverRoutes);// batch import drivers using csv file
 
 app.post('/api/v1/user/login', userLogin);// authenticate admin
 app.get('/api/v1/admin/logout', isAuthenticated, adminLogout);// logout admin

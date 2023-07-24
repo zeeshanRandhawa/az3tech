@@ -1,30 +1,153 @@
-
 const { queryInsertDriverRoute, queryBatchInsertTransitRoute, queryDRoutesFilter, queryAll, findPointsOfInterestBetweenPolygon, qGetWaypointDistance, updateRouteIntermediateNodes } = require('../utilities/query');
 const { logDebugInfo } = require('../utilities/logger');
-const { getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, formatNodeData } = require('../utilities/utilities')
+const { getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, formatNodeData } = require('../utilities/utilities');
+const { destination } = require('@turf/turf');
 
-const createDriverRoute = async (req, res) => {
+
+const prepareMetaBatchData = (fileData) => {
     try {
-        if (!req.body.row || Object.keys(req.body.row).length < 10 || (Object.keys(req.body.row).filter(col_name => !['droute_name', 'origin_node', 'destination_node', 'departure_time', 'departure_flexibility', 'driver_id', 'capacity', 'max_wait', 'fixed_route', 'droute_dbm_tag'].includes(col_name))).length != 0) {
-            return res.status(400).json({ message: 'Invalid Data' });
-        } else {
-            // const driverRouteData = { ...req.body.row, "droute_dbm_tag": req.body.tag };
-            const driverRouteData = req.body.row;
-            const qRes = await queryInsertDriverRoute(driverRouteData); // query routes with generic function filter by tags
-            if (qRes.status == 201) {
-                res.sendStatus(201);
-            } else {
-                res.status(qRes.status).json({ message: qRes.data }); // error handling
+        const routeGroup = {}
+        for (let line of fileData) {
+            if (line.trim() !== '') {
+                const [droute_name, origin_node, destination_node, departure_time, departure_flexibility, driver_id, capacity, max_wait, fixed_route, droute_dbm_tag] = line.split(',');
+
+                if (!Object.keys(routeGroup).includes(droute_name)) {
+                    routeGroup[droute_name] = { origin_node: parseInt(origin_node, 10), destination_node: null, arrival_time: null, departure_time: departure_time, capacity: capacity, max_wait: max_wait, status: "NEW", driver_id: driver_id, droute_dbm_tag: droute_dbm_tag, droute_name: droute_name, departure_flexibility: departure_flexibility, scheduled_weekdays: null, intermediateNodes: null, fixed_route: fixed_route === '1' ? true : false, route_nodes: [] }
+                    routeGroup[droute_name].route_nodes.push({ origin_node: parseInt(origin_node, 10), destination_node: parseInt(destination_node, 10) });
+                } else {
+                    routeGroup[droute_name].route_nodes.push({ origin_node: parseInt(origin_node, 10), destination_node: parseInt(destination_node, 10) });
+                    routeGroup[droute_name].destination_node = destination_node
+                }
             }
-        }
+        };
+        return { status: 200, data: routeGroup };
     } catch (error) {
+        console.log(error)
+
+        return { status: 500, message: "Server Error " + error.message };
+    }
+}
+
+const generateDrouteNodeFromDroute = async (routeNodesMeta) => {
+    routeNodesMeta = await Promise.all(routeNodesMeta.map(async (rNodeMeta) => {
+        if (rNodeMeta.fixed_route) {
+            checkRouteNodesContinuty(rNodeMeta.route_nodes)
+            console.log("\n\n")
+            rNodeMeta = await Promise.all(rNodeMeta.route_nodes.map(async (rNode, index) => {
+                if (index === 0) {
+
+                } else {
+                }
+                return rNode;
+            }));
+            return rNodeMeta;
+        }
+    }));
+}
+
+
+
+
+const checkRouteNodesContinuty = (rNodes) => {
+
+    const originNodeList = rNodes.map(rNode => rNode.origin_node);
+    const destinationNodeList = rNodes.map(rNode => rNode.destination_node);
+
+    let actualOriginNodes = [];
+    let actualDestinationNodes = [];
+
+    rNodes.forEach((rNode) => {
+        if (destinationNodeList.filter(item => item !== rNode.origin_node).length === destinationNodeList.length) {
+            actualOriginNodes.push(rNode.origin_node)
+        }
+        if (originNodeList.filter(item => item !== rNode.destination_node).length === originNodeList.length) {
+            actualDestinationNodes.push(rNode.destination_node)
+        }
+    });
+    if (originNodeList.length == 1 && destinationNodeList.length == 1) {
+        return true;
+    }
+    return false;
+}
+
+function sortAndReorderList(list) {
+    function reorderList(list, startNode) {
+        const reorderedList = [];
+
+        let nextNode = startNode;
+
+        while (list.length > 0) {
+            const nextIndex = list.findIndex((item) => item.origin_node === nextNode);
+            if (nextIndex === -1) {
+                break;
+            }
+
+            const nextDict = list.splice(nextIndex, 1)[0];
+            reorderedList.push(nextDict);
+            nextNode = nextDict.destination_node;
+        }
+
+        return reorderedList;
+    }
+
+    // Sort the list initially based on the origin_node and destination_node.
+    const sortedList = list.sort((a, b) => {
+        if (a.origin_node !== b.destination_node) {
+            return a.origin_node.localeCompare(b.destination_node);
+        }
+        return a.destination_node.localeCompare(b.origin_node);
+    });
+
+    // Find the starting node based on the sorted list.
+    const startNode = sortedList[0].origin_node;
+
+    // Reorder the list based on the starting node.
+    const reorderedList = reorderList(sortedList, startNode);
+
+    return reorderedList;
+}
+
+
+
+const batchImportDriverRoutes = async (req, res) => {
+    try {
+        if (!req.files[0]) { // validate if file uploaded
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+        if (!(['text/csv', 'application/vnd.ms-excel'].includes(req.files[0].mimetype))) { // check if file mimetype is csv
+            return res.status(400).json({ message: 'Unsupported file type' });
+        }
+        const header = req.files[0].buffer
+            .toString() // convert buffer to string
+            .split('\r\n') // split each line of string
+            .slice(0, 1)[0] // trunc first line as it is header containing columns)
+            .split(',');
+
+
+        if (header.length != 10 ||
+            (header.filter(col_name => !['droute_name', 'origin_node', 'destination_node', 'departure_time', 'departure_flexibility', 'driver_id', 'capacity', 'max_wait', 'fixed_route', 'droute_dbm_tag'
+            ].includes(col_name))).length != 0) {
+            return res.status(400).json({ message: 'Invalid column length' });
+        }
+
+        const riderRoutesMetaBatchData = prepareMetaBatchData(req.files[0].buffer.toString().split('\r\n').slice(1));
+
+        if (riderRoutesMetaBatchData.status == 200) {
+
+            const generatedDrouteNodes = generateDrouteNodeFromDroute(Object.values(riderRoutesMetaBatchData.data));
+            // console.log(riderRoutesMetaBatchData.data['Morgan-Alameda'].route_nodes[0]);
+        }
+
+        res.sendStatus(200)
+
+
+    } catch (error) {
+        console.log(error)
         logDebugInfo('error', 'batch_insert', 'drivers_route', error.message, error.stack);
         res.status(500).json({ message: "Server Error " + error.message });
     }
 
 }
-
-
 
 // take file buffer
 const prepareBulkData = async (fileBuffer, scheduled_wd, schedule_start, schedule_end) => {
@@ -48,8 +171,6 @@ const prepareBulkData = async (fileBuffer, scheduled_wd, schedule_start, schedul
         return { status: 500, message: "Server Error " + error.message };
     }
 }
-
-
 
 const importDriverTransitScheduleRoutes = async (req, res) => {
     try {
@@ -194,7 +315,6 @@ const filterDRouteByDNodeTW = async (req, res) => {
     }
 }
 
-
 const listDRouteNodes = async (req, res) => {
     try {
         if (!req.query.routeId) {
@@ -213,5 +333,4 @@ const listDRouteNodes = async (req, res) => {
     }
 }
 
-
-module.exports = { createDriverRoute, importDriverTransitScheduleRoutes, filterDRouteByDNodeTW, listDRouteNodes };
+module.exports = { batchImportDriverRoutes, importDriverTransitScheduleRoutes, filterDRouteByDNodeTW, listDRouteNodes };

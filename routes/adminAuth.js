@@ -59,7 +59,7 @@ const userLogin = async (req, res) => {
             if (result) {
                 const session_token = await (crypto.randomBytes(32)).toString('hex'); // generate new session cooki (need optimization check for duplicate cookie)
                 await res.cookie('admin_cookie', session_token, {
-                    maxAge: 3600000,
+                    maxAge: 3600000 * 6,
                     // httpOnly: true, //need to turn these on
                     // secure: true,
                 });
