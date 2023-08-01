@@ -11,10 +11,11 @@ const getpageCount = async (req, res) => {
   try {
     const routeTags = (req.query.tagsList != null && req.query.tagsList != '') ? req.query.tagsList.split(',') : null;
     const searchName = (req.query.name != null && req.query.name != '') ? req.query.name : null;
+    const searchAddress = (req.query.address != null && req.query.address != '') ? req.query.address : null;
     if (!req.query.tableName) {
       return res.status(400).json({ message: 'Invalid Data' });
     } else {
-      const countRes = await queryTableCount(req.query.tableName, req.query.id, routeTags, searchName);
+      const countRes = await queryTableCount(req.query.tableName, req.query.id, routeTags, searchName, searchAddress);
       if (countRes.status == 200) {
         res.status(200).json({ "pageCount": countRes.data });
       } else {
@@ -250,8 +251,23 @@ async function fetchCoordinatesDataFromApi(url, i, retryDelay) {
 }
 
 
-
-
+async function fetchDistanceDurationFromCoordinates(url, retryDelay = 100) {
+  try {
+    const response = await axios.get(url);
+    if (await response.status == 200) {
+      r_data = await response.data;
+      if (r_data.routes.length > 0) {
+        return { distance: await r_data.routes[0].distance, duration: await r_data.routes[0].duration };
+      }
+      return { distance: null, duration: null };
+    } else {
+      throw new Error();
+    }
+  } catch (error) {
+    await new Promise(resolve => setTimeout(resolve, retryDelay));
+    return await fetchDistanceDurationFromCoordinates(url, retryDelay + 100);
+  }
+}
 
 
 async function fetchCoordinatesDataFromApiGMap(address, i, retryDelay) {
@@ -277,7 +293,75 @@ async function fetchCoordinatesDataFromApiGMap(address, i, retryDelay) {
   }
 }
 
-module.exports = { getpageCount, formatNodeData, hashPassword, getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints, fetchCoordinatesDataFromApi };
+
+// return very first node and last node in route
+// if no data returned or more than 2 nodes returned then either origin node or destination node is not unique
+const getOrigDestNode = (rNodes) => {
+  // extract destinct nodes
+  const originNodeList = rNodes.map(rNode => rNode.origin_node);
+  const destinationNodeList = rNodes.map(rNode => rNode.destination_node);
+
+  // contain first and last node
+  let actualOriginNodes = [];
+  let actualDestinationNodes = [];
+
+
+  // take node from origin filter from destination will get origin node that is unique adn vice versa
+  rNodes.forEach((rNode) => {
+    if (destinationNodeList.filter(item => item !== rNode.origin_node).length === destinationNodeList.length) {
+      actualOriginNodes.push(rNode.origin_node)
+    }
+    if (originNodeList.filter(item => item !== rNode.destination_node).length === originNodeList.length) {
+      actualDestinationNodes.push(rNode.destination_node)
+    }
+  });
+
+
+  // if length is not exactly one return null
+  if (actualOriginNodes.length != 1 || actualDestinationNodes.length != 1) {
+    return { origNode: null, destNode: null };
+  }
+  // else return data
+  return { origNode: actualOriginNodes[0], destNode: actualDestinationNodes[0] };
+
+  // if (actualOriginNodes.length == 1 && actualDestinationNodes.length == 1) {
+  //     return false;
+  // }
+  // return true;
+}
+
+// sort route nodes data by dest of 1st and orig of 2nd
+// take route node list and satrting origin node
+function sortRouteNodeList(routeNodes, startOrigNode) {
+  // store ordered list
+  const reorderedList = [];
+
+  // satrt from origin node
+  let nextNode = startOrigNode;
+
+
+  // if length of routeNodes is not 0 
+  while (routeNodes.length > 0) {
+    // it will always give origin index 
+    const nextIndex = routeNodes.findIndex((node) => node.origin_node === nextNode);
+    if (nextIndex === -1) {
+      break;
+    }
+
+    // splite the pair and add to ordered list
+    const nextDict = routeNodes.splice(nextIndex, 1)[0];
+
+    reorderedList.push(nextDict);
+
+    // change reference to dest node of first pair
+    nextNode = nextDict.destination_node;
+  }
+
+  return reorderedList;
+
+}
+
+module.exports = { sortRouteNodeList, getOrigDestNode, getpageCount, formatNodeData, hashPassword, getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints, fetchCoordinatesDataFromApi, fetchDistanceDurationFromCoordinates };
 
 // 37.79103509151187, -122.42789800130387
 // 37.74041824562184, -122.46978337728044

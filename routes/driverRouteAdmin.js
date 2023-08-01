@@ -1,336 +1,530 @@
-const { queryInsertDriverRoute, queryBatchInsertTransitRoute, queryDRoutesFilter, queryAll, findPointsOfInterestBetweenPolygon, qGetWaypointDistance, updateRouteIntermediateNodes } = require('../utilities/query');
+const { getNodeCoordinates, queryDRoutesFilter, queryAll, findPointsOfInterestBetweenPolygon, qGetWaypointDistance, updateRouteIntermediateNodes, qBatchInsertDriverRoutes } = require('../utilities/query');
 const { logDebugInfo } = require('../utilities/logger');
-const { getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, formatNodeData } = require('../utilities/utilities');
-const { destination } = require('@turf/turf');
+const { sortRouteNodeList, getOrigDestNode, getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, formatNodeData, fetchDistanceDurationFromCoordinates } = require('../utilities/utilities');
+const moment = require('moment');
+const { readFile, writeFile } = require('node:fs/promises');
+const { fork } = require('child_process');
 
 
-const prepareMetaBatchData = (fileData) => {
-    try {
-        const routeGroup = {}
-        for (let line of fileData) {
-            if (line.trim() !== '') {
-                const [droute_name, origin_node, destination_node, departure_time, departure_flexibility, driver_id, capacity, max_wait, fixed_route, droute_dbm_tag] = line.split(',');
+class DriverRoute {
+    constructor(io) {
+        this.processList = {}
+        this.io = io
+        this.initializeSocket();
+    }
 
-                if (!Object.keys(routeGroup).includes(droute_name)) {
-                    routeGroup[droute_name] = { origin_node: parseInt(origin_node, 10), destination_node: null, arrival_time: null, departure_time: departure_time, capacity: capacity, max_wait: max_wait, status: "NEW", driver_id: driver_id, droute_dbm_tag: droute_dbm_tag, droute_name: droute_name, departure_flexibility: departure_flexibility, scheduled_weekdays: null, intermediateNodes: null, fixed_route: fixed_route === '1' ? true : false, route_nodes: [] }
-                    routeGroup[droute_name].route_nodes.push({ origin_node: parseInt(origin_node, 10), destination_node: parseInt(destination_node, 10) });
-                } else {
-                    routeGroup[droute_name].route_nodes.push({ origin_node: parseInt(origin_node, 10), destination_node: parseInt(destination_node, 10) });
-                    routeGroup[droute_name].destination_node = destination_node
+    initializeSocket() {
+        try {
+            this.io.on('connect', (socket) => {
+                socket.on('sessionTokenDriverRouteBatch', async (message) => {
+                    const email = await queryAll('sessions', 'session_token', message, null, ['email']);
+                    if (email.data[0].email in this.processList) {
+                        this.processList[email.data[0].email].sockets.push(socket);
+                    } else {
+                        this.processList[email.data[0].email] = { message: '', childProcess: null, op_type: '', status: '', sockets: [socket] };
+                    }
+                });
+
+                socket.on('disconnect', () => {
+                    for (let key in this.processList) {
+                        this.processList[key].sockets = this.processList[key].sockets.filter(sckt => sckt.id != socket.id);
+                    }
+                });
+                socket.on("poolStatusDriverRouteBatch", async (message) => {
+                    const email = await queryAll('sessions', 'session_token', message, null, ['email']);
+                    if (email.data[0].email in this.processList) {
+                        let currentMessage = this.processList[email.data[0].email].message
+                        socket.emit("uploadStatusDriverRouteBatch", { 'message': currentMessage })
+                    }
+                });
+            });
+        } catch (error) {
+        }
+    }
+
+    startChildProcess(authToken) {
+        try {
+            const forked = fork('./utilities/driverroutebatch.js', [authToken]);
+
+            forked.on('close', (code) => {
+                const currentPid = forked.pid;
+                let keyToDelete = null;
+                for (let key in this.processList) {
+                    if (this.processList[key].childProcess.pid == currentPid) {
+                        keyToDelete = key;
+                        this.processList[key].sockets.forEach((sckt) => {
+                            sckt.emit('uploadStatusDriverRouteBatch', { 'message': 'completed' });
+                        });
+                    }
+                }
+                if (keyToDelete != null) {
+                    delete this.processList[keyToDelete];
+                }
+            });
+
+            forked.on('error', (err) => {
+            });
+
+            forked.on('message', (message) => {
+                const currentPid = forked.pid;
+                if (message.split(':')[0] == 'status') {
+                    for (let key in this.processList) {
+                        if (this.processList[key].childProcess.pid == currentPid) {
+                            this.processList[key].sockets.forEach((sckt) => {
+                                sckt.emit('uploadStatusDriverRouteBatch', { 'message': message.split(':')[1] });
+                            });
+                            this.processList[key].message = message.split(':')[1];
+                        }
+                    }
+                }
+            });
+
+
+            return forked;
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    isProcessRunning = async (token, op_type) => {
+        try {
+            let flag = false;
+            const email = await queryAll('sessions', 'session_token', token, null, ['email']);
+            for (let key in this.processList) {
+                if (key == email.data[0].email) {
+                    if (this.processList[key].op_type == op_type && (this.processList[key].status != 'complete' || this.processList[key].status != 'error')) {
+                        flag = true
+                    }
                 }
             }
-        };
-        return { status: 200, data: routeGroup };
-    } catch (error) {
-        console.log(error)
-
-        return { status: 500, message: "Server Error " + error.message };
+            return flag;
+        } catch (error) {
+        }
     }
-}
 
-const generateDrouteNodeFromDroute = async (routeNodesMeta) => {
-    routeNodesMeta = await Promise.all(routeNodesMeta.map(async (rNodeMeta) => {
-        if (rNodeMeta.fixed_route) {
-            checkRouteNodesContinuty(rNodeMeta.route_nodes)
-            console.log("\n\n")
-            rNodeMeta = await Promise.all(rNodeMeta.route_nodes.map(async (rNode, index) => {
-                if (index === 0) {
 
-                } else {
+    writeJsonToFile = async (jsonStr) => {
+        await writeFile(`./utilities/uploadfiles/driverroutebatch.json`, jsonStr, 'utf8', (err) => {
+            if (err) {
+                return;
+            }
+        });
+    }
+
+
+    prepareDriverRouteBatchMetaData = (fileData) => {
+        try {
+            // group routes by name
+            const routeGroup = {}
+            for (let line of fileData) { // iterate over data
+                if (line.trim() !== '') { //excluse empty line
+                    // take data from line after splitting
+                    let [droute_name, origin_node, destination_node, departure_time, departure_flexibility, driver_id, capacity, max_wait, fixed_route, droute_dbm_tag] = line.split(',');
+
+                    // correct format of date time to be used in time calculation for arrival and departure time
+                    departure_time = moment.utc(departure_time, 'M/D/YYYY H:mm').format('YYYY-MM-DD HH:mm')
+
+                    // if droute_name not in list add it and its corresponding data
+                    if (!Object.keys(routeGroup).includes(droute_name)) {
+                        // holds data of droute table for sinfle entry
+                        // status: NEW
+                        //contains route_nodes dict
+                        // meta route node dat is in route_nodes.initial 
+                        // calculated route_nodes will go in route_nodes.final
+                        routeGroup[droute_name] = { origin_node: null, destination_node: null, departure_time: departure_time, capacity: capacity, max_wait: max_wait, status: "NEW", driver_id: driver_id, droute_dbm_tag: droute_dbm_tag, droute_name: droute_name, departure_flexibility: departure_flexibility, scheduled_weekdays: null, intermediate_nodes_list: null, fixed_route: fixed_route === '1' ? true : false, route_nodes: { initial: [], final: [] } }
+
+                        // of it is first index then need to manual;y set up initial adn final
+                        routeGroup[droute_name].route_nodes.initial.push({ origin_node: parseInt(origin_node, 10), destination_node: parseInt(destination_node, 10) });
+                        routeGroup[droute_name].route_nodes.final = []
+                    } else {
+                        // else insert nodes pairs
+                        routeGroup[droute_name].route_nodes.initial.push({ origin_node: parseInt(origin_node, 10), destination_node: parseInt(destination_node, 10) });
+                        // routeGroup[droute_name].destination_node = destination_node
+                    }
                 }
-                return rNode;
-            }));
-            return rNodeMeta;
+            };
+            return { status: 200, data: routeGroup };
+        } catch (error) {
+            console.log(error)
+
+            return { status: 500, message: "Server Error " + error.message };
         }
-    }));
-}
-
-
-
-
-const checkRouteNodesContinuty = (rNodes) => {
-
-    const originNodeList = rNodes.map(rNode => rNode.origin_node);
-    const destinationNodeList = rNodes.map(rNode => rNode.destination_node);
-
-    let actualOriginNodes = [];
-    let actualDestinationNodes = [];
-
-    rNodes.forEach((rNode) => {
-        if (destinationNodeList.filter(item => item !== rNode.origin_node).length === destinationNodeList.length) {
-            actualOriginNodes.push(rNode.origin_node)
-        }
-        if (originNodeList.filter(item => item !== rNode.destination_node).length === originNodeList.length) {
-            actualDestinationNodes.push(rNode.destination_node)
-        }
-    });
-    if (originNodeList.length == 1 && destinationNodeList.length == 1) {
-        return true;
     }
-    return false;
-}
 
-function sortAndReorderList(list) {
-    function reorderList(list, startNode) {
-        const reorderedList = [];
+    batchImportDriverRoutes = async (req, res) => {
+        try {
+            if (await this.isProcessRunning(req.headers.cookies, 'batchInsertNodes')) {
+                return res.status(400).json({ message: 'Another import process alreay running' });
+            }
+            if (!req.files[0]) { // validate if file uploaded
+                return res.status(400).json({ message: 'No file uploaded' });
+            }
+            if (!(['text/csv', 'application/vnd.ms-excel'].includes(req.files[0].mimetype))) { // check if file mimetype is csv
+                return res.status(400).json({ message: 'Unsupported file type' });
+            }
+            const header = req.files[0].buffer
+                .toString() // convert buffer to string
+                .split('\r\n') // split each line of string
+                .slice(0, 1)[0] // trunc first line as it is header containing columns)
+                .split(',');
 
-        let nextNode = startNode;
 
-        while (list.length > 0) {
-            const nextIndex = list.findIndex((item) => item.origin_node === nextNode);
-            if (nextIndex === -1) {
-                break;
+            if (header.length != 10 ||
+                (header.filter(col_name => !['droute_name', 'origin_node', 'destination_node', 'departure_time', 'departure_flexibility', 'driver_id', 'capacity', 'max_wait', 'fixed_route', 'droute_dbm_tag'
+                ].includes(col_name))).length != 0) {
+                return res.status(400).json({ message: 'Invalid column length' });
             }
 
-            const nextDict = list.splice(nextIndex, 1)[0];
-            reorderedList.push(nextDict);
-            nextNode = nextDict.destination_node;
-        }
+            //prepare meta data for nodes generation
+            // it takes string of file buffer and splits the variables
+            let riderRoutesMetaBatchData = this.prepareDriverRouteBatchMetaData(req.files[0].buffer.toString().split('\r\n').slice(1));
 
-        return reorderedList;
-    }
+            if (riderRoutesMetaBatchData.status == 200) {
 
-    // Sort the list initially based on the origin_node and destination_node.
-    const sortedList = list.sort((a, b) => {
-        if (a.origin_node !== b.destination_node) {
-            return a.origin_node.localeCompare(b.destination_node);
-        }
-        return a.destination_node.localeCompare(b.origin_node);
-    });
+                await this.writeJsonToFile(JSON.stringify({ 'routeNodes': riderRoutesMetaBatchData.data }));
+                const email = await queryAll('sessions', 'session_token', req.headers.cookies, null, ['email']);
 
-    // Find the starting node based on the sorted list.
-    const startNode = sortedList[0].origin_node;
+                const childP = this.startChildProcess(req.headers.cookies);
 
-    // Reorder the list based on the starting node.
-    const reorderedList = reorderList(sortedList, startNode);
-
-    return reorderedList;
-}
-
-
-
-const batchImportDriverRoutes = async (req, res) => {
-    try {
-        if (!req.files[0]) { // validate if file uploaded
-            return res.status(400).json({ message: 'No file uploaded' });
-        }
-        if (!(['text/csv', 'application/vnd.ms-excel'].includes(req.files[0].mimetype))) { // check if file mimetype is csv
-            return res.status(400).json({ message: 'Unsupported file type' });
-        }
-        const header = req.files[0].buffer
-            .toString() // convert buffer to string
-            .split('\r\n') // split each line of string
-            .slice(0, 1)[0] // trunc first line as it is header containing columns)
-            .split(',');
-
-
-        if (header.length != 10 ||
-            (header.filter(col_name => !['droute_name', 'origin_node', 'destination_node', 'departure_time', 'departure_flexibility', 'driver_id', 'capacity', 'max_wait', 'fixed_route', 'droute_dbm_tag'
-            ].includes(col_name))).length != 0) {
-            return res.status(400).json({ message: 'Invalid column length' });
-        }
-
-        const riderRoutesMetaBatchData = prepareMetaBatchData(req.files[0].buffer.toString().split('\r\n').slice(1));
-
-        if (riderRoutesMetaBatchData.status == 200) {
-
-            const generatedDrouteNodes = generateDrouteNodeFromDroute(Object.values(riderRoutesMetaBatchData.data));
-            // console.log(riderRoutesMetaBatchData.data['Morgan-Alameda'].route_nodes[0]);
-        }
-
-        res.sendStatus(200)
-
-
-    } catch (error) {
-        console.log(error)
-        logDebugInfo('error', 'batch_insert', 'drivers_route', error.message, error.stack);
-        res.status(500).json({ message: "Server Error " + error.message });
-    }
-
-}
-
-// take file buffer
-const prepareBulkData = async (fileBuffer, scheduled_wd, schedule_start, schedule_end) => {
-    try {
-        const results = []; // list to store file data structure
-        await fileBuffer
-            .toString() // convert buffer to string
-            .split('\n') // split each line of string
-            .slice(1) // trunc first line as it is header containing columns
-            .forEach((line) => {
-                const [droute_dbm_tag, droute_name, origin_node, destination_node, arrival_time, departure_time, driver_id, capacity] = line.split(','); // for each line split strig by , delimeter
-                if (scheduled_wd == '') {
-                    results.push({ droute_dbm_tag: droute_dbm_tag, droute_name: droute_name, origin_node: origin_node, destination_node: destination_node, arrival_time: arrival_time, departure_time: departure_time, driver_id: driver_id, capacity: capacity, fixed_route: 1, schedule_start: schedule_start, schedule_end: schedule_end });
+                if (email.data[0].email in this.processList) {
+                    this.processList[email.data[0].email].childProcess = childP;
+                    this.processList[email.data[0].email].status = 'running'
                 } else {
-                    results.push({ droute_dbm_tag: droute_dbm_tag, droute_name: droute_name, origin_node: origin_node, destination_node: destination_node, arrival_time: arrival_time, departure_time: departure_time, driver_id: driver_id, capacity: capacity, fixed_route: 1, scheduled_weekdays: scheduled_wd });
+                    this.processList[email.data[0].email] = { message: '', childProcess: childP, op_type: '', status: 'running', sockets: [] };
                 }
-            }); // push the data as dict in list
-        return { status: 200, data: results }; //return data
-    } catch (error) {
-        logDebugInfo('error', 'prepare_bulk_data', '', error.message, error.stack);
-        return { status: 500, message: "Server Error " + error.message };
-    }
-}
 
-const importDriverTransitScheduleRoutes = async (req, res) => {
-    try {
-        // console.log(typeof (req.body.scheduled_weekdays), req.body.scheduled_weekdays);
+                this.processList[email.data[0].email].childProcess = childP;
+                this.processList[email.data[0].email].status = 'running'
 
-        if (!req.body.scheduled_weekdays && !req.body.scheduled_start && !req.body.scheduled_end) {
-            return res.status(400).json({ message: 'Invalid Data' });
-        }
-        if (!req.files[0]) { // validate if file uploaded
-            return res.status(400).json({ message: 'No file uploaded' });
-        }
-        if (!(['text/csv', 'application/vnd.ms-excel'].includes(req.files[0].mimetype))) { // check if file mimetype is csv
-            return res.status(400).json({ message: 'Unsupported file type' });
-        }
-        const header = req.files[0].buffer
-            .toString() // convert buffer to string
-            .split('\n') // split each line of string
-            .slice(0, 1)[0] // trunc first line as it is header containing columns)
-            .split(',');
-
-        if (header.length != 8 ||
-            (header.filter(col_name => !['droute_dbm_tag', 'droute_name', 'origin_node', 'destination_node', 'arrival_time', 'departure_time', 'driver_id', 'capacity'].includes(col_name))).length != 0) {
-            return res.status(400).json({ message: 'Invalid column length' });
-        }
-        const batchTransitData = await prepareBulkData(req.files[0].buffer, req.body.scheduled_weekdays, req.body.scheduled_start, req.body.scheduled_end); // prepare data to insert
-
-        if (batchTransitData.status == 200) {
-            const retRes = await queryBatchInsertTransitRoute(batchTransitData.data); // execute batch query if data prepared
-
-            if (retRes.status != 500) {
-                res.sendStatus(retRes.status); // if no error occured then return 200
+                res.sendStatus(200);
             } else {
-                res.status(retRes.status).json({ message: retRes.data ? retRes.data : null }); // else return log file
+                return res.status(500).json({ message: "Internal server error" })
             }
-        } else {
-            res.status(batchTransitData.status).json({ message: batchTransitData.data }); // batch data processing failed return error
-        }
-    } catch (error) {
-        logDebugInfo('error', 'batch_transit_insert', 'driver_routes', error.message, error.stack);
-        res.status(500).json({ message: "Server Error " + error.message });
-    }
-}
+            // if (riderRoutesMetaBatchData.status == 200) {
+            //     riderRoutesMetaBatchData = riderRoutesMetaBatchData.data;
 
-const filterDRouteByDNodeTW = async (req, res) => {
-    try {
-        if (!req.query.nodeId || !req.query.nodeStartArrivalTime || !req.query.nodeEndArrivalTime) {
-            return res.status(400).json({ message: 'Invalid Data' });
-        } else {
-            const qRes = await queryDRoutesFilter({ "nodeId": req.query.nodeId, "startTimeWindow": req.query.nodeStartArrivalTime, "endTimeWindow": req.query.nodeEndArrivalTime }); // query routes with generic function filter by tags
+            //     // if batch Meta Data available then calculate route nodes
+            //     let generatedDrouteNodes = await generateDrouteNodeFromDrouteBatch(Object.values(riderRoutesMetaBatchData), req.headers.cookies);
 
-            // for (let rroute of qRes.data) {
-            //     const routeInfo = await getRouteInfo([rroute.origin_node.long, rroute.origin_node.lat], [rroute.destination_node.long, rroute.destination_node.lat]);
-            //     let waypointNodes = [];
-            //     for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length - 1; i++) {
-            //         let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
-            //         let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
-            //         waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
-            //     }
-            //     rroute.WaypointsGIS = waypointNodes;
-            //     rroute.geometry = routeInfo.routes[0].geometry.coordinates;
+
+            //     // assert if routeNodes are correct in length
+            //     generatedDrouteNodes = generatedDrouteNodes.map((dRouteNode) => {
+            //         if (dRouteNode.fixed_route && dRouteNode.route_nodes.initial.length == dRouteNode.route_nodes.final.length - 1) {
+            //             return dRouteNode;
+            //         } else if (!dRouteNode.fixed_route && dRouteNode.route_nodes.initial.length + 1 <= dRouteNode.route_nodes.final.length) {
+            //             return dRouteNode
+            //         } else {
+            //             return
+            //         }
+            //     }).filter(Boolean);
+
+            //     await qBatchInsertDriverRoutes(generatedDrouteNodes);
             // }
+            // res.sendStatus(200)
+        } catch (error) {
+            console.log(error)
+            logDebugInfo('error', 'batch_insert', 'drivers_route', error.message, error.stack);
+            res.status(500).json({ message: "Server Error " + error.message });
+        }
 
+    }
 
-            for (let droute of qRes.data) {
+    // take file buffer
+    prepareTransitRouteMetaBatchData = (fileData, scheduled_wd, schedule_start, schedule_end) => {
+        try {
+            const routeGroup = {}
+            for (let line of fileData) { // iterate over data
+                if (line.trim() !== '') { //excluse empty line
+                    let [droute_name, origin_node, destination_node, arrival_time, departure_time, driver_id, capacity, droute_dbm_tag] = line.split(',');
 
-                let waypointNodes = [];
-                let dataPoints = [];
-                dataPoints.push([droute.origin_node.long, droute.origin_node.lat]);
-                dataPoints.push([droute.destination_node.long, droute.destination_node.lat]);
+                    arrival_time = !arrival_time.trim() ? null : moment.utc(arrival_time, 'H:mm');
+                    departure_time = !departure_time.trim() ? null : moment.utc(departure_time, 'H:mm');
 
-                // calculate edges of square polygon
-                // takes two long;lat points
-                // return 4 points of polygon
-                let source = dataPoints[0];
-                let destination = dataPoints[1];
-                dataPoints = findParallelLines(dataPoints);
-
-                // return nodes of interest in polygon
-                let nodesData = await findPointsOfInterestBetweenPolygon(dataPoints);
-
-                //gets osrm route complete details
-                let routeInfo = await getRouteInfo(source, destination);
-                let inter = []
-
-                // const routeInfo = await getRouteInfo([droute.origin_node.long, droute.origin_node.lat], [droute.destination_node.long, droute.destination_node.lat]);
-                for (let j = 0; j < nodesData.data.length; j++) {
-
-                    for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length - 1; i++) {
-
-                        let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
-                        let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
-                        waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
-
-                        let allPoints = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates
-
-                        let calculatedintermediateNode = getDistances(waypointStart, waypointEnd, nodesData.data[j], hasSignificantCurve(allPoints), allPoints);
-
-                        if (calculatedintermediateNode.intercepted == true) {
-                            inter.push(calculatedintermediateNode)
-                            if (Object.keys(nodesData.data[j]).includes('isWaypoint')) {
-                                if (nodesData.data[j].distance > calculatedintermediateNode.distance) {
-                                    nodesData.data[j].distance = calculatedintermediateNode.distance;
-                                }
-                            } else {
-                                nodesData.data[j] = { 'isWaypoint': true, 'distance': calculatedintermediateNode.distance, ...nodesData.data[j] };
-                            }
+                    if (!Object.keys(routeGroup).includes(droute_name)) {
+                        routeGroup[droute_name] = {
+                            origin_node: null, destination_node: null, departure_time: departure_time,
+                            capacity: capacity, status: "NEW", driver_id: driver_id, droute_dbm_tag: droute_dbm_tag, droute_name: droute_name,
+                            intermediate_nodes_list: null, fixed_route: true, route_nodes: { initial: [], final: [] }
+                        }
+                        if (scheduled_wd == '') {
+                            routeGroup[droute_name].schedule_start = schedule_start;
+                            routeGroup[droute_name].schedule_end = schedule_end;
+                        } else {
+                            routeGroup[droute_name].scheduled_weekdays = scheduled_wd;
                         }
 
+                        routeGroup[droute_name].route_nodes.initial.push({
+                            origin_node: parseInt(origin_node, 10), destination_node: parseInt(destination_node, 10),
+                            arrival_time: arrival_time, departure_time: departure_time
+                        });
+                        // routeGroup[droute_name].route_nodes.final = []
+                    } else {
+                        routeGroup[droute_name].route_nodes.initial.push({
+                            origin_node: parseInt(origin_node, 10), destination_node: parseInt(destination_node, 10),
+                            arrival_time: arrival_time, departure_time: departure_time
+                        });
                     }
                 }
-                let intermediateNodes = formatNodeData(nodesData.data, (await qGetWaypointDistance(req.headers.cookies)).data).map((wp_node) => {
-                    if (wp_node.isWaypoint) {
-                        return wp_node;
-                    }
-                }).filter(Boolean);
+            };
+            return { status: 200, data: routeGroup };
+        } catch (error) {
+            console.log(error)
+            return { status: 500, message: "Server Error " + error.message };
+        }
+    }
 
-                droute.intermediate_nodes_list = intermediateNodes.map(iNode => iNode.node_id).join(',');
+    importDriverTransitScheduleRoutes = async (req, res) => {
+        try {
 
-                await updateRouteIntermediateNodes('droutes', droute.intermediate_nodes_list, droute.droute_id);
+            if (!req.body.scheduled_weekdays && (!req.body.scheduled_start && !req.body.scheduled_end)) {
+                return res.status(400).json({ message: 'Invalid Data' });
+            }
+            if (!req.files[0]) { // validate if file uploaded
+                return res.status(400).json({ message: 'No file uploaded' });
+            }
+            if (!(['text/csv', 'application/vnd.ms-excel'].includes(req.files[0].mimetype))) { // check if file mimetype is csv
+                return res.status(400).json({ message: 'Unsupported file type' });
+            }
+            const header = req.files[0].buffer
+                .toString() // convert buffer to string
+                .split('\n') // split each line of string
+                .slice(0, 1)[0] // trunc first line as it is header containing columns)
+                .split(',');
 
-                droute.intermediateNodes = droute.intermediateNodes = intermediateNodes.filter((iNode) => {
-                    return (droute.origin_node.lat != iNode.lat && droute.origin_node.long != iNode.long) && (droute.destination_node.lat != iNode.lat && droute.destination_node.long != iNode.long)
-                });
-                droute.WaypointsGIS = waypointNodes;
-                droute.geometry = routeInfo.routes[0].geometry.coordinates;
+            if (header.length != 8 ||
+                (header.filter(col_name => !['droute_dbm_tag', 'droute_name', 'origin_node', 'destination_node', 'arrival_time', 'departure_time', 'driver_id', 'capacity'].includes(col_name))).length != 0) {
+                return res.status(400).json({ message: 'Invalid column length' });
             }
 
-            if (qRes.status == 200) {
-                if (qRes.data.length == 0) {
-                    res.status(qRes.status).json({ message: "No data found" });
+            const batchTransitMetaData = prepareTransitRouteMetaBatchData(req.files[0].buffer.toString().split('\n').slice(1), req.body.scheduled_weekdays, req.body.scheduled_start, req.body.scheduled_end); // prepare data to insert
+
+            // Object.keys(batchTransitMetaData.data).forEach((q) => {
+            //     console.log(batchTransitMetaData.data[q])
+            //     console.log(batchTransitMetaData.data[q].route_nodes)
+            // })
+
+
+            let finalTransitRoutes = await generateDrouteNodeFromDrouteTransit(Object.values(batchTransitMetaData.data), req.header.cookies);
+
+            finalTransitRoutes = finalTransitRoutes.map((dRouteNode) => {
+                if (dRouteNode.fixed_route && dRouteNode.route_nodes.initial.length == dRouteNode.route_nodes.final.length) {
+                    return dRouteNode;
                 } else {
-                    res.status(qRes.status).json({ routeData: qRes.data });
+                    return
                 }
-            } else {
-                res.status(qRes.status).json({ message: qRes.data }); // error handling
-            }
+            }).filter(Boolean);
+            await qBatchInsertDriverRoutes(finalTransitRoutes);
+
+            res.sendStatus(200)
+        } catch (error) {
+            logDebugInfo('error', 'batch_transit_insert', 'driver_routes', error.message, error.stack);
+            res.status(500).json({ message: "Server Error " + error.message });
         }
-    } catch (error) {
-        // console.log(error)
-        logDebugInfo('error', 'filter_droutes_tw', 'driver_route', error.message, error.stack);
-        res.status(500).json({ message: "Server Error " + error.message });
+    }
+
+    generateDrouteNodeFromDrouteTransit = async (routeNodesMeta, authToken) => {
+        try {
+            // itertae over routeNodesMeta
+            // here we will calculate route_nodes.final from route_nodes.initial
+            routeNodesMeta = (await Promise.all(routeNodesMeta.map(async (rNodeMeta) => {
+                // Now we have the very first orig node and lst destination Node
+                // Have to check if it is true
+                let origDestNode = getOrigDestNode(rNodeMeta.route_nodes.initial);
+
+                if (!origDestNode.origNode || !origDestNode.destNode) {
+                    return;
+                }
+
+                // Sort route nodes at first
+                rNodeMeta.route_nodes.initial = sortRouteNodeList(rNodeMeta.route_nodes.initial, origDestNode.origNode);
+
+                // we have forst and last node of route
+                rNodeMeta.origin_node = origDestNode.origNode;
+
+
+                let departure_time = rNodeMeta.departure_time;
+                let arrival_time = null;
+
+
+                // insert first node as origin node having cum_time adn cum_distance as 0
+                // capacity_used randomly generated
+                let temprouteNode = {
+                    droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: origDestNode.origNode, arrival_time: null,
+                    departure_time: '1970-01-01 '.concat(departure_time.clone().format('HH:mm')), rank: 0, capacity: rNodeMeta.capacity,
+                    capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: 0, cum_time: 0, status: 'ORIGIN'
+                };
+                rNodeMeta.route_nodes.final.push(temprouteNode);
+
+                let cum_time = 0;
+                let cum_distance = 0;
+
+                // itertae over other nodes from initial and calculate route_nodes
+                for (let [index, rNode] of rNodeMeta.route_nodes.initial.slice(1).entries()) {
+                    // get long lat from data base
+                    let origNodeC = (await getNodeCoordinates(rNodeMeta.route_nodes.initial[index].origin_node)).data;
+                    let destNodeC = (await getNodeCoordinates(rNode.destination_node)).data;
+
+                    // calculate distance and duration from api
+                    let calculatedDistDur = await fetchDistanceDurationFromCoordinates(`http://143.110.152.222:5000/route/v1/driving/${origNodeC.long},${origNodeC.lat};${destNodeC.long},${destNodeC.lat}?geometries=geojson&overview=false`);
+
+                    // if dist sur not found then return empty object
+                    if (!calculatedDistDur.distance || !calculatedDistDur.duration) {
+                        return;
+                    }
+
+                    arrival_time = rNode.arrival_time;
+
+                    cum_distance += calculatedDistDur.distance
+                    cum_time += (moment.duration(arrival_time.diff(departure_time))).asMinutes();
+
+                    departure_time = rNode.departure_time;
+
+                    // if last node then status DESTINARION
+                    if (index == rNodeMeta.route_nodes.initial.slice(1).length - 1) {
+                        temprouteNode = {
+                            droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: rNode.origin_node, arrival_time: '1970-01-01 '.concat(rNode.arrival_time.format('HH:mm')),
+                            departure_time: null, rank: index + 1, capacity: rNodeMeta.capacity,
+                            capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: cum_distance, cum_time: cum_time, status: 'DESTINATON'
+                        };
+                        rNodeMeta.destination_node = rNode.origin_node;
+                    } else {
+                        // if intermediate node then status POTENTIAL
+                        temprouteNode = {
+                            droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: rNode.origin_node, arrival_time: '1970-01-01 '.concat(rNode.arrival_time.format('HH:mm')),
+                            departure_time: '1970-01-01 '.concat(rNode.departure_time.format('HH:mm')), rank: index + 1, capacity: rNodeMeta.capacity,
+                            capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: cum_distance, cum_time: cum_time, status: 'POTENTIAL'
+                        };
+                    }
+                    rNodeMeta.route_nodes.final.push(temprouteNode);
+                }
+                return rNodeMeta;
+            }))).filter(Boolean);
+
+            return routeNodesMeta;
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    filterDRouteByDNodeTW = async (req, res) => {
+        try {
+            if (!req.query.nodeId || !req.query.nodeStartArrivalTime || !req.query.nodeEndArrivalTime) {
+                return res.status(400).json({ message: 'Invalid Data' });
+            } else {
+                const qRes = await queryDRoutesFilter({ "nodeId": req.query.nodeId, "startTimeWindow": req.query.nodeStartArrivalTime, "endTimeWindow": req.query.nodeEndArrivalTime }); // query routes with generic function filter by tags
+
+                // for (let rroute of qRes.data) {
+                //     const routeInfo = await getRouteInfo([rroute.origin_node.long, rroute.origin_node.lat], [rroute.destination_node.long, rroute.destination_node.lat]);
+                //     let waypointNodes = [];
+                //     for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length - 1; i++) {
+                //         let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
+                //         let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
+                //         waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
+                //     }
+                //     rroute.WaypointsGIS = waypointNodes;
+                //     rroute.geometry = routeInfo.routes[0].geometry.coordinates;
+                // }
+
+
+                for (let droute of qRes.data) {
+
+                    let waypointNodes = [];
+                    let dataPoints = [];
+                    dataPoints.push([droute.origin_node.long, droute.origin_node.lat]);
+                    dataPoints.push([droute.destination_node.long, droute.destination_node.lat]);
+
+                    // calculate edges of square polygon
+                    // takes two long;lat points
+                    // return 4 points of polygon
+                    let source = dataPoints[0];
+                    let destination = dataPoints[1];
+                    dataPoints = findParallelLines(dataPoints);
+
+                    // return nodes of interest in polygon
+                    let nodesData = await findPointsOfInterestBetweenPolygon(dataPoints);
+
+                    //gets osrm route complete details
+                    let routeInfo = await getRouteInfo(source, destination);
+
+                    // const routeInfo = await getRouteInfo([droute.origin_node.long, droute.origin_node.lat], [droute.destination_node.long, droute.destination_node.lat]);
+                    for (let j = 0; j < nodesData.data.length; j++) {
+
+                        for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length - 1; i++) {
+
+                            let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
+                            let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
+                            waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
+
+                            let allPoints = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates
+
+                            let calculatedintermediateNode = getDistances(waypointStart, waypointEnd, nodesData.data[j], hasSignificantCurve(allPoints), allPoints);
+
+                            if (calculatedintermediateNode.intercepted == true) {
+                                if (Object.keys(nodesData.data[j]).includes('isWaypoint')) {
+                                    if (nodesData.data[j].distance > calculatedintermediateNode.distance) {
+                                        nodesData.data[j].distance = calculatedintermediateNode.distance;
+                                    }
+                                } else {
+                                    nodesData.data[j] = { 'isWaypoint': true, 'distance': calculatedintermediateNode.distance, ...nodesData.data[j] };
+                                }
+                            }
+
+                        }
+                    }
+                    let intermediateNodes = formatNodeData(nodesData.data, (await qGetWaypointDistance(req.headers.cookies)).data).map((wp_node) => {
+                        if (wp_node.isWaypoint) {
+                            return wp_node;
+                        }
+                    }).filter(Boolean);
+
+                    droute.intermediate_nodes_list = intermediateNodes.map(iNode => iNode.node_id).join(',');
+
+                    await updateRouteIntermediateNodes('droutes', droute.intermediate_nodes_list, droute.droute_id);
+
+                    droute.intermediateNodes = intermediateNodes.filter((iNode) => {
+                        return (droute.origin_node.lat != iNode.lat && droute.origin_node.long != iNode.long) && (droute.destination_node.lat != iNode.lat && droute.destination_node.long != iNode.long)
+                    });
+                    droute.WaypointsGIS = waypointNodes;
+                    droute.geometry = routeInfo.routes[0].geometry.coordinates;
+                }
+
+                if (qRes.status == 200) {
+                    if (qRes.data.length == 0) {
+                        res.status(qRes.status).json({ message: "No data found" });
+                    } else {
+                        res.status(qRes.status).json({ routeData: qRes.data });
+                    }
+                } else {
+                    res.status(qRes.status).json({ message: qRes.data }); // error handling
+                }
+            }
+        } catch (error) {
+            // console.log(error)
+            logDebugInfo('error', 'filter_droutes_tw', 'driver_route', error.message, error.stack);
+            res.status(500).json({ message: "Server Error " + error.message });
+        }
+    }
+
+    listDRouteNodes = async (req, res) => {
+        try {
+            if (!req.query.routeId) {
+                return res.status(400).json({ message: 'Invalid Data' });
+            } else {
+                const dRouteNodeList = await queryAll('droutenodes', columnName = 'droute_id', columnvalue = parseInt(req.query.routeId), pagination = req.query.pageNumber); // execute rider fetch query
+                if (dRouteNodeList.status == 200) {
+                    res.status(dRouteNodeList.status).json({ dRouteNodes: dRouteNodeList.data });
+                } else {
+                    res.status(dRouteNodeList.status).json({ message: dRouteNodeList.data }); // error handling
+                }
+            }
+        } catch (error) {
+            logDebugInfo('error', 'query_droute_nodes', 'droutenodes', error.message, error.stack);
+            res.status(500).json({ message: "Server Error " + error.message });
+        }
     }
 }
 
-const listDRouteNodes = async (req, res) => {
-    try {
-        if (!req.query.routeId) {
-            return res.status(400).json({ message: 'Invalid Data' });
-        } else {
-            const dRouteNodeList = await queryAll('droutenodes', columnName = 'droute_id', columnvalue = parseInt(req.query.routeId), pagination = req.query.pageNumber); // execute rider fetch query
-            if (dRouteNodeList.status == 200) {
-                res.status(dRouteNodeList.status).json({ dRouteNodes: dRouteNodeList.data });
-            } else {
-                res.status(dRouteNodeList.status).json({ message: dRouteNodeList.data }); // error handling
-            }
-        }
-    } catch (error) {
-        logDebugInfo('error', 'query_droute_nodes', 'droutenodes', error.message, error.stack);
-        res.status(500).json({ message: "Server Error " + error.message });
-    }
-}
 
-module.exports = { batchImportDriverRoutes, importDriverTransitScheduleRoutes, filterDRouteByDNodeTW, listDRouteNodes };
+module.exports = DriverRoute;
+
+

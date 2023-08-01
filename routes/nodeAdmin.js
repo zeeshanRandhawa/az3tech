@@ -1,5 +1,5 @@
 
-const { findPointsOfInterestBetweenPolygon, queryAll, qSetWaypointDistance, qGetWaypointDistance, countRows, deleteWhereById, queryCreate, modifyProfile } = require('../utilities/query');
+const { findPointsOfInterestBetweenPolygon, queryAll, qSetWaypointDistance, qGetWaypointDistance, countRows, deleteWhereById, queryCreate, modifyProfile, queryFilterNodeByAddress } = require('../utilities/query');
 const { getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints, formatNodeData, fetchCoordinatesDataFromApi } = require('../utilities/utilities')
 const { logDebugInfo } = require('../utilities/logger');
 const { fork } = require('child_process');
@@ -14,70 +14,47 @@ const querystring = require('querystring');
 class NodeAdmin {
     constructor(io) {
         this.processList = {};
-        this.io = io;
+        this.io = io
         this.initializeSocket();
     }
 
     initializeSocket() {
         try {
             this.io.on('connect', (socket) => {
-                // console.log('connected');
-                socket.on('sessiontoken', async (message) => {
-                    // console.log('message', message);
+                socket.on('sessionTokenNode', async (message) => {
                     const email = await queryAll('sessions', 'session_token', message, null, ['email']);
                     if (email.data[0].email in this.processList) {
                         this.processList[email.data[0].email].sockets.push(socket);
                     } else {
-                        // this.processList[email.data[0].email] = { message: "", childProcess: null, operationType: "", status: "", sockets: [socket] }
                         this.processList[email.data[0].email] = { message: '', childProcess: null, op_type: '', status: '', sockets: [socket] };
                     }
-                    // socket.emit('sessiontokenreceivestatus', 'done');
-                    // console.log(this.processList);
                 });
 
                 socket.on('disconnect', () => {
-                    // console.log('socket closed');
                     for (let key in this.processList) {
                         this.processList[key].sockets = this.processList[key].sockets.filter(sckt => sckt.id != socket.id);
                     }
-                    // console.log(this.processList);
                 });
 
-                socket.on("Check Status", async (message) => {
+                socket.on("poolStatusNode", async (message) => {
 
                     const email = await queryAll('sessions', 'session_token', message, null, ['email']);
 
                     if (email.data[0].email in this.processList) {
-                        let currentStatus = this.processList[email.data[0].email].message
-                        socket.emit("uploadStatus", { 'message': currentStatus })
+                        let currentMessage = this.processList[email.data[0].email].message
+                        socket.emit("uploadStatusNode", { 'message': currentMessage })
                     }
 
                 });
 
             });
         } catch (error) {
-            // console.log(error);
-        }
-    }
-
-    getNode2NodeCalculationStatus = async (req, res) => {
-        try {
-            const email = await queryAll('sessions', 'session_token', req.headers.cookies, null, ['email']);
-            if (email.data[0].email in this.processList) {
-                res.status(200).json({ message: !this.processList[email.data[0].email].message ? 'completed' : this.processList[email.data[0].email].message });
-            } else {
-                res.status(200).json({ message: 'completed' });
-            }
-        } catch (error) {
-            // console.log(error);
-            res.status(200).json({ message: 'completed' });
         }
     }
 
     startChildProcess() {
         try {
-            const forked = fork('./utilities/worker.js');
-
+            const forked = fork('./utilities/nodeimport.js');
             forked.on('close', (code) => {
                 const currentPid = forked.pid;
 
@@ -86,18 +63,13 @@ class NodeAdmin {
                     if (this.processList[key].childProcess.pid == currentPid) {
                         keyToDelete = key;
                         this.processList[key].sockets.forEach((sckt) => {
-                            sckt.emit('uploadStatus', { 'message': 'completed' });
+                            sckt.emit('uploadStatusNode', { 'message': 'completed' });
                         });
-                        // this.processList[key].message = message.split(':')[1];
-                        // this.io.sockets.emit("uploadStatus", { 'message': message.split(':')[1] });
                     }
                 }
                 if (keyToDelete != null) {
                     delete this.processList[keyToDelete];
                 }
-                // this.processList = this.processList.filter(proces => proces.childProcess.pid != currentPid);
-                // this.io.sockets.emit("uploadStatus", { 'message': 'completed' });
-
             });
 
             forked.on('error', (err) => {
@@ -107,23 +79,17 @@ class NodeAdmin {
                 const currentPid = forked.pid;
                 if (message.split(':')[0] == 'status') {
                     for (let key in this.processList) {
-                        // console.log('check it', this.processList)
                         if (this.processList[key].childProcess.pid == currentPid) {
-                            // console.log(message.split(':')[1]);
                             this.processList[key].sockets.forEach((sckt) => {
-                                sckt.emit('uploadStatus', { 'message': message.split(':')[1] });
+                                sckt.emit('uploadStatusNode', { 'message': message.split(':')[1] });
                             });
                             this.processList[key].message = message.split(':')[1];
-                            // this.io.sockets.emit("uploadStatus", { 'message': message.split(':')[1] });
                         }
                     }
                 }
             });
-
-
             return forked;
         } catch (error) {
-            // console.log(error);
         }
     }
 
@@ -131,11 +97,8 @@ class NodeAdmin {
         try {
             let flag = false;
             const email = await queryAll('sessions', 'session_token', token, null, ['email']);
-            // console.log('asdsasad', email);
-            // console.log(this.processList);
 
             for (let key in this.processList) {
-                // console.log(key)
                 if (key == email.data[0].email) {
                     if (this.processList[key].op_type == op_type && (this.processList[key].status != 'complete' || this.processList[key].status != 'error')) {
                         flag = true
@@ -144,8 +107,6 @@ class NodeAdmin {
             }
             return flag;
         } catch (error) {
-            // console.log(error);
-
         }
     }
 
@@ -370,6 +331,31 @@ class NodeAdmin {
         }
     }
 
+    // search nodes based on filter object provided
+    searchNodes = async (req, res) => {
+        try {
+            const nodeAddress = req.query.address;
+            const pageNumber = req.query.pageNumber;
+            if (!nodeAddress) { // validate if filter data is in correct format
+                res.status(400).json({ message: "Invalid Data" })
+            } else {
+                const nodeList = await queryFilterNodeByAddress('nodes', nodeAddress, pageNumber); // insert in database
+                if (nodeList.status == 200) { // error handling
+                    if (nodeList.data.length == 0) {
+                        res.status(200).json({ message: "No node found" });
+                    } else {
+                        res.status(200).json({ 'nodes': nodeList.data });
+                    }
+                } else {
+                    res.status(nodeList.status).json({ message: nodeList.data });
+                }
+            }
+        } catch (error) {
+            logDebugInfo('error', 'searchNodes', 'nodes', error.message, error.stack);
+            res.status(500).json({ message: "Server Error " + error.message });
+        }
+    }
+
     downloadNodesCSV = async (req, res) => {
         const nodeList = await queryAll('nodes', '', null, req.query.pageNumber, null);
         const data = nodeList.data;
@@ -382,7 +368,7 @@ class NodeAdmin {
                 { id: 'address', title: 'Address' },
                 { id: 'city', title: 'City' },
                 { id: 'state_province', title: 'State/Province' },
-                { id: 'zip_postal_code', title: 'Postal Code' },
+                { id: 'zip_postal_code', title: 'Zip/Postal Code' },
                 { id: 'long', title: 'Logitude' },
                 { id: 'lat', title: 'latitude' },
                 { id: 'locid', title: 'Location ID' },
@@ -393,7 +379,7 @@ class NodeAdmin {
         const csvContent = csvStringifier.getHeaderString() + csvStringifier.stringifyRecords(data);
 
         res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', 'attachment; filename="filename.csv"');
+        res.setHeader('Content-Disposition', 'attachment; filename="Nodes List.csv"');
 
         res.send(csvContent);
     }
@@ -509,6 +495,18 @@ class NodeAdmin {
             });
         } catch (error) {
             // console.log(error)
+        }
+    }
+
+    deleteLogFile = async (req, res) => {
+        const fileName = req.query.fileName;
+
+        try {
+            await fs.unlink(`./utilities/logfiles/${fileName}`);
+            return res.status(200).json({ message: 'File deleted successfully' });
+        } catch (error) {
+            console.log(error)
+            return res.status(404).json({ message: 'File not found' });
         }
     }
 

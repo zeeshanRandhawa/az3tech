@@ -77,6 +77,43 @@ const getAllNodes = async () => {
 }
 
 
+const qBatchInsertDriverRoutes = async (driverRouteData) => {
+  try {
+
+    const routeColumns = Object.keys(driverRouteData[0]).map((str) => str.trim()).filter(str => str != 'route_nodes');
+    const routeSetTable = new pgp.helpers.ColumnSet(routeColumns, { table: 'droutes' });
+
+    const routeNodeColumns = Object.keys(driverRouteData[0].route_nodes.final[0]).map((str) => str.trim());
+    const routeNodeSetTable = new pgp.helpers.ColumnSet(routeNodeColumns, { table: 'droutenodes' });
+
+    for (const driverRoute of driverRouteData) {
+
+      let insertData = pgp.helpers.insert(driverRoute, routeSetTable);
+
+      await db.tx(async (t) => {
+        try {
+          let driverRouteId = await t.one(`${insertData} RETURNING droute_id`);
+
+          for (let dRouteNode of driverRoute.route_nodes.final) {
+            dRouteNode.droute_id = driverRouteId.droute_id;
+            let insertData = pgp.helpers.insert(dRouteNode, routeNodeSetTable);
+            await t.none(insertData);
+          }
+
+        } catch (error) {
+          console.log(error)
+        }
+      });
+    }
+    return { status: 200, message: 'Bulk data inserted successfully' };
+  } catch (error) {
+    console.log(error)
+    logDebugInfo('error', 'insert_batch_transit_droutes', 'droutes', error.message, error.stack);
+    return { status: 500, message: error.message };
+  }
+}
+
+
 // check by cookie if user is super admin
 const queryGetRole = async (session_token = '', email = '') => {
   try {
@@ -760,6 +797,18 @@ const insertNode = async (nodes) => {
 }
 
 
+const getNodeCoordinates = async (nodeId) => {
+  try {
+    const nodeData = (await pool.query(`SELECT lat, long, transit_time FROM nodes WHERE node_id=${nodeId}`));
+    return { status: 200, data: nodeData.rows[0] };
+  } catch (error) {
+    console.log(error)
+    logDebugInfo('error', 'insert_route', 'droutes', error.message, error.stack);
+    return { status: 500, data: error.message };
+  }
+}
+
+
 const correctLocIDValues = async () => {
   const query = `
       UPDATE nodes AS n
@@ -818,5 +867,7 @@ module.exports = {
   qGetWaypointDistance,
   countRows,
   queryBulkInsertRiderRoute,
-  updateRouteIntermediateNodes
+  updateRouteIntermediateNodes,
+  getNodeCoordinates,
+  qBatchInsertDriverRoutes
 };
