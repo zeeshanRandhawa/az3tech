@@ -82,7 +82,6 @@ class DriverRoute {
 
             return forked;
         } catch (error) {
-            console.log(error)
         }
     }
 
@@ -117,10 +116,9 @@ class DriverRoute {
             // group routes by name
             const routeGroup = {}
             for (let line of fileData) { // iterate over data
-                if (line.trim() !== '') { //excluse empty line
+                if (line.trim() !== '' && !line.split(',').every((column) => column.trim() === '')) { //excluse empty line
                     // take data from line after splitting
                     let [droute_name, origin_node, destination_node, departure_time, departure_flexibility, driver_id, capacity, max_wait, fixed_route, droute_dbm_tag] = line.split(',');
-
                     // correct format of date time to be used in time calculation for arrival and departure time
                     departure_time = moment.utc(departure_time, 'M/D/YYYY H:mm').format('YYYY-MM-DD HH:mm')
 
@@ -145,8 +143,6 @@ class DriverRoute {
             };
             return { status: 200, data: routeGroup };
         } catch (error) {
-            console.log(error)
-
             return { status: 500, message: "Server Error " + error.message };
         }
     }
@@ -178,7 +174,6 @@ class DriverRoute {
             //prepare meta data for nodes generation
             // it takes string of file buffer and splits the variables
             let riderRoutesMetaBatchData = this.prepareDriverRouteBatchMetaData(req.files[0].buffer.toString().split('\r\n').slice(1));
-
             if (riderRoutesMetaBatchData.status == 200) {
 
                 await this.writeJsonToFile(JSON.stringify({ 'routeNodes': riderRoutesMetaBatchData.data }));
@@ -222,7 +217,6 @@ class DriverRoute {
             // }
             // res.sendStatus(200)
         } catch (error) {
-            console.log(error)
             logDebugInfo('error', 'batch_insert', 'drivers_route', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }
@@ -234,7 +228,7 @@ class DriverRoute {
         try {
             const routeGroup = {}
             for (let line of fileData) { // iterate over data
-                if (line.trim() !== '') { //excluse empty line
+                if (line.trim() !== '' && !line.split(',').every((column) => column.trim() === '')) { //excluse empty line
                     let [droute_name, origin_node, destination_node, arrival_time, departure_time, driver_id, capacity, droute_dbm_tag] = line.split(',');
 
                     arrival_time = !arrival_time.trim() ? null : moment.utc(arrival_time, 'H:mm');
@@ -268,7 +262,6 @@ class DriverRoute {
             };
             return { status: 200, data: routeGroup };
         } catch (error) {
-            console.log(error)
             return { status: 500, message: "Server Error " + error.message };
         }
     }
@@ -296,15 +289,10 @@ class DriverRoute {
                 return res.status(400).json({ message: 'Invalid column length' });
             }
 
-            const batchTransitMetaData = prepareTransitRouteMetaBatchData(req.files[0].buffer.toString().split('\n').slice(1), req.body.scheduled_weekdays, req.body.scheduled_start, req.body.scheduled_end); // prepare data to insert
-
-            // Object.keys(batchTransitMetaData.data).forEach((q) => {
-            //     console.log(batchTransitMetaData.data[q])
-            //     console.log(batchTransitMetaData.data[q].route_nodes)
-            // })
+            const batchTransitMetaData = this.prepareTransitRouteMetaBatchData(req.files[0].buffer.toString().split('\n').slice(1), req.body.scheduled_weekdays, req.body.scheduled_start, req.body.scheduled_end); // prepare data to insert
 
 
-            let finalTransitRoutes = await generateDrouteNodeFromDrouteTransit(Object.values(batchTransitMetaData.data), req.header.cookies);
+            let finalTransitRoutes = await this.generateDrouteNodeFromDrouteTransit(Object.values(batchTransitMetaData.data), req.header.cookies);
 
             finalTransitRoutes = finalTransitRoutes.map((dRouteNode) => {
                 if (dRouteNode.fixed_route && dRouteNode.route_nodes.initial.length == dRouteNode.route_nodes.final.length) {
@@ -402,7 +390,6 @@ class DriverRoute {
 
             return routeNodesMeta;
         } catch (error) {
-            console.log(error)
         }
     }
 
@@ -499,7 +486,6 @@ class DriverRoute {
                 }
             }
         } catch (error) {
-            // console.log(error)
             logDebugInfo('error', 'filter_droutes_tw', 'driver_route', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }

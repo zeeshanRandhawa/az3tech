@@ -8,7 +8,7 @@ const cors = require('cors'); // remove this line when deploying toserver
 // const helmet = require('helmet');
 const compression = require('compression')
 const cookieParser = require('cookie-parser');  // set cookies for front end 
-// const path = require('path');
+const path = require('path');
 
 const app = express();
 

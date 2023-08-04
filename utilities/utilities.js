@@ -234,7 +234,7 @@ async function fetchCoordinatesDataFromApi(url, i, retryDelay) {
   try {
     const response = await axios.get(url);
     if (await response.status == 200) {
-      // console.log("success", i)
+      console.log("success", i)
       r_data = await response.data;
       if (r_data.length > 0) {
         return { lat: await r_data[0].lat, long: await r_data[0].lon };
@@ -244,7 +244,8 @@ async function fetchCoordinatesDataFromApi(url, i, retryDelay) {
       throw new Error();
     }
   } catch (error) {
-    // console.log("error", i)
+    console.log(error)
+    console.log("error", i)
     await new Promise(resolve => setTimeout(resolve, retryDelay));
     return await fetchCoordinatesDataFromApi(url, i, retryDelay + 100);
   }

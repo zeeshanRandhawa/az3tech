@@ -7,7 +7,6 @@ const { readFile, writeFile } = require('node:fs/promises');
 const importGeneratedRouteNodes = async () => {
     try {
         let authToken = process.argv[2];
-        console.log(process.argv)
 
         let riderRoutesMetaBatchData;
 
@@ -46,7 +45,6 @@ const importGeneratedRouteNodes = async () => {
 
         process.send('status:Batch data insertion completed');
     } catch (error) {
-        console.log(error)
         process.send('status:Error');
     }
 }
@@ -212,7 +210,6 @@ const generateDrouteNodeFromDrouteBatch = async (routeNodesMeta, authToken) => {
 
         return routeNodesMeta;
     } catch (error) {
-        console.log(error)
     }
 }
 
@@ -269,7 +266,6 @@ findIntermediateNodes = async (origNodeC, destNodeC, authToken) => {
 
         return intermediateNodes;
     } catch (error) {
-        console.log(error)
     }
 }
 

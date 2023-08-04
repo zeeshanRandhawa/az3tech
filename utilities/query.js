@@ -101,13 +101,11 @@ const qBatchInsertDriverRoutes = async (driverRouteData) => {
           }
 
         } catch (error) {
-          console.log(error)
         }
       });
     }
     return { status: 200, message: 'Bulk data inserted successfully' };
   } catch (error) {
-    console.log(error)
     logDebugInfo('error', 'insert_batch_transit_droutes', 'droutes', error.message, error.stack);
     return { status: 500, message: error.message };
   }
@@ -135,7 +133,6 @@ const queryGetRole = async (session_token = '', email = '') => {
 const countRows = async (tableName) => {
   const countQuery = `SELECT COUNT(*) FROM "${tableName}"`;
   const count = await pool.query(countQuery);
-  // console.log(count.rows)
   return count.rows[0].count;
 }
 
@@ -149,7 +146,6 @@ const queryAll = async (tableName, columnName = '', columnValue = null, paginati
     const data = await pool.query(query); // execute query
     return { status: 200, data: data.rows } // return data
   } catch (error) {
-    // console.log(error)
     return { status: 500, data: error.message }; // if error return error message
   }
 }
@@ -158,7 +154,6 @@ const queryAll = async (tableName, columnName = '', columnValue = null, paginati
 const qSetWaypointDistance = async (sessionToken, waypointDistance) => {
   const email = await queryAll('sessions', 'session_token', sessionToken, null, ['email']);
   const updatequery = `UPDATE users SET waypoint_distance=${waypointDistance} WHERE email='${email.data[0].email}'`;
-  // console.log(updatequery)
   await pool.query(updatequery);
   return { status: 200, data: 'configuration updated' };
 }
@@ -242,7 +237,6 @@ const purgeTable = async (tableName) => {
     await pool.query('COMMIT');
     return { status: 200 };
   } catch (error) {
-    // console.log(error);
     await pool.query('ROLLBACK');
     logDebugInfo('error', 'purge_table', tableName, error.message, error.stack);
     return { status: 400, data: error.message };
@@ -307,7 +301,6 @@ const queryCreate = async (tableName, bioData) => {
     return { status: 200, data: qRes.rows[0] };
   }
   catch (error) {
-    // console.log(error)
     logDebugInfo('error', 'create_entity', tableName, error.message, error.stack);
     return { status: 500, data: error.message };
   }
@@ -341,7 +334,6 @@ const modifyProfile = async (tableName, id, details) => {
     return { status: 200 };
   }
   catch (error) {
-    // console.log(error)
     logDebugInfo('error', 'update_profile_query', tableName, error.message, error.stack);
     return { status: 400, data: error.message };
   }
@@ -353,7 +345,6 @@ const makeUpdateQuery = async (tableName, uniqueId, details) => { // slicing tab
     const query = `UPDATE "${tableName}" SET ${Object.keys(details).map(column_key => `${column_key}=`.concat(details[column_key] != null ? `'${details[column_key]}'` : 'NULL'))} WHERE ${tableName.slice(0, -1)}_id=${uniqueId}`;
     return query;
   } catch (error) {
-    // console.log(error)
     logDebugInfo('error', 'make_update_profile_query', tableName, error.message, error.stack);
     return ''
   }
@@ -430,7 +421,6 @@ const queryInsertSessionCookie = async (sessionCookie = '', user_email) => {
 const updateRouteIntermediateNodes = async (tableName, intermediateNodes, route_id) => {
   try {
     const query = `UPDATE ${tableName} SET intermediate_nodes_list='${intermediateNodes}' WHERE ${tableName.slice(0, -1)}_id=${route_id}`;
-    // console.log(query);
     await pool.query(query);
     return { status: 200 };
   } catch (error) {
@@ -534,7 +524,6 @@ const queryBulkInsertRiderRoute = async (riderRouteData) => {
 const queryInsertDriverRoute = async (driverRouteData) => {
   try {
     const insertQuery = `INSERT INTO "droutes" (driver_id, origin_node, destination_node, departure_time, departure_flexibility, droute_dbm_tag, droute_name, capacity, max_wait, fixed_route) VALUES(${driverRouteData.driver_id}, ${driverRouteData.origin_node}, ${driverRouteData.destination_node}, \'${driverRouteData.departure_time}\', ${driverRouteData.departure_flexibility}, \'${driverRouteData.droute_dbm_tag}\', \'${driverRouteData.droute_name}\', ${driverRouteData.capacity}, ${driverRouteData.max_wait}, ${driverRouteData.fixed_route})`;
-    console.log(insertQuery)
     await pool.query(insertQuery);
     return { status: 201 };
   } catch (error) {
@@ -601,7 +590,6 @@ const queryRRoutesFilter = async (filterData) => {
     return { status: 200, data: searchRes };
   }
   catch (error) {
-    // console.log(error);
     logDebugInfo('error', 'filter_routes', 'rroutes', error.message, error.stack);
     return { status: 500, data: error.message };
   }
@@ -665,7 +653,6 @@ const queryDRoutesFilter = async (filterData) => {
     }
   }
   catch (error) {
-    // console.log(error)
     logDebugInfo('error', 'filter_routes', 'rroutes', error.message, error.stack);
     return { status: 500, data: error.message };
   }
@@ -687,7 +674,6 @@ const queryBatchInsertTransitRoute = async (batchTransitData) => {
           await t.none(`INSERT INTO "droutenodes" (droute_id, outb_driver_id, node_id, departure_time, capacity) VALUES(${droute_id}, ${data.driver_id}, ${data.origin_node}, \'${data.departure_time}\', ${data.capacity})`);
           await t.none(`INSERT INTO "droutenodes" (droute_id, outb_driver_id, node_id, arrival_time, capacity) VALUES(${droute_id}, ${data.driver_id}, ${data.destination_node}, \'${data.arrival_time}\', ${data.capacity})`);
         } catch (error) {
-          // console.log('in error', error);
           failedData.push({ data: data, message: error.message });
         }
       }
@@ -724,7 +710,6 @@ const queryBatchInsertNodes = async (batchNodeData) => {
           }
           // await t.none(insertData)
         } catch (error) {
-          // console.log(error)
           failedData.push({ data: data, message: error.message });
         }
       });
@@ -756,24 +741,20 @@ const queryBatchInsertN2N = async (batchDataN2N) => {
         }
       });
     }
-    // console.log(insertData)
     // await db.tx(async (t) => {
     // try {
     //   await db.none(insertData);
     // } catch (error) {
-    //   console.log(error)
     //   return { status: 500, message: error.message };
     // }
     // });
   } catch (error) {
-    // console.log(error.message)
     // logDebugInfo('error', 'insert_batch_transit_droutes', 'droutes', error.message, error.stack);
   }
 }
 
 
 const insertNode = async (nodes) => {
-  // console.log("in insertNodes")
   const values = nodes.flatMap(node => [
     node.Location.slice(0, 50),
     node.Description.slice(0, 50),
@@ -785,8 +766,7 @@ const insertNode = async (nodes) => {
     node.Lat.slice(0, 50),
   ]);
 
-  // console.log("New Node Length:", nodes.length);
-  // console.log("New Node:", nodes);
+
   const placeholders = [];
   for (let i = 1; i <= nodes.length; i++) {
     placeholders.push(`($${(i - 1) * 8 + 1}, $${(i - 1) * 8 + 2}, $${(i - 1) * 8 + 3}, $${(i - 1) * 8 + 4}, $${(i - 1) * 8 + 5}, $${(i - 1) * 8 + 6}, $${(i - 1) * 8 + 7}, $${(i - 1) * 8 + 8})`);
@@ -802,7 +782,6 @@ const getNodeCoordinates = async (nodeId) => {
     const nodeData = (await pool.query(`SELECT lat, long, transit_time FROM nodes WHERE node_id=${nodeId}`));
     return { status: 200, data: nodeData.rows[0] };
   } catch (error) {
-    console.log(error)
     logDebugInfo('error', 'insert_route', 'droutes', error.message, error.stack);
     return { status: 500, data: error.message };
   }

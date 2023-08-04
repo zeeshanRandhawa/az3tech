@@ -1,0 +1,9 @@
+droute_name,origin_node,destination_node,arrival_time,departure_time,driver_id,capacity,droute_dbm_tag
+BART SF SHORT,2511,2501,9:00,9:01,233,100,IMPORT TEST 1
+BART SF SHORT,2501,2504,9:12,9:13,233,100,IMPORT TEST 1
+BART SF SHORT,2504,2523,9:23,9:24,233,100,IMPORT TEST 1
+BART SF SHORT,2523,2507,9:33,9:34,233,100,IMPORT TEST 1
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,

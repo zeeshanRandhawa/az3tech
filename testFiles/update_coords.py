@@ -92,7 +92,7 @@ def get_accurate_lat_longs():
         print("------------------------------------")
         if("Address not available" not in row[3]):
             text = encode_for_url(row[3])
-            url = "https://nominatim.openstreetmap.org/search/?q="+text+"%20"+row[4].strip().replace(" ","%20")+"%20"+row[5].replace(" ","")+"&format=json&addressdetails=1"
+            url = "https://nominatim.openstreetmap.org/search?q="+text+"%20"+row[4].strip().replace(" ","%20")+"%20"+row[5].replace(" ","")+"&format=json&addressdetails=1"
             #url = "https://geocode.maps.co/search?q="+text+"%20"+row[4].strip().replace(" ","%20")+"%20"+row[5]
             print(url)
             response = requests.get(url)

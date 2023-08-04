@@ -21,7 +21,6 @@ const createDriverProfile = async (req, res) => {
             }
         }
     } catch (error) {
-        // console.log(error)
         logDebugInfo('error', 'create_driver_profile', 'drivers', error.message, error.stack);
         res.status(500).json({ message: "Server Error " + error.message });
     }
@@ -294,13 +293,10 @@ const batchImportDrivers = async (req, res) => {
             //             const query = 'INSERT INTO "riders" (first_name,last_name,address,city,state_province,zip_postal_code) VALUES ($1, $2, $3, $4, $5, $6)';
             //             const values = [item.first_name, item.last_name, item.address, item.city, item.state_province, item.zip_postal_code,];
             //             await t.none(query, values);
-            //             console.log(new Date());
             //         }
             //     });
-            //     console.log(new Date());
             //     res.status(200).json({ message: 'Bulk data inserted successfully' });
             // } catch (error) {
-            //     console.log(new Date());
             //     res.status(500).json({ message: 'Error inserting bulk data', error: error.message });
             // }
         } else {

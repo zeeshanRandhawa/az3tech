@@ -1,12 +1,10 @@
 const { readFile, writeFile } = require('node:fs/promises');
 const axios = require('axios');
 const querystring = require('querystring');
-const { fetchCoordinatesDataFromApi } = require('./utilities')
+const { fetchCoordinatesDataFromApi } = require('./utilities');
 const { queryBatchInsertN2N, queryBatchInsertNodes } = require('./query');
 const { error } = require('node:console');
 const createCsvWriter = require('csv-writer').createObjectCsvStringifier;
-
-
 
 
 const distanceDurationBetweenAllNodes = async () => {
@@ -33,7 +31,7 @@ const distanceDurationBetweenAllNodes = async () => {
     nodesToInsert = await queryBatchInsertNodes(nodesToInsert.data);
 
     process.send('status:Bulk data insertion complete nodes table');
-    
+
     //   process.send('status:creating node pairs');
     //   let nodePairs = await getAllNodePairs(oldNodes, nodesToInsert.data);
 
@@ -80,46 +78,7 @@ const distanceDurationBetweenAllNodes = async () => {
   }
 }
 
-const getAllNodePairs = async (oldNodes, newNodes) => {
-  const pairs = [];
-  for (let i = 0; i < newNodes.length; i++) {
-    for (let j = 0; j < oldNodes.length; j++) {
-      pairs.push([newNodes[i], oldNodes[j]]);
-      pairs.push([oldNodes[j], newNodes[i]]);
-    }
-  }
-  for (let i = 0; i < newNodes.length; i++) {
-    for (let j = 0; j < newNodes.length; j++) {
-      if (i != j) {
-        pairs.push([newNodes[i], newNodes[j]]);
-        // pairs.push([newNodes[j], newNodes[i]]);
-      }
-    }
-  }
-  return pairs;
-}
 
-const getApiUrls = async (nodePair) => {
-  const lng1 = nodePair[0].long;
-  const lat1 = nodePair[0].lat;
-  const lng2 = nodePair[1].long;
-  const lat2 = nodePair[1].lat;
-  return `http://143.110.152.222:5000/route/v1/car/${lng1},${lat1};${lng2},${lat2}?steps=true&geometries=geojson&overview=full&annotations=true`;
-}
-
-async function fetchDataFromApi(url, i, j, retryDelay) {
-  try {
-    const response = await axios.get(url);
-    r_data = await response.data;
-    let res = { distance: await r_data.routes[0].distance, duration: await r_data.routes[0].duration };
-    // console.log('success', i, '', j);
-    return res;
-  } catch (error) {
-    // console.log('error', i, '', j);
-    await new Promise(resolve => setTimeout(resolve, retryDelay));
-    return await fetchDataFromApi(url, i, j, retryDelay + 5);
-  }
-}
 
 const prepareBulkData = async (fileData) => {
   try {
@@ -129,8 +88,8 @@ const prepareBulkData = async (fileData) => {
     for (let line of fileData) {
       if (line.trim() !== '') {
         const [location, description, address, city, state_province, zip_postal_code, transit_time] = line.split(',');
-        // console.log(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(address.trim().concat(', ').concat(city.trim()).concat(', ').concat(state_province.trim()))}&format=json&addressdetails=1`);
-        let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(address.trim().concat(', ').concat(city.trim()).concat(', ').concat(state_province.trim()))}&format=json&addressdetails=1`, i, 25);
+        // console.log(`https://nominatim.openstreetmap.org/search?q=${querystring.escape(address.trim().concat(', ').concat(city.trim()).concat(', ').concat(state_province.trim()))}&format=json&addressdetails=1`);
+        let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search?q=${querystring.escape(address.trim().concat(', ').concat(city.trim()).concat(', ').concat(state_province.trim()))}&format=json&addressdetails=1`, i, 25);
         if (!latLong.long || !latLong.lat) {
           failedNodes.push({ location: location, description: description, address: address, city: city, state_province: state_province, zip_postal_code: zip_postal_code, transit_time: transit_time });
         } else {
@@ -164,7 +123,6 @@ const prepareBulkData = async (fileData) => {
     return { status: 200, data: results };
   } catch (error) {
     console.log(error)
-
     return { status: 500, message: "Server Error " + error.message };
   }
 }
@@ -182,5 +140,45 @@ const parseApiData = async (apiData) => {
   }
 }
 
+const getApiUrls = async (nodePair) => {
+  const lng1 = nodePair[0].long;
+  const lat1 = nodePair[0].lat;
+  const lng2 = nodePair[1].long;
+  const lat2 = nodePair[1].lat;
+  return `http://143.110.152.222:5000/route/v1/car/${lng1},${lat1};${lng2},${lat2}?steps=true&geometries=geojson&overview=full&annotations=true`;
+}
+
+async function fetchDataFromApi(url, i, j, retryDelay) {
+  try {
+    const response = await axios.get(url);
+    r_data = await response.data;
+    let res = { distance: await r_data.routes[0].distance, duration: await r_data.routes[0].duration };
+    // console.log('success', i, '', j);
+    return res;
+  } catch (error) {
+    // console.log('error', i, '', j);
+    await new Promise(resolve => setTimeout(resolve, retryDelay));
+    return await fetchDataFromApi(url, i, j, retryDelay + 5);
+  }
+}
+
+const getAllNodePairs = async (oldNodes, newNodes) => {
+  const pairs = [];
+  for (let i = 0; i < newNodes.length; i++) {
+    for (let j = 0; j < oldNodes.length; j++) {
+      pairs.push([newNodes[i], oldNodes[j]]);
+      pairs.push([oldNodes[j], newNodes[i]]);
+    }
+  }
+  for (let i = 0; i < newNodes.length; i++) {
+    for (let j = 0; j < newNodes.length; j++) {
+      if (i != j) {
+        pairs.push([newNodes[i], newNodes[j]]);
+        // pairs.push([newNodes[j], newNodes[i]]);
+      }
+    }
+  }
+  return pairs;
+}
 
 distanceDurationBetweenAllNodes();

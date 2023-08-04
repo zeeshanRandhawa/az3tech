@@ -13,12 +13,12 @@ const createRiderRoute = async (req, res) => {
         } else {
             const riderRouteData = req.body.row;
 
-            let originLatLong = await axios.get(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape((riderRouteData.origin_address.trim()).concat(', ').concat(riderRouteData.origin_city.trim()).concat(', ').concat(riderRouteData.origin_state_province.trim()))}&format=json&addressdetails=1`)
+            let originLatLong = await axios.get(`https://nominatim.openstreetmap.org/search?q=${querystring.escape((riderRouteData.origin_address.trim()).concat(', ').concat(riderRouteData.origin_city.trim()).concat(', ').concat(riderRouteData.origin_state_province.trim()))}&format=json&addressdetails=1`)
             riderRouteData.origin_lat = originLatLong.data.length > 0 ? originLatLong.data[0].lat : null;
             riderRouteData.origin_long = originLatLong.data.length > 0 ? originLatLong.data[0].lon : null;
 
             await new Promise(resolve => setTimeout(resolve, 50));
-            let destinationLatLong = await axios.get(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape((riderRouteData.destination_address.trim()).concat(', ').concat(riderRouteData.destination_city.trim()).concat(', ').concat(riderRouteData.destination_state_province.trim()))}&format=json&addressdetails=1`)
+            let destinationLatLong = await axios.get(`https://nominatim.openstreetmap.org/search?q=${querystring.escape((riderRouteData.destination_address.trim()).concat(', ').concat(riderRouteData.destination_city.trim()).concat(', ').concat(riderRouteData.destination_state_province.trim()))}&format=json&addressdetails=1`)
             riderRouteData.destination_lat = destinationLatLong.data.length > 0 ? destinationLatLong.data[0].lat : null;
             riderRouteData.destination_long = destinationLatLong.data.length > 0 ? destinationLatLong.data[0].lon : null;
 

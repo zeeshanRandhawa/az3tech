@@ -538,7 +538,7 @@ class NodeAdmin {
                 res.status(400).json({ message: "Invalid data" });
             } else {
 
-                let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(nodeData.address.trim().concat(' ').concat(nodeData.city.trim()).concat(', ').concat(nodeData.state_province.trim()))}&format=json&addressdetails=1`, 0, 25);
+                let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search?q=${querystring.escape(nodeData.address.trim().concat(' ').concat(nodeData.city.trim()).concat(', ').concat(nodeData.state_province.trim()))}&format=json&addressdetails=1`, 0, 25);
 
                 if (!latLong.lat || !latLong.long) {
                     res.status(400).json({ message: "Invalid address or city" });
@@ -581,7 +581,7 @@ class NodeAdmin {
                     res.status(404).json({ message: "Node does not exist" });
                 } else {
                     if (oldNodeData.data[0].address != nodeData.address || oldNodeData.data[0].city != nodeData.city) {
-                        let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search/?q=${querystring.escape(nodeData.address.trim().concat(' ').concat(nodeData.city.trim()).concat(', ').concat(nodeData.state_province.trim()))}&format=json&addressdetails=1`, 0, 25);
+                        let latLong = await fetchCoordinatesDataFromApi(`https://nominatim.openstreetmap.org/search?q=${querystring.escape(nodeData.address.trim().concat(' ').concat(nodeData.city.trim()).concat(', ').concat(nodeData.state_province.trim()))}&format=json&addressdetails=1`, 0, 25);
 
                         if (!latLong.lat || !latLong.long) {
                             return res.status(400).json({ message: "Unable to update. Invalid address or city" });
