@@ -127,7 +127,7 @@ class DriverRoute {
                         // holds data of droute table for sinfle entry
                         // status: NEW
                         //contains route_nodes dict
-                        // meta route node dat is in route_nodes.initial 
+                        // meta route node dat is in route_nodes.initial
                         // calculated route_nodes will go in route_nodes.final
                         routeGroup[droute_name] = { origin_node: null, destination_node: null, departure_time: departure_time, capacity: capacity, max_wait: max_wait, status: "NEW", driver_id: driver_id, droute_dbm_tag: droute_dbm_tag, droute_name: droute_name, departure_flexibility: departure_flexibility, scheduled_weekdays: null, intermediate_nodes_list: null, fixed_route: fixed_route === '1' ? true : false, route_nodes: { initial: [], final: [] } }
 
@@ -227,6 +227,7 @@ class DriverRoute {
     prepareTransitRouteMetaBatchData = (fileData, scheduled_wd, schedule_start, schedule_end) => {
         try {
             const routeGroup = {}
+            // let oldTime = null;
             for (let line of fileData) { // iterate over data
                 if (line.trim() !== '' && !line.split(',').every((column) => column.trim() === '')) { //excluse empty line
                     let [droute_name, origin_node, destination_node, arrival_time, departure_time, driver_id, capacity, droute_dbm_tag] = line.split(',');
@@ -240,12 +241,12 @@ class DriverRoute {
                             capacity: capacity, status: "NEW", driver_id: driver_id, droute_dbm_tag: droute_dbm_tag, droute_name: droute_name,
                             intermediate_nodes_list: null, fixed_route: true, route_nodes: { initial: [], final: [] }
                         }
-                        if (scheduled_wd == '') {
-                            routeGroup[droute_name].schedule_start = schedule_start;
-                            routeGroup[droute_name].schedule_end = schedule_end;
-                        } else {
-                            routeGroup[droute_name].scheduled_weekdays = scheduled_wd;
-                        }
+                        // if (scheduled_wd == '') {
+                        routeGroup[droute_name].schedule_start = schedule_start;
+                        routeGroup[droute_name].schedule_end = schedule_end;
+                        // } else {
+                        routeGroup[droute_name].scheduled_weekdays = scheduled_wd;
+                        // }
 
                         routeGroup[droute_name].route_nodes.initial.push({
                             origin_node: parseInt(origin_node, 10), destination_node: parseInt(destination_node, 10),
@@ -258,17 +259,18 @@ class DriverRoute {
                             arrival_time: arrival_time, departure_time: departure_time
                         });
                     }
+                    // oldTime = moment(arrival_time)
                 }
             };
             return { status: 200, data: routeGroup };
         } catch (error) {
+            console.log(error);
             return { status: 500, message: "Server Error " + error.message };
         }
     }
 
     importDriverTransitScheduleRoutes = async (req, res) => {
         try {
-
             if (!req.body.scheduled_weekdays && (!req.body.scheduled_start && !req.body.scheduled_end)) {
                 return res.status(400).json({ message: 'Invalid Data' });
             }
@@ -291,20 +293,26 @@ class DriverRoute {
 
             const batchTransitMetaData = this.prepareTransitRouteMetaBatchData(req.files[0].buffer.toString().split('\n').slice(1), req.body.scheduled_weekdays, req.body.scheduled_start, req.body.scheduled_end); // prepare data to insert
 
+            // console.log(batchTransitMetaData.data)
+            // console.log(batchTransitMetaData.data['BART SF SHORT'].route_nodes)
 
             let finalTransitRoutes = await this.generateDrouteNodeFromDrouteTransit(Object.values(batchTransitMetaData.data), req.header.cookies);
 
             finalTransitRoutes = finalTransitRoutes.map((dRouteNode) => {
-                if (dRouteNode.fixed_route && dRouteNode.route_nodes.initial.length == dRouteNode.route_nodes.final.length) {
+                if (dRouteNode.fixed_route && dRouteNode.route_nodes.initial.length == dRouteNode.route_nodes.final.length - 1) {
                     return dRouteNode;
                 } else {
                     return
                 }
             }).filter(Boolean);
+
+            console.log(finalTransitRoutes);
+
             await qBatchInsertDriverRoutes(finalTransitRoutes);
 
             res.sendStatus(200)
         } catch (error) {
+            console.log(error);
             logDebugInfo('error', 'batch_transit_insert', 'driver_routes', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }
@@ -328,6 +336,7 @@ class DriverRoute {
 
                 // we have forst and last node of route
                 rNodeMeta.origin_node = origDestNode.origNode;
+                rNodeMeta.destination_node = origDestNode.destNode;
 
 
                 let departure_time = rNodeMeta.departure_time;
@@ -337,7 +346,7 @@ class DriverRoute {
                 // insert first node as origin node having cum_time adn cum_distance as 0
                 // capacity_used randomly generated
                 let temprouteNode = {
-                    droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: origDestNode.origNode, arrival_time: null,
+                    droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: origDestNode.origNode, arrival_time: arrival_time,
                     departure_time: '1970-01-01 '.concat(departure_time.clone().format('HH:mm')), rank: 0, capacity: rNodeMeta.capacity,
                     capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: 0, cum_time: 0, status: 'ORIGIN'
                 };
@@ -347,7 +356,7 @@ class DriverRoute {
                 let cum_distance = 0;
 
                 // itertae over other nodes from initial and calculate route_nodes
-                for (let [index, rNode] of rNodeMeta.route_nodes.initial.slice(1).entries()) {
+                for (let [index, rNode] of rNodeMeta.route_nodes.initial.entries()) {
                     // get long lat from data base
                     let origNodeC = (await getNodeCoordinates(rNodeMeta.route_nodes.initial[index].origin_node)).data;
                     let destNodeC = (await getNodeCoordinates(rNode.destination_node)).data;
@@ -355,31 +364,35 @@ class DriverRoute {
                     // calculate distance and duration from api
                     let calculatedDistDur = await fetchDistanceDurationFromCoordinates(`http://143.110.152.222:5000/route/v1/driving/${origNodeC.long},${origNodeC.lat};${destNodeC.long},${destNodeC.lat}?geometries=geojson&overview=false`);
 
-                    // if dist sur not found then return empty object
+                    // if dist dur not found then return empty object
                     if (!calculatedDistDur.distance || !calculatedDistDur.duration) {
                         return;
                     }
 
-                    arrival_time = rNode.arrival_time;
+                    if (index !== rNodeMeta.route_nodes.initial.length - 1) {
+                        arrival_time = rNodeMeta.route_nodes.initial[index + 1].arrival_time;
+                        cum_time += (moment.duration(rNodeMeta.route_nodes.initial[index + 1].departure_time.diff(rNodeMeta.route_nodes.initial[index].departure_time))).asMinutes();
+                    } else {
+                        cum_time += (moment.duration(rNode.arrival_time.diff(rNodeMeta.route_nodes.initial[index].departure_time))).asMinutes();
+                    }
 
                     cum_distance += calculatedDistDur.distance
-                    cum_time += (moment.duration(arrival_time.diff(departure_time))).asMinutes();
-
-                    departure_time = rNode.departure_time;
 
                     // if last node then status DESTINARION
-                    if (index == rNodeMeta.route_nodes.initial.slice(1).length - 1) {
+                    if (index == rNodeMeta.route_nodes.initial.length - 1) {
                         temprouteNode = {
-                            droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: rNode.origin_node, arrival_time: '1970-01-01 '.concat(rNode.arrival_time.format('HH:mm')),
+                            droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: rNode.destination_node, arrival_time: '1970-01-01 '.concat(rNode.arrival_time.format('HH:mm')),
                             departure_time: null, rank: index + 1, capacity: rNodeMeta.capacity,
                             capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: cum_distance, cum_time: cum_time, status: 'DESTINATON'
                         };
                         rNodeMeta.destination_node = rNode.origin_node;
                     } else {
+                        arrival_time = rNodeMeta.route_nodes.initial[index + 1].arrival_time;
+
                         // if intermediate node then status POTENTIAL
                         temprouteNode = {
-                            droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: rNode.origin_node, arrival_time: '1970-01-01 '.concat(rNode.arrival_time.format('HH:mm')),
-                            departure_time: '1970-01-01 '.concat(rNode.departure_time.format('HH:mm')), rank: index + 1, capacity: rNodeMeta.capacity,
+                            droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: rNode.destination_node, arrival_time: '1970-01-01 '.concat(rNode.arrival_time.format('HH:mm')),
+                            departure_time: '1970-01-01 '.concat(rNodeMeta.route_nodes.initial[index + 1].departure_time.format('HH:mm')), rank: index + 1, capacity: rNodeMeta.capacity,
                             capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: cum_distance, cum_time: cum_time, status: 'POTENTIAL'
                         };
                     }
@@ -390,6 +403,7 @@ class DriverRoute {
 
             return routeNodesMeta;
         } catch (error) {
+            console.log(error);
         }
     }
 
@@ -399,19 +413,6 @@ class DriverRoute {
                 return res.status(400).json({ message: 'Invalid Data' });
             } else {
                 const qRes = await queryDRoutesFilter({ "nodeId": req.query.nodeId, "startTimeWindow": req.query.nodeStartArrivalTime, "endTimeWindow": req.query.nodeEndArrivalTime }); // query routes with generic function filter by tags
-
-                // for (let rroute of qRes.data) {
-                //     const routeInfo = await getRouteInfo([rroute.origin_node.long, rroute.origin_node.lat], [rroute.destination_node.long, rroute.destination_node.lat]);
-                //     let waypointNodes = [];
-                //     for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length - 1; i++) {
-                //         let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
-                //         let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
-                //         waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
-                //     }
-                //     rroute.WaypointsGIS = waypointNodes;
-                //     rroute.geometry = routeInfo.routes[0].geometry.coordinates;
-                // }
-
 
                 for (let droute of qRes.data) {
 
@@ -455,7 +456,6 @@ class DriverRoute {
                                     nodesData.data[j] = { 'isWaypoint': true, 'distance': calculatedintermediateNode.distance, ...nodesData.data[j] };
                                 }
                             }
-
                         }
                     }
                     let intermediateNodes = formatNodeData(nodesData.data, (await qGetWaypointDistance(req.headers.cookies)).data).map((wp_node) => {

@@ -131,9 +131,7 @@ function hasSignificantCurve(coordinates) {
 // Example usa
 
 const getDistances = (lineStart, lineEnd, nodePoint, curve, allPoints) => {
-
   if (curve) {
-
     let smallest = ""
     allPoints.forEach(point => {
 
@@ -223,6 +221,7 @@ function findParallelLines(dataPoints) {
 
   // return [parallel_line_1_deg, parallel_line_2_deg];
   return [[parallel_line_1_deg[0][1], parallel_line_1_deg[0][0]], [parallel_line_1_deg[1][1], parallel_line_1_deg[1][0]], [parallel_line_2_deg[0][1], parallel_line_2_deg[0][0]], [parallel_line_2_deg[1][1], parallel_line_2_deg[1][0]]]
+
 }
 
 function calculateDistanceBetweenPoints(A, B) {

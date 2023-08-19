@@ -180,6 +180,27 @@ class NodeAdmin {
         }
     }
 
+    // Function to convert an integer to an RGB color code
+
+    intToColorCode = (num) => {
+        const hue = (num * 200.5) % 360; // Vary hue based on the number
+        const saturation = 80; // You can adjust this as needed
+        const lightness = 50; // You can adjust this as needed
+        return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    }
+    convertStringToInteger = (str) => {
+        let result = '';
+
+        for (let i = 0; i < str.length; i++) {
+            const charCode = str.charCodeAt(i);
+            if (!isNaN(charCode)) {
+                result += charCode;
+            }
+        }
+
+        return parseInt(result);
+    }
+
     displayNodesByCoordinate = async (req, res) => {
         try {
             if (!req.query.corners) { // validate if file uploaded
@@ -195,9 +216,17 @@ class NodeAdmin {
                 const nodesData = await findPointsOfInterestBetweenPolygon(dataPoints);
 
                 if (nodesData.status == 200) {
+                    let colorCoding = {};
+                    let i = 0;
+
                     res.status(200).json({
                         nodesData: nodesData.data.map((node) => {
                             if (node.description) {
+                                if (!colorCoding.hasOwnProperty(node.description.trim())) {
+                                    colorCoding[node.description.trim()] = this.intToColorCode(this.convertStringToInteger(node.description.trim()));
+                                    i = i + 1;
+                                }
+                                node.nodeColor = colorCoding[node.description.trim()]
                                 node.description = node.description.trim();
                             }
                             return node;
@@ -208,7 +237,7 @@ class NodeAdmin {
                 }
             }
         } catch (error) {
-            // console.log(error);
+            console.log(error);
             logDebugInfo('error', 'batch_node_insert_with_n2n_calculation', 'nodes/n2n', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }
@@ -234,26 +263,24 @@ class NodeAdmin {
                 const destination = dataPoints[1]
                 dataPoints = findParallelLines(dataPoints)
 
+
                 // return nodes of interest in polygon
                 let nodesData = await findPointsOfInterestBetweenPolygon(dataPoints);
 
 
                 //gets osrm route complete details
                 const routeInfo = await getRouteInfo(source, destination);
+
+                console.log(routeInfo)
                 let inter = []
 
                 for (let j = 0; j < nodesData.data.length; j++) {
-
                     for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length - 1; i++) {
-
                         let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
                         let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
                         let allPoints = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates
-
                         waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
-
                         let calculatedintermediateNode = getDistances(waypointStart, waypointEnd, nodesData.data[j], hasSignificantCurve(allPoints), allPoints);
-
                         if (calculatedintermediateNode.intercepted == true) {
                             inter.push(calculatedintermediateNode)
                             if (Object.keys(nodesData.data[j]).includes('isWaypoint')) {
@@ -264,9 +291,7 @@ class NodeAdmin {
                                 nodesData.data[j] = { 'isWaypoint': true, 'distance': calculatedintermediateNode.distance, ...nodesData.data[j] };
                             }
                         }
-
                     }
-
                 }
 
                 nodesData = formatNodeData(nodesData.data, (await qGetWaypointDistance(req.headers.cookies)).data);
@@ -388,8 +413,8 @@ class NodeAdmin {
         try {
             // console.log("here")
             let searchCoordinates = req.body.searchCoordinates;
-            // console.log(searchCoordinates)
-            const nodeList = await queryAll('nodes', '', null, req.query.pageNumber, null);
+            console.log(req.query.pageNumber)
+            const nodeList = await queryAll('nodes', '', null, null, null);
             let smallest = { distance: "", coordinates: {} }
             nodeList.data.some((element) => {
                 if (!element.lat || !element.long) { } else {

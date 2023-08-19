@@ -61,7 +61,6 @@ const filterRRouteByANodeTW = async (req, res) => {
 
                 //gets osrm route complete details
                 let routeInfo = await getRouteInfo(source, destination);
-                let inter = []
 
                 // const routeInfo = await getRouteInfo([rroute.origin_node.long, rroute.origin_node.lat], [rroute.destination_node.long, rroute.destination_node.lat]);
                 for (let j = 0; j < nodesData.data.length; j++) {
@@ -77,7 +76,6 @@ const filterRRouteByANodeTW = async (req, res) => {
                         let calculatedintermediateNode = getDistances(waypointStart, waypointEnd, nodesData.data[j], hasSignificantCurve(allPoints), allPoints);
 
                         if (calculatedintermediateNode.intercepted == true) {
-                            inter.push(calculatedintermediateNode)
                             if (Object.keys(nodesData.data[j]).includes('isWaypoint')) {
                                 if (nodesData.data[j].distance > calculatedintermediateNode.distance) {
                                     nodesData.data[j].distance = calculatedintermediateNode.distance;

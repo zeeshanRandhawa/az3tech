@@ -1,0 +1,12 @@
+droute_name,origin_node,destination_node,departure_time,departure_flexibility,driver_id,capacity,max_wait,fixed_route,droute_dbm_tag
+CARPOOL 1,2633,2901,8/3/2023 7:30,5,1,2,2,0,BATCH IMPORT 1
+CARPOOL 2,2901,2633,8/3/2023 17:00,5,2,2,2,0,BATCH IMPORT 1
+CARPOOL 3,2578,2611,8/3/2023 8:00,5,3,2,2,0,BATCH IMPORT 1
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,

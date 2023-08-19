@@ -30,6 +30,9 @@ const queryInsertLog = async (logEntry) => {
         await pool.query(logQuery);
     }
     catch (error) {
+
+
+
     }
 }
 
