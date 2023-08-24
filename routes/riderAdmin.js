@@ -6,7 +6,7 @@ const moment = require('moment');
 require('moment-timezone');
 
 const { logDebugInfo } = require('../utilities/logger');
-const { queryCreate, queryFilterDriverRider, modifyProfile, queryRemove, queryAll, deleteWhereById, queryBatchInsert, queryInsertPic, queryDistinctRoutes, queryDeleteRoutesByTag } = require('../utilities/query');
+const { queryCreate, queryFilter, modifyProfile, queryRemove, queryAll, deleteWhereById, queryBatchInsert, queryInsertPic, queryDistinctRoutes, queryDeleteRoutesByTag } = require('../utilities/query');
 
 
 // create rider profile takes rider details as dict object and inserts into database
@@ -38,7 +38,7 @@ const searchRiders = async (req, res) => {
         if (!riderName) { // validate if filter data is in correct format
             res.status(400).json({ message: "Invalid Data" })
         } else {
-            const riderList = await queryFilterDriverRider('riders', riderName, pageNumber); // insert in database
+            const riderList = await queryFilter('riders', riderName, pageNumber); // insert in database
             if (riderList.status == 200) { // error handling
                 if (riderList.data.length == 0) {
                     res.status(200).json({ message: "No rider found" });

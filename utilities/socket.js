@@ -16,7 +16,7 @@ const socketListen = async (server) => {
     });
 
     io.on('connection', (socket) => {
-        console.log("Connected")
+        // console.log("Connected")
         if (Object.keys(adminCurrentSessionSocketList).length == 0) {
             adminCurrentSessionSocketList['somekey'] = [socket]
 

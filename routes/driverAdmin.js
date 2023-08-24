@@ -3,7 +3,7 @@ const moment = require('moment');
 require('moment-timezone');
 
 const { logDebugInfo } = require('../utilities/logger');
-const { queryAll, queryCreate, queryFilterDriverRider, modifyProfile, queryRemove, deleteWhereById, queryBatchInsert, queryInsertPic, queryDistinctRoutes, queryDeleteRoutesByTag } = require('../utilities/query');
+const { queryAll, queryCreate, queryFilter, modifyProfile, queryRemove, deleteWhereById, queryBatchInsert, queryInsertPic, queryDistinctRoutes, queryDeleteRoutesByTag } = require('../utilities/query');
 
 
 // create driver profile
@@ -35,7 +35,7 @@ const searchDrivers = async (req, res) => {
         if (!driverName) { // validate if filter data is in correct format
             res.status(400).json({ message: "Invalid Data" })
         } else {
-            const driverList = await queryFilterDriverRider('drivers', driverName, pageNumber); // insert in database
+            const driverList = await queryFilter('drivers', driverName, pageNumber); // insert in database
             if (driverList.status == 200) { // error handling
                 if (driverList.data.length == 0) {
                     res.status(200).json({ message: "No rider found" });

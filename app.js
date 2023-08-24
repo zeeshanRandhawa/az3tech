@@ -35,12 +35,12 @@ const io = new Server(server, {
 
 const { userLogin, adminLogout, isLoggedIn, getRole, userSignUp } = require('./routes/adminAuth');
 const databaseManagement = require('./routes/databaseManagement');
-const { createRiderProfile, searchRiders, patchRider, deleteRider, listRiders, deleteRiderRoute, batchImportRiders, listRiderRoutes, uploadRiderProfilePic, getRRouteTags, filterRRouteByTags, deleteRRouteByTags } = require('./routes/riderAdmin');
-const { listDrivers, createDriverProfile, searchDrivers, patchDriver, deleteDriver, deleteDriverRoute, batchImportDrivers, listDriverRoutes, uploadDriverProfilePic, getDRouteTags, filterDRouteByTags, deleteDRouteByTags } = require('./routes/driverAdmin');
+const { createRiderProfile, searchRiders, patchRider, deleteRider, listRiders, deleteRiderRoute, batchImportRiders, listRiderRoutes, uploadRiderProfilePic, getRRouteTags, deleteRRouteByTags } = require('./routes/riderAdmin');
+const { listDrivers, createDriverProfile, searchDrivers, patchDriver, deleteDriver, deleteDriverRoute, batchImportDrivers, listDriverRoutes, uploadDriverProfilePic, getDRouteTags, deleteDRouteByTags } = require('./routes/driverAdmin');
 const { createRiderRoute, filterRRouteByANodeTW, listRRouteNodes, bulkImportRiderRoutes } = require('./routes/riderRouteAdmin');
 // const { batchImportDriverRoutes, importDriverTransitScheduleRoutes, filterDRouteByDNodeTW, listDRouteNodes } = require('./routes/driverRouteAdmin');
 const { getpageCount } = require('./utilities/utilities');
-const { isAuthenticated, isAdmin } = require('./routes/middleware');
+const { isAuthenticated } = require('./routes/middleware');
 const NodeAdmin = require('./routes/nodeAdmin')
 const DriverRoute = require('./routes/driverRouteAdmin')
 
@@ -135,7 +135,7 @@ app.get('/api/v1/nodes/search', isAuthenticated, nodeAdmin.searchNodes)
 
 app.delete('/api/v1/nodes/:nodeId', isAuthenticated, nodeAdmin.deleteNodeById);
 app.post('/api/v1/nodes', isAuthenticated, nodeAdmin.createNode);
-app.patch('/api/v1/nodes/:nodeId', isAuthenticated, nodeAdmin.updateNode);
+app.patch('/api/v1/nodes/:nodeId', nodeAdmin.updateNode);
 
 app.get('/api/v1/nodes/display/two-point', isAuthenticated, nodeAdmin.displayNodesBy2Point);
 app.get('/api/v1/nodes/download', isAuthenticated, nodeAdmin.downloadNodesCSV)

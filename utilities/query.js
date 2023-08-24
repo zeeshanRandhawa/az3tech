@@ -82,13 +82,13 @@ const qBatchInsertDriverRoutes = async (driverRouteData) => {
             await t.none(insertData);
           }
         } catch (error) {
-          console.log(error)
+          // console.log(error)
         }
       });
     }
     return { status: 200, message: 'Bulk data inserted successfully' };
   } catch (error) {
-    console.log(error)
+    // console.log(error)
     logDebugInfo('error', 'insert_batch_transit_droutes', 'droutes', error.message, error.stack);
     return { status: 500, message: error.message };
   }
@@ -269,10 +269,14 @@ const queryCreate = async (tableName, bioData) => {
 const queryFilter = async (tableName, name, pageNumber) => {
   try {
     // const searchQuery = await makeSearchFilterQuery(tableName, riderSearchFilters); // process filter query
-    const qRes = await pool.query(`SELECT * FROM "${tableName}" WHERE first_name ILIKE '%${name}%' OR last_name ILIKE '%${name}%' OR (first_name || ' ' || last_name) ILIKE '%${name}%' LIMIT 10 OFFSET ${(pageNumber - 1) * 10}`); // execute query
-    return { status: 200, data: qRes.rows }; // if OK return data
-  }
-  catch (error) {
+    if (tableName === "nodes") {
+      const qRes = await pool.query(`SELECT * FROM "${tableName}" WHERE address ILIKE '%${name}%' LIMIT 10 OFFSET ${(pageNumber - 1) * 10}`); // execute query
+      return { status: 200, data: qRes.rows }; // if OK return data
+    } else {
+      const qRes = await pool.query(`SELECT * FROM "${tableName}" WHERE first_name ILIKE '%${name}%' OR last_name ILIKE '%${name}%' OR (first_name || ' ' || last_name) ILIKE '%${name}%' LIMIT 10 OFFSET ${(pageNumber - 1) * 10}`); // execute query
+      return { status: 200, data: qRes.rows }; // if OK return data
+    }
+  } catch (error) {
     logDebugInfo('error', 'search_data_by_filter', tableName, error.message, error.stack);
     return { status: 500, data: error.message };
   }
@@ -484,11 +488,13 @@ const queryInsertNode = async (node_type, nodeData) => {
   }
 }
 
-const queryTableCount = async (tableName, id, tagsList, name) => {
+const queryTableCount = async (tableName, id, tagsList, name, address) => {
   try {
     let query = null;
     if (['riders', 'drivers'].includes(tableName) && name != null) {
       query = `SELECT COUNT(*) FROM "${tableName}" WHERE first_name ILIKE '%${name}%' OR last_name ILIKE '%${name}%' OR (first_name || ' ' || last_name) ILIKE '%${name}%'`;
+    } else if (tableName === "nodes") {
+      query = `SELECT COUNT(*) FROM "${tableName}" WHERE address ILIKE '%${address}%'`;
     } else {
       query = `SELECT COUNT(*) FROM "${tableName}"${id != null ? tableName == 'rroutes' ? ` WHERE rider_id=${id}` : tableName == 'droutenodes' ? ` WHERE droute_id=${id}` : tableName == 'rroutenodes' ? ` WHERE rroute_id=${id}` : ` WHERE driver_id=${id}` : ''}${tagsList != null ? ` ${id != null ? `AND` : `WHERE`} ${tableName == 'rroutes' ? 'r' : 'd'}route_dbm_tag IN (${tagsList.map(tag => `\'${tag}\'`).join(',')})` : ''}`;
     }
@@ -552,10 +558,12 @@ const queryDRoutesFilter = async (filterData) => {
       droutesBetweenTime = droutesBetweenTime.filter(obj => Object.keys(obj).length != 0);
       return { status: 200, data: droutesBetweenTime };
 
+    } else {
+      return { status: 200, data: [] };
     }
   }
   catch (error) {
-    console.log(error)
+    // console.log(error)
     logDebugInfo('error', 'filter_routes', 'rroutes', error.message, error.stack);
     return { status: 500, data: error.message };
   }

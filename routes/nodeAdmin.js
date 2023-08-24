@@ -1,5 +1,5 @@
 
-const { findPointsOfInterestBetweenPolygon, queryAll, qSetWaypointDistance, qGetWaypointDistance, countRows, deleteWhereById, queryCreate, modifyProfile, queryFilterNodeByAddress } = require('../utilities/query');
+const { findPointsOfInterestBetweenPolygon, queryAll, qSetWaypointDistance, qGetWaypointDistance, countRows, deleteWhereById, queryCreate, modifyProfile, queryFilter } = require('../utilities/query');
 const { getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, calculateDistanceBetweenPoints, formatNodeData, fetchCoordinatesDataFromApi } = require('../utilities/utilities')
 const { logDebugInfo } = require('../utilities/logger');
 const { fork } = require('child_process');
@@ -237,7 +237,7 @@ class NodeAdmin {
                 }
             }
         } catch (error) {
-            console.log(error);
+            // console.log(error);
             logDebugInfo('error', 'batch_node_insert_with_n2n_calculation', 'nodes/n2n', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }
@@ -271,7 +271,7 @@ class NodeAdmin {
                 //gets osrm route complete details
                 const routeInfo = await getRouteInfo(source, destination);
 
-                console.log(routeInfo)
+                // console.log(routeInfo)
                 let inter = []
 
                 for (let j = 0; j < nodesData.data.length; j++) {
@@ -364,7 +364,7 @@ class NodeAdmin {
             if (!nodeAddress) { // validate if filter data is in correct format
                 res.status(400).json({ message: "Invalid Data" })
             } else {
-                const nodeList = await queryFilterNodeByAddress('nodes', nodeAddress, pageNumber); // insert in database
+                const nodeList = await queryFilter('nodes', nodeAddress, pageNumber); // insert in database
                 if (nodeList.status == 200) { // error handling
                     if (nodeList.data.length == 0) {
                         res.status(200).json({ message: "No node found" });
@@ -413,7 +413,7 @@ class NodeAdmin {
         try {
             // console.log("here")
             let searchCoordinates = req.body.searchCoordinates;
-            console.log(req.query.pageNumber)
+            // console.log(req.query.pageNumber)
             const nodeList = await queryAll('nodes', '', null, null, null);
             let smallest = { distance: "", coordinates: {} }
             nodeList.data.some((element) => {
@@ -530,7 +530,7 @@ class NodeAdmin {
             await fs.unlink(`./utilities/logfiles/${fileName}`);
             return res.status(200).json({ message: 'File deleted successfully' });
         } catch (error) {
-            console.log(error)
+            // console.log(error)
             return res.status(404).json({ message: 'File not found' });
         }
     }

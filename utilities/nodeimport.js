@@ -73,7 +73,7 @@ const distanceDurationBetweenAllNodes = async () => {
 
     // console.log((new Date()) - start);
   } catch (err) {
-    console.log(error)
+    // console.log(error)
     process.send('status:Error');
   }
 }
@@ -117,12 +117,12 @@ const prepareBulkData = async (fileData) => {
         await writeFile(`./utilities/logfiles/${new Date().toLocaleString().replace(/[/.,\s:]/g, '_')}_node.csv`, csvContent, { encoding: 'utf8' });
       }
     } catch (error) {
-      console.log(error)
+      // console.log(error)
     }
 
     return { status: 200, data: results };
   } catch (error) {
-    console.log(error)
+    // console.log(error)
     return { status: 500, message: "Server Error " + error.message };
   }
 }

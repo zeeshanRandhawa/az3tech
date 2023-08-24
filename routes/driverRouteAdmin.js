@@ -2,8 +2,9 @@ const { getNodeCoordinates, queryDRoutesFilter, queryAll, findPointsOfInterestBe
 const { logDebugInfo } = require('../utilities/logger');
 const { sortRouteNodeList, getOrigDestNode, getRouteInfo, findParallelLines, getDistances, hasSignificantCurve, formatNodeData, fetchDistanceDurationFromCoordinates } = require('../utilities/utilities');
 const moment = require('moment');
-const { readFile, writeFile } = require('node:fs/promises');
+const { writeFile } = require('node:fs/promises');
 const { fork } = require('child_process');
+const { existsSync, mkdirSync } = require("fs");
 
 
 class DriverRoute {
@@ -101,15 +102,19 @@ class DriverRoute {
         }
     }
 
-
     writeJsonToFile = async (jsonStr) => {
-        await writeFile(`./utilities/uploadfiles/driverroutebatch.json`, jsonStr, 'utf8', (err) => {
+        const directoryPath = `./utilities/uploadfiles`
+
+        if (!existsSync(directoryPath)) {
+            mkdirSync(directoryPath, { recursive: true });
+        }
+
+        await writeFile(directoryPath.concat(`/driverroutebatch.json`), jsonStr, 'utf8', (err) => {
             if (err) {
                 return;
             }
         });
     }
-
 
     prepareDriverRouteBatchMetaData = (fileData) => {
         try {
@@ -264,7 +269,7 @@ class DriverRoute {
             };
             return { status: 200, data: routeGroup };
         } catch (error) {
-            console.log(error);
+            // console.log(error);
             return { status: 500, message: "Server Error " + error.message };
         }
     }
@@ -298,6 +303,8 @@ class DriverRoute {
 
             let finalTransitRoutes = await this.generateDrouteNodeFromDrouteTransit(Object.values(batchTransitMetaData.data), req.header.cookies);
 
+
+
             finalTransitRoutes = finalTransitRoutes.map((dRouteNode) => {
                 if (dRouteNode.fixed_route && dRouteNode.route_nodes.initial.length == dRouteNode.route_nodes.final.length - 1) {
                     return dRouteNode;
@@ -306,13 +313,12 @@ class DriverRoute {
                 }
             }).filter(Boolean);
 
-            console.log(finalTransitRoutes);
 
             await qBatchInsertDriverRoutes(finalTransitRoutes);
 
             res.sendStatus(200)
         } catch (error) {
-            console.log(error);
+            // console.log(error);
             logDebugInfo('error', 'batch_transit_insert', 'driver_routes', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }
@@ -385,7 +391,7 @@ class DriverRoute {
                             departure_time: null, rank: index + 1, capacity: rNodeMeta.capacity,
                             capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: cum_distance, cum_time: cum_time, status: 'DESTINATON'
                         };
-                        rNodeMeta.destination_node = rNode.origin_node;
+                        // rNodeMeta.destination_node = rNode.origin_node;
                     } else {
                         arrival_time = rNodeMeta.route_nodes.initial[index + 1].arrival_time;
 
@@ -403,7 +409,7 @@ class DriverRoute {
 
             return routeNodesMeta;
         } catch (error) {
-            console.log(error);
+            // console.log(error);
         }
     }
 
@@ -413,6 +419,7 @@ class DriverRoute {
                 return res.status(400).json({ message: 'Invalid Data' });
             } else {
                 const qRes = await queryDRoutesFilter({ "nodeId": req.query.nodeId, "startTimeWindow": req.query.nodeStartArrivalTime, "endTimeWindow": req.query.nodeEndArrivalTime }); // query routes with generic function filter by tags
+                // console.log(qRes);
 
                 for (let droute of qRes.data) {
 
@@ -486,6 +493,7 @@ class DriverRoute {
                 }
             }
         } catch (error) {
+            // console.log(error)
             logDebugInfo('error', 'filter_droutes_tw', 'driver_route', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }

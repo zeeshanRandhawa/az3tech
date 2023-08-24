@@ -3,49 +3,59 @@ const { sortRouteNodeList, getOrigDestNode, getRouteInfo, findParallelLines, get
 const moment = require('moment');
 const { readFile, writeFile } = require('node:fs/promises');
 
+findIntermediateNodes = async (origNodeC, destNodeC, authToken) => {
 
-const importGeneratedRouteNodes = async () => {
     try {
-        let authToken = process.argv[2];
 
-        let riderRoutesMetaBatchData;
+        let dataPoints = [];
+        dataPoints.push([origNodeC.long, origNodeC.lat]);
+        dataPoints.push([destNodeC.long, destNodeC.lat]);
 
-        process.send('status:Preparing data from bulk file');
+        // calculate edges of square polygon
+        // takes two long;lat points
+        // return 4 points of polygon
+        let source = dataPoints[0];
+        let destination = dataPoints[1];
+        dataPoints = findParallelLines(dataPoints);
 
-        try {
-            let contents = await readFile('./utilities/uploadfiles/driverroutebatch.json', { encoding: 'utf8' });
-            contents = JSON.parse(contents);
-            riderRoutesMetaBatchData = contents.routeNodes;
-        } catch (err) {
-            process.send('status:Error');
+        // return nodes of interest in polygon
+        let nodesData = await findPointsOfInterestBetweenPolygon(dataPoints);
+
+        //gets osrm route complete details
+        let routeInfo = await getRouteInfo(source, destination);
+
+        // const routeInfo = await getRouteInfo([droute.origin_node.long, droute.origin_node.lat], [droute.destination_node.long, droute.destination_node.lat]);
+        for (let j = 0; j < nodesData.data.length; j++) {
+
+            for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length - 1; i++) {
+
+                let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
+                let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
+
+                let allPoints = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates
+
+                let calculatedintermediateNode = getDistances(waypointStart, waypointEnd, nodesData.data[j], hasSignificantCurve(allPoints), allPoints);
+
+                if (calculatedintermediateNode.intercepted == true) {
+                    if (Object.keys(nodesData.data[j]).includes('isWaypoint')) {
+                        if (nodesData.data[j].distance > calculatedintermediateNode.distance) {
+                            nodesData.data[j].distance = calculatedintermediateNode.distance;
+                        }
+                    } else {
+                        nodesData.data[j] = { 'isWaypoint': true, 'distance': calculatedintermediateNode.distance, ...nodesData.data[j] };
+                    }
+                }
+
+            }
         }
-
-
-        process.send('status:Generating cummulative distance duration from node pairs');
-
-        // if batch Meta Data available then calculate route nodes
-        let generatedDrouteNodes = await generateDrouteNodeFromDrouteBatch(Object.values(riderRoutesMetaBatchData), authToken);
-
-        process.send('status:Asserting datagenerated');
-
-
-        // assert if routeNodes are correct in length
-        generatedDrouteNodes = generatedDrouteNodes.map((dRouteNode) => {
-            if (dRouteNode.fixed_route && dRouteNode.route_nodes.initial.length == dRouteNode.route_nodes.final.length - 1) {
-                return dRouteNode;
-            } else if (!dRouteNode.fixed_route && dRouteNode.route_nodes.initial.length + 1 <= dRouteNode.route_nodes.final.length) {
-                return dRouteNode
-            } else {
-                return
+        let intermediateNodes = formatNodeData(nodesData.data, (await qGetWaypointDistance(authToken)).data).map((wp_node) => {
+            if (wp_node.isWaypoint) {
+                return wp_node;
             }
         }).filter(Boolean);
 
-
-        await qBatchInsertDriverRoutes(generatedDrouteNodes);
-
-        process.send('status:Batch data insertion completed');
+        return intermediateNodes;
     } catch (error) {
-        process.send('status:Error');
     }
 }
 
@@ -210,65 +220,54 @@ const generateDrouteNodeFromDrouteBatch = async (routeNodesMeta, authToken) => {
 
         return routeNodesMeta;
     } catch (error) {
+        // console.log(error);
     }
 }
 
-findIntermediateNodes = async (origNodeC, destNodeC, authToken) => {
-
+const importGeneratedRouteNodes = async () => {
     try {
+        let authToken = process.argv[2];
 
-        let dataPoints = [];
-        dataPoints.push([origNodeC.long, origNodeC.lat]);
-        dataPoints.push([destNodeC.long, destNodeC.lat]);
+        let riderRoutesMetaBatchData;
 
-        // calculate edges of square polygon
-        // takes two long;lat points
-        // return 4 points of polygon
-        let source = dataPoints[0];
-        let destination = dataPoints[1];
-        dataPoints = findParallelLines(dataPoints);
+        process.send('status:Preparing data from bulk file');
 
-        // return nodes of interest in polygon
-        let nodesData = await findPointsOfInterestBetweenPolygon(dataPoints);
-
-        //gets osrm route complete details
-        let routeInfo = await getRouteInfo(source, destination);
-
-        // const routeInfo = await getRouteInfo([droute.origin_node.long, droute.origin_node.lat], [droute.destination_node.long, droute.destination_node.lat]);
-        for (let j = 0; j < nodesData.data.length; j++) {
-
-            for (let i = 0; i < routeInfo.routes[0].legs[0].steps.length - 1; i++) {
-
-                let waypointStart = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[0];
-                let waypointEnd = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates[routeInfo.routes[0].legs[0].steps[i].geometry.coordinates.length - 1];
-
-                let allPoints = routeInfo.routes[0].legs[0].steps[i].geometry.coordinates
-
-                let calculatedintermediateNode = getDistances(waypointStart, waypointEnd, nodesData.data[j], hasSignificantCurve(allPoints), allPoints);
-
-                if (calculatedintermediateNode.intercepted == true) {
-                    if (Object.keys(nodesData.data[j]).includes('isWaypoint')) {
-                        if (nodesData.data[j].distance > calculatedintermediateNode.distance) {
-                            nodesData.data[j].distance = calculatedintermediateNode.distance;
-                        }
-                    } else {
-                        nodesData.data[j] = { 'isWaypoint': true, 'distance': calculatedintermediateNode.distance, ...nodesData.data[j] };
-                    }
-                }
-
-            }
+        try {
+            let contents = await readFile('./utilities/uploadfiles/driverroutebatch.json', { encoding: 'utf8' });
+            contents = JSON.parse(contents);
+            riderRoutesMetaBatchData = contents.routeNodes;
+        } catch (err) {
+            process.send('status:Error');
         }
-        let intermediateNodes = formatNodeData(nodesData.data, (await qGetWaypointDistance(authToken)).data).map((wp_node) => {
-            if (wp_node.isWaypoint) {
-                return wp_node;
+
+
+        process.send('status:Generating cummulative distance duration from node pairs');
+
+        // if batch Meta Data available then calculate route nodes
+        let generatedDrouteNodes = await generateDrouteNodeFromDrouteBatch(Object.values(riderRoutesMetaBatchData), authToken);
+
+        process.send('status:Asserting datagenerated');
+
+
+        // assert if routeNodes are correct in length
+        generatedDrouteNodes = generatedDrouteNodes.map((dRouteNode) => {
+            if (dRouteNode.fixed_route && dRouteNode.route_nodes.initial.length == dRouteNode.route_nodes.final.length - 1) {
+                return dRouteNode;
+            } else if (!dRouteNode.fixed_route && dRouteNode.route_nodes.initial.length + 1 <= dRouteNode.route_nodes.final.length) {
+                return dRouteNode
+            } else {
+                return
             }
         }).filter(Boolean);
 
-        return intermediateNodes;
+
+        await qBatchInsertDriverRoutes(generatedDrouteNodes);
+
+        process.send('status:Batch data insertion completed');
     } catch (error) {
+        // console.log(error)
+        process.send('status:Error');
     }
 }
 
-
-
-importGeneratedRouteNodes()
+importGeneratedRouteNodes();
