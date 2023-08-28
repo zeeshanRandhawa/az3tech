@@ -13,7 +13,9 @@ const pool = new Pool({
   // password: '123456',
   // host: 'localhost',
   // port: 5432,
-  // database: 'test-transport'
+  // database: 'test-transport',
+  // connectionString: 'postgresql://postgres:1234@localhost:5432/test-transport?dateStyle=iso',
+
   user: 'doadmin',
   password: 'AVNS_MHGwE5WNGWUy_wvn_-l',
   host: 'db-postgresql-sfo2-32856-do-user-13737111-0.b.db.ondigitalocean.com',
@@ -46,7 +48,9 @@ const db = pgp({
   // password: '123456',
   // host: 'localhost',
   // port: 5432,
-  // database: 'test-transport'
+  // database: 'test-transport',
+  // connectionString: 'postgresql://postgres:1234@localhost:5432/test-transport?dateStyle=iso',
+
   user: 'doadmin',
   password: 'AVNS_MHGwE5WNGWUy_wvn_-l',
   host: 'db-postgresql-sfo2-32856-do-user-13737111-0.b.db.ondigitalocean.com',
@@ -82,13 +86,11 @@ const qBatchInsertDriverRoutes = async (driverRouteData) => {
             await t.none(insertData);
           }
         } catch (error) {
-          // console.log(error)
         }
       });
     }
     return { status: 200, message: 'Bulk data inserted successfully' };
   } catch (error) {
-    // console.log(error)
     logDebugInfo('error', 'insert_batch_transit_droutes', 'droutes', error.message, error.stack);
     return { status: 500, message: error.message };
   }
@@ -563,7 +565,6 @@ const queryDRoutesFilter = async (filterData) => {
     }
   }
   catch (error) {
-    // console.log(error)
     logDebugInfo('error', 'filter_routes', 'rroutes', error.message, error.stack);
     return { status: 500, data: error.message };
   }

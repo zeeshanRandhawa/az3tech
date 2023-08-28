@@ -125,7 +125,7 @@ const listDriverRoutes = async (req, res) => {
         if (driverRouteList.status == 200) {
             // there is problem of date conversion from local to UTC. 
             const convertedData = await Promise.all(driverRouteList.data.map(async (obj) => {  // iterate over returned data and normalize the dates.
-                const convertedTimestamp = await normalizeTimeZone(obj.departure_time);
+                const convertedTimestamp = obj.departure_time ? (await normalizeTimeZone(obj.departure_time)) : obj.departure_time;
                 return { ...obj, departure_time: convertedTimestamp };  // return updated object with new value
             }));
             res.status(200).json({ "driver_routes": convertedData });   // return converted data
@@ -141,12 +141,15 @@ const listDriverRoutes = async (req, res) => {
 
 
 // takes iso standard datetime string and normalizes it
-const normalizeTimeZone = async (datetimestamp) => {
+normalizeTimeZone = async (datetimestamp) => {
     const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;  // get server time zone offset to either add/subtract from date
     const convertedTimestamp = moment(datetimestamp) // convert the date in "YYYY-MM-DD HH:MM:SS" format
         .tz(serverTimezone)
-        .format("YYYY-MM-DD HH:mm:ss");
-    return convertedTimestamp;
+
+    if (convertedTimestamp.clone().format("YYYY-MM-DD HH:mm:ss").indexOf("1970-01-01") !== -1) {
+        return convertedTimestamp.clone().format("HH:mm");
+    }
+    return convertedTimestamp.clone().format("YYYY-MM-DD HH:mm");
 }
 
 

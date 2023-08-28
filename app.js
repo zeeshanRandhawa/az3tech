@@ -44,13 +44,11 @@ const { isAuthenticated } = require('./routes/middleware');
 const NodeAdmin = require('./routes/nodeAdmin')
 const DriverRoute = require('./routes/driverRouteAdmin')
 
-
-
-
 const nodeAdmin = new NodeAdmin(io);
 const driverRouteAdmin = new DriverRoute(io)
 
 app.use(databaseManagement);
+
 
 app.post('/api/v1/rider', isAuthenticated, createRiderProfile); // create rider profile
 app.post('/api/v1/driver', isAuthenticated, createDriverProfile); // create driver profile
@@ -143,6 +141,13 @@ app.post('/api/v1/nodes/nearest', nodeAdmin.getNearestNode)
 
 app.get('/api/v1/nodes/states/getsates', nodeAdmin.getAllStates);
 app.get('/api/v1/nodes/state/getcitynodes', nodeAdmin.getStateCityNodes);
+app.get("/api/v1/version", async (req, res) => {
+  try {
+    const appVersion = await process.env.VERSION_NUMBER;
+    console.log(appVersion)
+    return res.status(200).json({ "versionNumber": appVersion });
+  } catch (error) { }
+});
 
 app.use((req, res, next) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));

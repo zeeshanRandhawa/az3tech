@@ -3,7 +3,7 @@ const { sortRouteNodeList, getOrigDestNode, getRouteInfo, findParallelLines, get
 const moment = require('moment');
 const { readFile, writeFile } = require('node:fs/promises');
 
-findIntermediateNodes = async (origNodeC, destNodeC, authToken) => {
+const findIntermediateNodes = async (origNodeC, destNodeC, authToken) => {
 
     try {
 
@@ -125,7 +125,7 @@ const generateDrouteNodeFromDrouteBatch = async (routeNodesMeta, authToken) => {
                         temprouteNode = {
                             droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: rNode.destination_node, arrival_time: arrival_time.format('YYYY-MM-DD HH:mm'),
                             departure_time: null, max_wait: rNodeMeta.max_wait, rank: index + 1, capacity: rNodeMeta.capacity,
-                            capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: cum_distance, cum_time: cum_time, status: 'DESTINATON'
+                            capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: cum_distance, cum_time: cum_time, status: 'DESTINATION'
                         };
                     } else {
                         // if intermediate node then status POTENTIAL
@@ -157,11 +157,12 @@ const generateDrouteNodeFromDrouteBatch = async (routeNodesMeta, authToken) => {
                 rNodeMeta.origin_node = origDestNode.origNode;
                 rNodeMeta.destination_node = origDestNode.destNode;
 
+                let rank = 0;
                 // insert first node as origin node having cum_time adn cum_distance as 0
                 // capacity_used randomly generated
                 let temprouteNode = {
                     droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: origDestNode.origNode, arrival_time: null,
-                    departure_time: rNodeMeta.departure_time, max_wait: rNodeMeta.max_wait, rank: 0, capacity: rNodeMeta.capacity,
+                    departure_time: rNodeMeta.departure_time, max_wait: rNodeMeta.max_wait, rank: rank, capacity: rNodeMeta.capacity,
                     capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: 0, cum_time: 0, status: 'ORIGIN'
                 };
 
@@ -186,10 +187,11 @@ const generateDrouteNodeFromDrouteBatch = async (routeNodesMeta, authToken) => {
 
                 let arrival_time = (moment.utc(rNodeMeta.departure_time, 'YYYY-MM-DD HH:mm').add(calculatedDistDur.duration, 'seconds'));
 
+                rank = rank + 1;
                 temprouteNode = {
                     droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: rNodeMeta.route_nodes.initial[0].destination_node, arrival_time: arrival_time.format('YYYY-MM-DD HH:mm'),
-                    departure_time: null, max_wait: rNodeMeta.max_wait, rank: 1, capacity: rNodeMeta.capacity,
-                    capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: calculatedDistDur.distance, cum_time: calculatedDistDur.duration / 60, status: 'DESTINATON'
+                    departure_time: null, max_wait: rNodeMeta.max_wait, rank: rank, capacity: rNodeMeta.capacity,
+                    capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: calculatedDistDur.distance, cum_time: calculatedDistDur.duration / 60, status: 'DESTINATION'
                 };
                 rNodeMeta.route_nodes.final.push(temprouteNode);
 
@@ -208,11 +210,23 @@ const generateDrouteNodeFromDrouteBatch = async (routeNodesMeta, authToken) => {
                             droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: interNode.node_id, arrival_time: arrival_time.format('YYYY-MM-DD HH:mm'),
                             departure_time: null, max_wait: rNodeMeta.max_wait, rank: 1, capacity: rNodeMeta.capacity,
                             capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: calculatedDistDur.distance, cum_time: calculatedDistDur.duration / 60,
-                            status: 'DESTINATON'
+                            status: 'POTENTIAL'
                         };
                         rNodeMeta.route_nodes.final.push(temprouteNode);
                     }
                 }
+                rNodeMeta.route_nodes.final.sort((a, b) => a.arrival_time.localeCompare(b.arrival_time));
+                rNodeMeta.route_nodes.final.forEach((tmpRNode) => {
+                    if (tmpRNode.status === "POTENTIAL") {
+                        tmpRNode.rank = rank;
+                        rank = rank + 1;
+                    }
+                });
+                rNodeMeta.route_nodes.final.forEach((tmpRNode) => {
+                    if (tmpRNode.status === "DESTINATION") {
+                        tmpRNode.rank = rank;
+                    }
+                });
             }
             return rNodeMeta;
 
@@ -220,7 +234,6 @@ const generateDrouteNodeFromDrouteBatch = async (routeNodesMeta, authToken) => {
 
         return routeNodesMeta;
     } catch (error) {
-        // console.log(error);
     }
 }
 
@@ -265,7 +278,6 @@ const importGeneratedRouteNodes = async () => {
 
         process.send('status:Batch data insertion completed');
     } catch (error) {
-        // console.log(error)
         process.send('status:Error');
     }
 }

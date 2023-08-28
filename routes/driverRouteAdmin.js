@@ -237,8 +237,8 @@ class DriverRoute {
                 if (line.trim() !== '' && !line.split(',').every((column) => column.trim() === '')) { //excluse empty line
                     let [droute_name, origin_node, destination_node, arrival_time, departure_time, driver_id, capacity, droute_dbm_tag] = line.split(',');
 
-                    arrival_time = !arrival_time.trim() ? null : moment.utc(arrival_time, 'H:mm');
-                    departure_time = !departure_time.trim() ? null : moment.utc(departure_time, 'H:mm');
+                    arrival_time = !arrival_time.trim() ? null : moment(arrival_time.trim(), 'HH:mm')
+                    departure_time = !departure_time.trim() ? null : moment(departure_time.trim(), 'HH:mm');
 
                     if (!Object.keys(routeGroup).includes(droute_name)) {
                         routeGroup[droute_name] = {
@@ -260,7 +260,7 @@ class DriverRoute {
                         // routeGroup[droute_name].route_nodes.final = []
                     } else {
                         routeGroup[droute_name].route_nodes.initial.push({
-                            origin_node: parseInt(origin_node, 10), destination_node: parseInt(destination_node, 10),
+                            origin_node: parseInt(origin_node, 10), destination_node: destination_node ? parseInt(destination_node, 10) : null,
                             arrival_time: arrival_time, departure_time: departure_time
                         });
                     }
@@ -269,7 +269,6 @@ class DriverRoute {
             };
             return { status: 200, data: routeGroup };
         } catch (error) {
-            // console.log(error);
             return { status: 500, message: "Server Error " + error.message };
         }
     }
@@ -298,27 +297,20 @@ class DriverRoute {
 
             const batchTransitMetaData = this.prepareTransitRouteMetaBatchData(req.files[0].buffer.toString().split('\n').slice(1), req.body.scheduled_weekdays, req.body.scheduled_start, req.body.scheduled_end); // prepare data to insert
 
-            // console.log(batchTransitMetaData.data)
-            // console.log(batchTransitMetaData.data['BART SF SHORT'].route_nodes)
-
             let finalTransitRoutes = await this.generateDrouteNodeFromDrouteTransit(Object.values(batchTransitMetaData.data), req.header.cookies);
 
-
-
             finalTransitRoutes = finalTransitRoutes.map((dRouteNode) => {
-                if (dRouteNode.fixed_route && dRouteNode.route_nodes.initial.length == dRouteNode.route_nodes.final.length - 1) {
+                if (dRouteNode.fixed_route && dRouteNode.route_nodes.initial.length == dRouteNode.route_nodes.final.length) {
                     return dRouteNode;
                 } else {
                     return
                 }
             }).filter(Boolean);
 
-
             await qBatchInsertDriverRoutes(finalTransitRoutes);
 
             res.sendStatus(200)
         } catch (error) {
-            // console.log(error);
             logDebugInfo('error', 'batch_transit_insert', 'driver_routes', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }
@@ -331,9 +323,9 @@ class DriverRoute {
             routeNodesMeta = (await Promise.all(routeNodesMeta.map(async (rNodeMeta) => {
                 // Now we have the very first orig node and lst destination Node
                 // Have to check if it is true
-                let origDestNode = getOrigDestNode(rNodeMeta.route_nodes.initial);
+                let origDestNode = getOrigDestNode(rNodeMeta.route_nodes.initial.slice(0, -1));
 
-                if (!origDestNode.origNode || !origDestNode.destNode) {
+                if (!origDestNode.origNode || !origDestNode.destNode || origDestNode.destNode !== rNodeMeta.route_nodes.initial[rNodeMeta.route_nodes.initial.length - 1].origin_node) {
                     return;
                 }
 
@@ -344,8 +336,9 @@ class DriverRoute {
                 rNodeMeta.origin_node = origDestNode.origNode;
                 rNodeMeta.destination_node = origDestNode.destNode;
 
-
                 let departure_time = rNodeMeta.departure_time;
+                rNodeMeta.departure_time = '1970-01-01 '.concat(rNodeMeta.departure_time.clone().format("HH:mm"));
+
                 let arrival_time = null;
 
 
@@ -362,10 +355,11 @@ class DriverRoute {
                 let cum_distance = 0;
 
                 // itertae over other nodes from initial and calculate route_nodes
-                for (let [index, rNode] of rNodeMeta.route_nodes.initial.entries()) {
+                for (let [index, rNode] of rNodeMeta.route_nodes.initial.slice(1).entries()) {
                     // get long lat from data base
                     let origNodeC = (await getNodeCoordinates(rNodeMeta.route_nodes.initial[index].origin_node)).data;
-                    let destNodeC = (await getNodeCoordinates(rNode.destination_node)).data;
+                    let destNodeC = (await getNodeCoordinates(rNode.origin_node)).data;
+
 
                     // calculate distance and duration from api
                     let calculatedDistDur = await fetchDistanceDurationFromCoordinates(`http://143.110.152.222:5000/route/v1/driving/${origNodeC.long},${origNodeC.lat};${destNodeC.long},${destNodeC.lat}?geometries=geojson&overview=false`);
@@ -375,29 +369,33 @@ class DriverRoute {
                         return;
                     }
 
-                    if (index !== rNodeMeta.route_nodes.initial.length - 1) {
-                        arrival_time = rNodeMeta.route_nodes.initial[index + 1].arrival_time;
-                        cum_time += (moment.duration(rNodeMeta.route_nodes.initial[index + 1].departure_time.diff(rNodeMeta.route_nodes.initial[index].departure_time))).asMinutes();
-                    } else {
-                        cum_time += (moment.duration(rNode.arrival_time.diff(rNodeMeta.route_nodes.initial[index].departure_time))).asMinutes();
-                    }
+                    // if (index !== rNodeMeta.route_nodes.initial.length - 1) {
+                    //     arrival_time = rNodeMeta.route_nodes.initial[index + 1].arrival_time;
+                    //     cum_time += (moment.duration(rNodeMeta.route_nodes.initial[index + 1].departure_time.diff(rNodeMeta.route_nodes.initial[index].departure_time))).asMinutes();
+                    // } else {
+                    //     cum_time += (moment.duration(rNode.arrival_time.diff(rNodeMeta.route_nodes.initial[index].departure_time))).asMinutes();
+                    // }
+
+                    cum_time += (moment.duration(rNode.arrival_time.diff(departure_time))).asMinutes();
+                    departure_time = rNode.departure_time;
 
                     cum_distance += calculatedDistDur.distance
 
+
                     // if last node then status DESTINARION
-                    if (index == rNodeMeta.route_nodes.initial.length - 1) {
+                    if (index == rNodeMeta.route_nodes.initial.length - 2) {
                         temprouteNode = {
-                            droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: rNode.destination_node, arrival_time: '1970-01-01 '.concat(rNode.arrival_time.format('HH:mm')),
+                            droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: rNode.origin_node, arrival_time: '1970-01-01 '.concat(rNode.arrival_time.format('HH:mm')),
                             departure_time: null, rank: index + 1, capacity: rNodeMeta.capacity,
                             capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: cum_distance, cum_time: cum_time, status: 'DESTINATON'
                         };
                         // rNodeMeta.destination_node = rNode.origin_node;
                     } else {
-                        arrival_time = rNodeMeta.route_nodes.initial[index + 1].arrival_time;
+                        // arrival_time = rNodeMeta.route_nodes.initial[index + 1].arrival_time;
 
                         // if intermediate node then status POTENTIAL
                         temprouteNode = {
-                            droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: rNode.destination_node, arrival_time: '1970-01-01 '.concat(rNode.arrival_time.format('HH:mm')),
+                            droute_id: null, outb_driver_id: rNodeMeta.driver_id, node_id: rNode.origin_node, arrival_time: '1970-01-01 '.concat(rNode.arrival_time.format('HH:mm')),
                             departure_time: '1970-01-01 '.concat(rNodeMeta.route_nodes.initial[index + 1].departure_time.format('HH:mm')), rank: index + 1, capacity: rNodeMeta.capacity,
                             capacity_used: Math.floor(Math.random() * rNodeMeta.capacity), cum_distance: cum_distance, cum_time: cum_time, status: 'POTENTIAL'
                         };
@@ -409,7 +407,6 @@ class DriverRoute {
 
             return routeNodesMeta;
         } catch (error) {
-            // console.log(error);
         }
     }
 
@@ -419,7 +416,6 @@ class DriverRoute {
                 return res.status(400).json({ message: 'Invalid Data' });
             } else {
                 const qRes = await queryDRoutesFilter({ "nodeId": req.query.nodeId, "startTimeWindow": req.query.nodeStartArrivalTime, "endTimeWindow": req.query.nodeEndArrivalTime }); // query routes with generic function filter by tags
-                // console.log(qRes);
 
                 for (let droute of qRes.data) {
 
@@ -493,7 +489,6 @@ class DriverRoute {
                 }
             }
         } catch (error) {
-            // console.log(error)
             logDebugInfo('error', 'filter_droutes_tw', 'driver_route', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }
@@ -504,9 +499,15 @@ class DriverRoute {
             if (!req.query.routeId) {
                 return res.status(400).json({ message: 'Invalid Data' });
             } else {
-                const dRouteNodeList = await queryAll('droutenodes', columnName = 'droute_id', columnvalue = parseInt(req.query.routeId), pagination = req.query.pageNumber); // execute rider fetch query
+                const dRouteNodeList = await queryAll('droutenodes', columnName = 'droute_id', columnvalue = parseInt(req.query.routeId), pagination = req.query.pageNumber, null, false, null, "", "rank"); // execute rider fetch query
                 if (dRouteNodeList.status == 200) {
-                    res.status(dRouteNodeList.status).json({ dRouteNodes: dRouteNodeList.data });
+
+                    const convertedData = await Promise.all(dRouteNodeList.data.map(async (obj) => {  // iterate over returned data and normalize the dates.
+                        const departure_time = obj.departure_time ? await this.normalizeTimeZone(obj.departure_time) : obj.departure_time;
+                        const arrival_time = obj.arrival_time ? await this.normalizeTimeZone(obj.arrival_time) : obj.arrival_time;
+                        return { ...obj, departure_time: departure_time, arrival_time: arrival_time };  // return updated object with new value
+                    }));
+                    res.status(dRouteNodeList.status).json({ dRouteNodes: convertedData });
                 } else {
                     res.status(dRouteNodeList.status).json({ message: dRouteNodeList.data }); // error handling
                 }
@@ -515,6 +516,17 @@ class DriverRoute {
             logDebugInfo('error', 'query_droute_nodes', 'droutenodes', error.message, error.stack);
             res.status(500).json({ message: "Server Error " + error.message });
         }
+    }
+
+    normalizeTimeZone = async (datetimestamp) => {
+        const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;  // get server time zone offset to either add/subtract from date
+        const convertedTimestamp = moment(datetimestamp) // convert the date in "YYYY-MM-DD HH:MM:SS" format
+            .tz(serverTimezone)
+
+        if (convertedTimestamp.clone().format("YYYY-MM-DD HH:mm:ss").indexOf("1970-01-01") !== -1) {
+            return convertedTimestamp.clone().format("HH:mm");
+        }
+        return convertedTimestamp.clone().format("YYYY-MM-DD HH:mm");
     }
 }
 
