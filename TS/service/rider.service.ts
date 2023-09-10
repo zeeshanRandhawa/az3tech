@@ -140,7 +140,7 @@ export class RiderService {
                 }
             }
         }));
-        this.userRepository.batchImportUsers(userBatchDataWithRider, {
+        await this.userRepository.batchImportUsers(userBatchDataWithRider, {
             include: [{
                 association: "rider"
             }],

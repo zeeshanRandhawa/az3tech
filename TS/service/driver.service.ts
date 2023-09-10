@@ -114,7 +114,8 @@ export class DriverService {
                 }
             }
         }));
-        this.userRepository.batchImportUsers(userBatchDataWithDriver, {
+
+        await this.userRepository.batchImportUsers(userBatchDataWithDriver, {
             include: [{
                 association: "driver"
             }],
