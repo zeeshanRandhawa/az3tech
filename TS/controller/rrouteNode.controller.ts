@@ -20,6 +20,7 @@ export class RiderRouteNodeController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -30,6 +31,7 @@ export class RiderRouteNodeController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 }

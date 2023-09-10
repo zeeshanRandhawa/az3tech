@@ -20,10 +20,10 @@ async function assertDriverRouteMetaBatchGroupData(driverRouteMetaBatchGroups: R
 
     for (let routeName in driverRouteMetaBatchGroups) {
         const distinctNodes: Set<number> = new Set<number>();
-        driverRouteMetaBatchGroups[routeName].routeNodes.initial.forEach((routeNode: Record<string, any>) => {
+        await Promise.all(driverRouteMetaBatchGroups[routeName].routeNodes.initial.map(async (routeNode: Record<string, any>) => {
             distinctNodes.add(routeNode.originNode);
             distinctNodes.add(routeNode.destinationNode);
-        });
+        }));
 
         let distinctOriginDestinationRouteNodesId: Record<string, any> = extractOrigDestNodeId(driverRouteMetaBatchGroups[routeName].routeNodes.initial);
 
@@ -54,9 +54,9 @@ async function assertDriverRouteMetaBatchGroupData(driverRouteMetaBatchGroups: R
         }
     }
 
-    keysToDelete.forEach((key: string) => {
+    await Promise.all(keysToDelete.map(async (key: string) => {
         delete driverRouteMetaBatchGroups[key];
-    });
+    }));
 
     try {
         if (failedRoutes.length) {
@@ -121,7 +121,6 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
             let distinctOriginDestinationRouteNodesId: Record<string, any> = extractOrigDestNodeId(driverRouteMeta!.routeNodes.initial);
 
             if (distinctOriginDestinationRouteNodesId.originNode && distinctOriginDestinationRouteNodesId.destinationNode) {
-                // }
 
                 driverRouteMeta!.routeNodes.initial = sortRouteNodeListByNodeStop(driverRouteMeta!.routeNodes.initial,
                     distinctOriginDestinationRouteNodesId.originNode);
@@ -146,8 +145,6 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
                     let routeDestinationNode: NodeAttributes | null = await getNodeObjectByNodeId(rNode.destinationNode)
 
                     if (routeOriginNode !== null && routeDestinationNode !== null) {
-                        // return;
-                        // }
 
                         let calculatedDistanceDurationBetweenNodes: Record<string, any> = await getDistanceDurationBetweenNodes(
                             { longitude: routeOriginNode?.long, latitude: routeOriginNode?.lat },
@@ -155,8 +152,6 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
                         );
 
                         if (Object.values(calculatedDistanceDurationBetweenNodes).every(value => value !== null)) {
-                            // return;
-                            // }
 
                             let arrivalTime: Moment = (moment(driverRouteMeta!.departureTime,
                                 "YYYY-MM-DD HH:mm").add(calculatedDistanceDurationBetweenNodes.duration, "seconds"));
@@ -201,8 +196,6 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
 
             let distinctOriginDestinationRouteNodesId: Record<string, any> = extractOrigDestNodeId(driverRouteMeta!.routeNodes.initial);
             if (distinctOriginDestinationRouteNodesId.originNode && distinctOriginDestinationRouteNodesId.destinationNode) {
-                // return;
-                // }
 
                 driverRouteMeta!.routeNodes.initial = sortRouteNodeListByNodeStop(driverRouteMeta!.routeNodes.initial,
                     distinctOriginDestinationRouteNodesId.originNode);
@@ -224,16 +217,12 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
                 let routeDestinationNode: NodeAttributes | null = await getNodeObjectByNodeId(driverRouteMeta!.routeNodes.initial[0].destinationNode);
 
                 if (routeOriginNode !== null && routeDestinationNode !== null) {
-                    // return;
-                    // }
 
                     let calculatedDistanceDurationBetweenNodes: Record<string, any> = await getDistanceDurationBetweenNodes(
                         { longitude: routeOriginNode?.long, latitude: routeOriginNode?.lat },
                         { longitude: routeDestinationNode?.long, latitude: routeDestinationNode?.lat }
                     );
                     if (Object.values(calculatedDistanceDurationBetweenNodes).every(value => value !== null)) {
-                        // return;
-                        // }
 
                         let arrivalTime: Moment = (moment(driverRouteMeta!.departureTime,
                             "YYYY-MM-DD HH:mm").add(calculatedDistanceDurationBetweenNodes.duration, "seconds"));
@@ -275,17 +264,17 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
                         }
                         await driverRouteMeta.routeNodes.final.sort((a: Record<string, any>, b: Record<string, any>) => a.arrivalTime.localeCompare(b.arrivalTime));
 
-                        await driverRouteMeta.routeNodes.final.forEach((tmpRNode: Record<string, any>) => {
+                        await Promise.all(driverRouteMeta.routeNodes.final.map(async (tmpRNode: Record<string, any>) => {
                             if (tmpRNode.status === "POTENTIAL") {
                                 tmpRNode.rank = rank;
                                 rank = rank + 1;
                             }
-                        });
-                        await driverRouteMeta.routeNodes.final.forEach((tmpRNode: Record<string, any>) => {
+                        }));
+                        await Promise.all(driverRouteMeta.routeNodes.final.map(async (tmpRNode: Record<string, any>) => {
                             if (tmpRNode.status === "DESTINATION") {
                                 tmpRNode.rank = rank;
                             }
-                        });
+                        }));
                     }
                 }
             }
@@ -302,7 +291,7 @@ async function findNodesOfInterestInAreaWithinRange(routeOriginNode: NodeAttribu
     );
 
     let nodesInAreaOfInterest: Array<Record<string, any> | undefined> = await findNodesOfInterestInArea(Object.values(parallelLinePoints[0]),
-        Object.values(parallelLinePoints[1]), Object.values(parallelLinePoints[2]), Object.values(parallelLinePoints[3]))
+        Object.values(parallelLinePoints[1]), Object.values(parallelLinePoints[2]), Object.values(parallelLinePoints[3]), [])
 
     const routeInfo: Record<string, any> = await getRouteDetailsByOSRM(
         { longitude: routeOriginNode.long!, latitude: routeOriginNode.lat! },
@@ -356,8 +345,6 @@ function prepareDriverRouteBatchMetaData(initialFileData: Array<Record<string, a
                 originNode: null, destinationNode: null, departureTime: line.departureTime,
                 capacity: line.passengerCapacity, maxWait: line.maxWait, status: "NEW", driverId: line.driverId, drouteDbmTag: line.databaseManagementTag,
                 drouteName: line.routeName, departureFlexibility: line.departureFlexibility,
-                //  scheduledWeekdays: null,
-                // intermediateNodesList: null,
                 fixedRoute: line.fixedRoute === "1" ? true : false, routeNodes: { initial: [], final: [] }
             }
 

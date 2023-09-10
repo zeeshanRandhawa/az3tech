@@ -6,14 +6,11 @@ class NodeToNode extends Model {
         NodeToNode.belongsTo(Node, {
             foreignKey: "origNodeId",
             targetKey: "nodeId",
-            as: "origin",
-            onDelete: "cascade"
-        });
+            as: "origin",        });
         NodeToNode.belongsTo(Node, {
             foreignKey: "destNodeId",
             targetKey: "nodeId",
-            as: "destination",
-            onDelete: "cascade"
+            as: "destination"
         });
     }
 }

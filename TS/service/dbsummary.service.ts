@@ -28,7 +28,7 @@ export class DBSummaryService {
             return { "name": tableName.tablename, "count": dbTableRowCountList[index], "usage": dbTableUsage[index] };
         });
 
-        const sortOrder = ["riders", "drivers", "nodes", "n2n", "n2nwp", "rroutes", "rroutenodes", "droutes", "droutenodes", "users", "sessions", "roles", "debug_logs"];
+        const sortOrder = ["riders", "drivers", "nodes", "n2n", "n2nwp", "rroutes", "rroutenodes", "droutes", "droutenodes", "users", "sessions", "roles", "user_role"];
         dbTableStats.sort((dataSetA, dataSetB) => {
             const indexA = sortOrder.indexOf(dataSetA.name);
             const indexB = sortOrder.indexOf(dataSetB.name);
@@ -36,7 +36,6 @@ export class DBSummaryService {
         });
 
         return { status: 200, data: { dbTableStatistics: dbTableStats } };
-
     }
 
     async purgeTable(tableName: string): Promise<Record<string, any> | void> {

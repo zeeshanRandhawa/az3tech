@@ -1,18 +1,18 @@
 import { Model, DataTypes } from "sequelize";
-import { sequelize } from "../util/db.config"; // Assuming you have a separate file for database configuration
+import { sequelize } from "../util/db.config";
 
 class Driver extends Model {
     static associate(models: any) {
-        Driver.hasOne(models.User, {
+        Driver.belongsTo(models.User, {
             foreignKey: "userId",
-            sourceKey: "userId",
-            as: "user",
-            onDelete: "cascade"
+            targetKey: "userId",
+            as: "user"
         });
         Driver.hasMany(models.DriverRoute, {
             foreignKey: "driverId",
             sourceKey: "driverId",
             as: "droutes",
+            onDelete: "CASCADE"
         });
     }
 }
@@ -63,7 +63,7 @@ Driver.init(
         },
         userId: {
             type: DataTypes.INTEGER,
-            allowNull: true,
+            allowNull: false,
             unique: true
         },
         phoneNumber: {

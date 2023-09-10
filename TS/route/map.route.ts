@@ -21,12 +21,13 @@ export class MapRouter {
         this.router.patch("/waypointdistance", (req: Request, res: Response) => {
             this.nodeController.setWaypointDistance(parseFloat(req.body.waypointDistance as string) as number, req.headers.cookies as string | undefined).then(data => res.status(data.status).json(data.data));
         });
+
         this.router.get("/node/nearest", (req: Request, res: Response) => {
             this.nodeController.displayMapNearestNode(parseFloat(req.query.longitude as string) as number, parseFloat(req.query.latitude as string) as number).then(data => res.status(data.status).json(data.data));
         });
 
         this.router.get("/node/all/display", (req: Request, res: Response) => {
-            this.nodeController.displayMapNodesInAreaOfInterest(req.query.upperLeftCorner as string, req.query.lowerLeftCorner as string, req.query.upperRightCorner as string, req.query.lowerRightCorner as string).then(data => res.status(data.status).json(data.data));
+            this.nodeController.displayMapNodesInAreaOfInterest(req.query.upperLeftCorner as string, req.query.lowerLeftCorner as string, req.query.upperRightCorner as string, req.query.lowerRightCorner as string, req.query.descriptionFilterListStr as string | undefined).then(data => res.status(data.status).json(data.data));
         });
 
         this.router.get("/route", (req: Request, res: Response) => {
@@ -34,7 +35,6 @@ export class MapRouter {
         });
 
         this.router.get("/waypointdistance", (req: Request, res: Response) => {
-            // req.headers.cookies
             this.nodeController.getWaypointDistance(req.headers.cookies as string | undefined).then(data => res.status(data.status).json(data.data));
         });
     }

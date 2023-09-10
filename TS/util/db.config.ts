@@ -36,7 +36,6 @@ import Driver from "../model/driver.model";
 import DriverRoute from "../model/droute.model";
 import DriverRouteNode from "../model/droutenode.model";
 import Node from "../model/node.model";
-import NodeToNode from "../model/n2n.model";
 
 User.associate({ Session, Role, Rider, Driver });
 Session.associate({ User });

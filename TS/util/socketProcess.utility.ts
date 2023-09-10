@@ -24,13 +24,16 @@ class ProcessSocket {
                 const session: SessionAttributes | null = await this.sessionRepository.findSession({
                     where: {
                         sessionToken: message
-                    }
+                    },
+                    include: [{
+                        association: "user"
+                    }]
                 });
                 if (session) {
-                    if (session!.email.trim().concat("Node") in this.processSocketList) {
-                        this.processSocketList[session!.email.trim().concat("Node")].sockets.push(socket);
+                    if (session!.user!.email.trim().concat("Node") in this.processSocketList) {
+                        this.processSocketList[session!.user!.email!.trim().concat("Node")].sockets.push(socket);
                     } else {
-                        this.processSocketList[session!.email.trim().concat("Node")] = { message: "", childProcess: null, opType: "Node", status: "", sockets: [socket] };
+                        this.processSocketList[session!.user!.email!.trim().concat("Node")] = { message: "", childProcess: null, opType: "Node", status: "", sockets: [socket] };
                     }
                 }
             });
@@ -38,11 +41,14 @@ class ProcessSocket {
                 const session: SessionAttributes | null = await this.sessionRepository.findSession({
                     where: {
                         sessionToken: message
-                    }
+                    },
+                    include: [{
+                        association: "user"
+                    }]
                 });
                 if (session) {
-                    if (session!.email.trim().concat("Node") in this.processSocketList) {
-                        let currentMessage: string = this.processSocketList[session!.email.trim().concat("Node")].message;
+                    if (session!.user!.email.trim().concat("Node") in this.processSocketList) {
+                        let currentMessage: string = this.processSocketList[session!.user!.email!.trim().concat("Node")].message;
                         socket.emit("uploadStatusNode", { "message": currentMessage })
                     }
                 }
@@ -51,13 +57,16 @@ class ProcessSocket {
                 const session: SessionAttributes | null = await this.sessionRepository.findSession({
                     where: {
                         sessionToken: message
-                    }
+                    },
+                    include: [{
+                        association: "user"
+                    }]
                 });
                 if (session) {
-                    if (session!.email.trim().concat("DriverRouteBatch") in this.processSocketList) {
-                        this.processSocketList[session!.email.trim().concat("DriverRouteBatch")].sockets.push(socket);
+                    if (session!.user!.email.trim().concat("DriverRouteBatch") in this.processSocketList) {
+                        this.processSocketList[session!.user!.email!.trim().concat("DriverRouteBatch")].sockets.push(socket);
                     } else {
-                        this.processSocketList[session!.email.trim().concat("DriverRouteBatch")] = { message: "", childProcess: null, opType: "DriverRouteBatch", status: "", sockets: [socket] };
+                        this.processSocketList[session!.user!.email!.trim().concat("DriverRouteBatch")] = { message: "", childProcess: null, opType: "DriverRouteBatch", status: "", sockets: [socket] };
                     }
                 }
             });
@@ -65,11 +74,14 @@ class ProcessSocket {
                 const session: SessionAttributes | null = await this.sessionRepository.findSession({
                     where: {
                         sessionToken: message
-                    }
+                    },
+                    include: [{
+                        association: "user"
+                    }]
                 });
                 if (session) {
-                    if (session!.email.trim().concat("DriverRouteBatch") in this.processSocketList) {
-                        let currentMessage: string = this.processSocketList[session!.email.trim().concat("DriverRouteBatch")].message;
+                    if (session!.user!.email.trim().concat("DriverRouteBatch") in this.processSocketList) {
+                        let currentMessage: string = this.processSocketList[session!.user!.email!.trim().concat("DriverRouteBatch")].message;
                         socket.emit("uploadStatusDriverRouteBatch", { "message": currentMessage })
                     }
                 }
@@ -135,11 +147,14 @@ class ProcessSocket {
             const session: SessionAttributes | null = await this.sessionRepository.findSession({
                 where: {
                     sessionToken: sessionToken
-                }
+                },
+                include: [{
+                    association: "user"
+                }]
             });
             if (session) {
                 for (let key in this.processSocketList) {
-                    if (key === session!.email.trim().concat(opType)) {
+                    if (key === session!.user!.email.trim().concat(opType)) {
                         if (this.processSocketList[key].opType === opType && this.processSocketList[key].status !== "complete" && this.processSocketList[key].status !== "error" && this.processSocketList[key].status !== "") {
                             flag = true
                         }

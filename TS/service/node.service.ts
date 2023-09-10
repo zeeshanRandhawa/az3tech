@@ -10,8 +10,8 @@ import { NodeRepository } from "../repository/node.repository";
 import { CoordinateAttribute, CustomError, NodeAttributes, NodeForm, SessionAttributes } from "../util/interface.utility";
 import {
     calculateDistanceBetweenPoints,
-    findNodesOfInterestInArea, findParallelLinePoints, formatNodeData, getDistances, getGeographicCoordinatesByAddress,
-    getRouteDetailsByOSRM, isValidFileHeader, prepareBatchBulkImportData
+    findNodesOfInterestInArea, getGeographicCoordinatesByAddress,
+    isValidFileHeader, prepareBatchBulkImportData
 } from "../util/helper.utility";
 import { SessionRepository } from "../repository/session.repository";
 import { UserRepository } from "../repository/user.repository";
@@ -201,7 +201,7 @@ export class NodeService {
             }
 
             const zip: Archiver = archiver("zip");
-            csvFiles.forEach((file: string) => {
+            csvFiles.forEach(async (file: string) => {
                 const filePath: string = path.join("./util/logs/", file);
                 zip.append(createReadStream(filePath), { name: file });
             });
@@ -215,7 +215,6 @@ export class NodeService {
             attributes: [
                 [fn("DISTINCT", col("state_province")), "stateProvince"]
             ],
-            // raw: true,
             order: [
                 ["stateProvince", "ASC"]
             ]
@@ -244,7 +243,6 @@ export class NodeService {
                 stateProvince: stateProvince
             },
             group: ["city"],
-            // raw: true,
             order: [
                 ["city", "ASC"]
             ]
@@ -277,10 +275,13 @@ export class NodeService {
         const session: SessionAttributes | null = await this.sessionRepository.findSession({
             where: {
                 sessionToken: sessionToken
-            }
+            },
+            include: [{
+                association: "user"
+            }]
         });
 
-        ProcessSocket.getInstance().forkProcess("./util/process/nodeBatchImport.process.ts", "Node", session?.email!, 0);
+        ProcessSocket.getInstance().forkProcess("./util/process/nodeBatchImport.process.ts", "Node", session?.user?.email.trim()!, 0);
 
         return { status: 200, data: { message: "Nodes import in progress" } };
     }
@@ -302,7 +303,7 @@ export class NodeService {
 
     async getNodesInAreaOfInterest(upperLeftCorner: Array<number>, lowerLeftCorner: Array<number>, upperRightCorner: Array<number>, lowerRightCorner: Array<number>): Promise<Record<string, any>> {
 
-        const nodesToDisplay: Array<Record<string, any>> = await findNodesOfInterestInArea(upperLeftCorner, lowerLeftCorner, upperRightCorner, lowerRightCorner);
+        const nodesToDisplay: Array<Record<string, any>> = await findNodesOfInterestInArea(upperLeftCorner, lowerLeftCorner, upperRightCorner, lowerRightCorner, []);
 
         if (nodesToDisplay.length) {
             const totalNodesCount: number = await this.nodeRepository.countNodes({});
@@ -311,78 +312,6 @@ export class NodeService {
         } else {
             return { status: 404, data: { message: "No node found in this area" } };
         }
-    }
-
-    // async getRouteWithIntermediateNodes(originPoint: Record<string, number>, destinationPoint: Record<string, number>): Promise<Record<string, any>> {
-
-    //     const parallelLinePoints: Array<Record<string, number>> = findParallelLinePoints(originPoint, destinationPoint);
-    //     let nodesInAreaOfInterest: Array<Record<string, any>> = await findNodesOfInterestInArea(Object.values(parallelLinePoints[0]), Object.values(parallelLinePoints[1]), Object.values(parallelLinePoints[2]), Object.values(parallelLinePoints[3]))
-    //     const routeInfo: Record<string, any> = await getRouteDetailsByOSRM(originPoint, destinationPoint);
-
-    //     const waypointNodes: Array<Record<string, any>> = [];
-
-    //     let inter: Array<any> = []
-    //     for (let i: number = 0; i < nodesInAreaOfInterest.length; ++i) {
-    //         for (let j: number = 0; j < routeInfo.routes[0].legs[0].steps.length - 1; ++j) {
-
-    //             let subRoutePointsGIS: Array<[number, number]> = routeInfo.routes[0].legs[0].steps[j].geometry.coordinates;
-
-    //             let waypointStart: [number, number] = subRoutePointsGIS[0]
-    //             let waypointEnd: [number, number] = subRoutePointsGIS[routeInfo.routes[0].legs[0].steps[j].geometry.coordinates.length - 1];
-    //             waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
-
-    //             let calculatedintermediateNode: Record<string, any> = getDistances(waypointStart, waypointEnd, nodesInAreaOfInterest[i], subRoutePointsGIS);
-
-    //             if (calculatedintermediateNode.intercepted === true) {
-    //                 inter.push(calculatedintermediateNode)
-    //                 if (Object.keys(nodesInAreaOfInterest[i]).includes('isWaypoint')) {
-    //                     if (nodesInAreaOfInterest[i].distance > calculatedintermediateNode.distance) {
-    //                         nodesInAreaOfInterest[i].distance = calculatedintermediateNode.distance;
-    //                     }
-    //                 } else {
-    //                     nodesInAreaOfInterest[i] = { 'isWaypoint': true, 'distance': calculatedintermediateNode.distance, ...nodesInAreaOfInterest[i] };
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     // nodesInAreaOfInterest = formatNodeData(nodesInAreaOfInterest, (await qGetWaypointDistance(req.headers.cookies)).data);
-    //     nodesInAreaOfInterest = formatNodeData(nodesInAreaOfInterest, 25000);
-
-    //     return { status: 200, data: { "intermediateNodes": nodesInAreaOfInterest, "osrmRoute": routeInfo, "GISWaypoints": waypointNodes } }
-    // }
-
-    async getWaypointDistance(sessionToken: string): Promise<Record<string, any>> {
-        const session: SessionAttributes | null = await this.sessionRepository.findSession({
-            where: {
-                sessionToken: sessionToken
-            },
-            include: [{
-                association: "user"
-            }]
-        });
-        if (!session) {
-            throw new CustomError("Session not found", 404);
-        }
-        return { status: 200, data: { waypointDistance: session.user?.waypointDistance } };
-    }
-
-    async setWaypointDistance(waypointDistance: number, sessionToken: string): Promise<Record<string, any>> {
-        const session: SessionAttributes | null = await this.sessionRepository.findSession({
-            where: {
-                sessionToken: sessionToken
-            }
-        });
-        if (!session) {
-            throw new CustomError("Session not found", 404);
-        }
-
-        await this.userRepository.updateUser({
-            waypointDistance: waypointDistance
-        }, {
-            email: session.email
-        });
-
-        return { status: 200, data: { message: "Updated successfullt" } }
     }
 
     async getNearestNode(coordinateData: CoordinateAttribute): Promise<Record<string, any>> {
@@ -395,7 +324,7 @@ export class NodeService {
             distance: Infinity,
             coordinates: {}
         };
-        nodeList.forEach((node: NodeAttributes) => {
+        await Promise.all(nodeList.map(async (node: NodeAttributes) => {
             if (node.lat !== undefined || node.long !== undefined) {
                 let distance: number = calculateDistanceBetweenPoints({ latitude: node.lat!, longitude: node.long! }, { latitude: coordinateData.latitude!, longitude: coordinateData.longitude! })
                 if (distance <= smallestDistanceCoordinate.distance) {
@@ -403,7 +332,7 @@ export class NodeService {
                     smallestDistanceCoordinate.coordinates = { latitude: node.lat, longitude: node.long }
                 }
             }
-        });
+        }));
 
         return { status: 200, data: smallestDistanceCoordinate };
     }

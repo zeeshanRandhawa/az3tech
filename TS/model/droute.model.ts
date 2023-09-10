@@ -7,28 +7,25 @@ class DriverRoute extends Model {
             foreignKey: "nodeId",
             sourceKey: "originNode",
             as: "origin",
-            onDelete: "cascade"
         });
         DriverRoute.hasOne(models.Node, {
             foreignKey: "nodeId",
             sourceKey: "destinationNode",
             as: "destination",
-            onDelete: "cascade"
         });
         DriverRoute.belongsTo(models.Driver, {
             foreignKey: "driverId",
             targetKey: "driverId",
             as: "driver",
-            onDelete: "cascade"
         });
         DriverRoute.hasMany(models.DriverRouteNode, {
             foreignKey: "drouteId",
             sourceKey: "drouteId",
-            as: "drouteNodes"
+            as: "drouteNodes",
+            onDelete: "CASCADE"
         });
     }
 }
-
 
 DriverRoute.init(
     {
@@ -83,26 +80,10 @@ DriverRoute.init(
             type: DataTypes.SMALLINT,
             allowNull: true,
         },
-        scheduledWeekdays: {
-            type: DataTypes.STRING(7),
-            allowNull: true
-        },
         intermediateNodesList: {
             type: DataTypes.TEXT,
             allowNull: true
         },
-        scheduleStart: {
-            type: DataTypes.DATE,
-            allowNull: true
-        },
-        scheduleEnd: {
-            type: DataTypes.DATE,
-            allowNull: true
-        },
-        isTransit: {
-            type: DataTypes.BOOLEAN,
-            allowNull: true
-        }
     },
     {
         sequelize,

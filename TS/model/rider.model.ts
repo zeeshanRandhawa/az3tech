@@ -3,16 +3,16 @@ import { sequelize } from "../util/db.config";
 
 class Rider extends Model {
     static associate(models: any) {
-        Rider.hasOne(models.User, {
+        Rider.belongsTo(models.User, {
             foreignKey: "userId",
-            sourceKey: "userId",
-            as: "user",
-            onDelete: "cascade"
+            targetKey: "userId",
+            as: "user"
         });
         Rider.hasMany(models.RiderRoute, {
             foreignKey: "riderId",
             sourceKey: "riderId",
             as: "rroutes",
+            onDelete: "CASCADE"
         });
     }
 }
@@ -55,7 +55,7 @@ Rider.init(
         },
         userId: {
             type: DataTypes.INTEGER,
-            allowNull: true,
+            allowNull: false,
             unique: true
         },
         phoneNumber: {

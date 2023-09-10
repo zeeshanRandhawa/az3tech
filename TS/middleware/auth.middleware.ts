@@ -4,7 +4,7 @@ import { CustomError, SessionAttributes } from "../util/interface.utility";
 import { SessionRepository } from "../repository/session.repository";
 
 // req.headers.cookies
-// req.cookies.admin_cookie
+// req.cookies.sessionToken
 
 export class AuthMiddleware {
 
@@ -61,11 +61,9 @@ export class AuthMiddleware {
             }
         } catch (error: any) {
             if (error instanceof CustomError) {
-                if (error instanceof CustomError) {
-                    res.status(error.statusCode).json({ message: error.message });
-                }
-                res.status(500).json({ message: error.message });
+                res.status(error.statusCode).json({ message: error.message });
             }
+            res.status(500).json({ message: error.message });
         }
     };
 }

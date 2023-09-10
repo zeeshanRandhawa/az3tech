@@ -9,20 +9,23 @@ class User extends Model {
             as: "role"
         });
         User.hasMany(models.Session, {
-            foreignKey: "email",
-            sourceKey: "email",
-            as: "sessions"
-        });
-        User.belongsTo(models.Rider, {
             foreignKey: "userId",
-            targetKey: "userId",
-            as: "rider",
-        });
+            sourceKey: "userId",
+            as: "sessions",
+            onDelete: "CASCADE"
 
-        User.belongsTo(models.Driver, {
+        });
+        User.hasOne(models.Driver, {
             foreignKey: "userId",
-            targetKey: "userId",
+            sourceKey: "userId",
             as: "driver",
+            onDelete: "CASCADE"
+        });
+        User.hasOne(models.Rider, {
+            foreignKey: "userId",
+            sourceKey: "userId",
+            as: "rider",
+            onDelete: "CASCADE"
         });
     }
 }
@@ -41,6 +44,7 @@ User.init(
         roleId: {
             type: DataTypes.SMALLINT,
             allowNull: false,
+            primaryKey: true
         },
         userId: {
             type: DataTypes.INTEGER,

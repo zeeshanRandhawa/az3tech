@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { UserController } from "../controller/user.controller";
-import { LoginForm, SignupForm } from "../util/interface.utility";
+import { LoginForm, RiderDriverForm, SignupForm } from "../util/interface.utility";
 import { AuthMiddleware } from "../middleware/auth.middleware";
 
 export class UserRouter {
@@ -27,7 +27,7 @@ export class UserRouter {
       this.userController.loginRider(req.body as LoginForm).then(data => res.status(data.status).json(data.data));
     });
 
-    this.router.post("/rider/logout", (req: Request, res: Response) => {
+    this.router.post("/rider/logout", AuthMiddleware.ensureAuthenticated, (req: Request, res: Response) => {
       this.userController.logoutRider(req.body.sessionToken as string).then(data => res.status(data.status).json(data.data));
     });
 
@@ -48,11 +48,6 @@ export class UserRouter {
     this.router.get("/admin/logout", AuthMiddleware.ensureAuthenticated, (req: Request, res: Response) => {
       this.userController.logoutAdmin(req.headers.cookies as string).then(data => res.clearCookie("sessionToken").status(data.status).json(data.data));
     });
-
-    // this.router.get("/getrole", (req: Request, res: Response) => {
-    //   this.userController.getRoleByEmail(req.query.email as string).then(data => res.status(data.status).json(data.data));
-
-    // });
   }
 }
 

@@ -1,13 +1,19 @@
 import { Op, literal } from "sequelize";
 import { RiderRepository } from "../repository/rider.repository";
-import { isValidFileHeader, prepareBatchBulkImportData } from "../util/helper.utility";
-import { CustomError, RiderAttributes, RiderDriverForm } from "../util/interface.utility";
+import { generatePasswordHash, isValidFileHeader, prepareBatchBulkImportData } from "../util/helper.utility";
+import { CustomError, RiderAttributes, RiderDriverForm, UserAttributes } from "../util/interface.utility";
+import { DriverRepository } from "../repository/driver.repository";
+import { UserRepository } from "../repository/user.repository";
 
 export class RiderService {
 
     private riderRepository: RiderRepository;
+    private driverRepository: DriverRepository;
+    private userRepository: UserRepository;
     constructor() {
         this.riderRepository = new RiderRepository();
+        this.driverRepository = new DriverRepository();
+        this.userRepository = new UserRepository();
     }
 
     async listRiders(pageNumber: number): Promise<Record<string, any>> {
@@ -24,18 +30,68 @@ export class RiderService {
     }
 
     async createRider(riderBio: RiderDriverForm): Promise<Record<string, any>> {
-        await this.riderRepository.createRider({
-            firstName: riderBio.firstName,
-            lastName: riderBio.lastName,
-            address: riderBio.address,
-            city: riderBio.city,
-            stateProvince: riderBio.stateProvince,
-            zipPostalCode: riderBio.zipPostalCode,
-            profilePicture: riderBio.profilePicture,
-            phoneNumber: riderBio.countryCode && riderBio.mobileNumber ? riderBio.countryCode.trim().concat(riderBio.mobileNumber.trim()) : null
-        }, {
-            fields: ["firstName", "lastName", "address", "city", "stateProvince", "zipPostalCode", "profilePicture", "phoneNumber"]
+
+        let existingUser: UserAttributes | null = await this.userRepository.findUser({
+            where: {
+                email: riderBio.email,
+                roleId: 3
+            }
         });
+
+        if (existingUser) {
+            throw new CustomError("User already exists", 409);
+        } else {
+            await this.userRepository.createUser({
+                email: riderBio.email,
+                password: await generatePasswordHash(riderBio.password),
+                roleId: 3,
+                rider: {
+                    phoneNumber: riderBio.countryCode.concat(riderBio.mobileNumber),
+                    firstName: riderBio.firstName,
+                    lastName: riderBio.lastName,
+                    address: riderBio.address,
+                    city: riderBio.city,
+                    stateProvince: riderBio.stateProvince,
+                    zipPostalCode: riderBio.zipPostalCode,
+                    profilePicture: riderBio.profilePicture,
+                }
+            }, {
+                include: [{
+                    association: "rider"
+                }],
+                fields: ["email", "password", "roleId"]
+            });
+
+            existingUser = await this.userRepository.findUser({
+                where: {
+                    email: riderBio.email,
+                    roleId: 4
+                }
+            });
+            if (!existingUser) {
+                await this.userRepository.createUser({
+                    email: riderBio.email,
+                    password: await generatePasswordHash(riderBio.password),
+                    roleId: 4,
+                    driver: {
+                        phoneNumber: riderBio.countryCode.concat(riderBio.mobileNumber),
+                        firstName: riderBio.firstName,
+                        lastName: riderBio.lastName,
+                        address: riderBio.address,
+                        city: riderBio.city,
+                        stateProvince: riderBio.stateProvince,
+                        zipPostalCode: riderBio.zipPostalCode,
+                        profilePicture: riderBio.profilePicture,
+                        capacity: Math.floor(Math.random() * 5) + 1
+                    }
+                }, {
+                    include: [{
+                        association: "driver"
+                    }],
+                    fields: ["email", "password", "roleId"]
+                });
+            }
+        }
 
         return { status: 201, data: { message: "Rider Created Successfully" } }
     }
@@ -63,12 +119,56 @@ export class RiderService {
     }
 
     async batchImportRiders(fileToImport: Express.Multer.File): Promise<Record<string, any>> {
-        if (!isValidFileHeader(fileToImport.buffer, ["First Name", "Last Name", "Address", "City", "State/Province", "Zip/Postal Code"])) {
+        if (!isValidFileHeader(fileToImport.buffer, ["First Name", "Last Name", "Email", "Address", "City", "State/Province", "Zip/Postal Code", "Country Code", "Mobile Number"])) {
             throw new CustomError("Invalid columns or column length", 422);
         }
-        const riderBatchData: Array<Record<string, any>> = prepareBatchBulkImportData(fileToImport.buffer, ["firstName", "lastName", "address", "city", "stateProvince", "zipPostalCode"]);
+        const riderBatchData: Array<Record<string, any>> = prepareBatchBulkImportData(fileToImport.buffer, ["firstName", "lastName", "email", "address", "city", "stateProvince", "zipPostalCode", "countryCode", "mobileNumber"]);
 
-        await this.riderRepository.batchImportRiders(riderBatchData);
+        const userBatchDataWithRider: Array<Record<string, any>> = await Promise.all(riderBatchData.map(async (riderData: Record<string, any>) => {
+            return {
+                email: riderData.email,
+                password: await generatePasswordHash(riderData.firstName),
+                roleId: 3,
+                rider: {
+                    phoneNumber: riderData.countryCode.concat(riderData.mobileNumber),
+                    firstName: riderData.firstName,
+                    lastName: riderData.lastName,
+                    address: riderData.address,
+                    city: riderData.city,
+                    stateProvince: riderData.stateProvince,
+                    zipPostalCode: riderData.zipPostalCode,
+                }
+            }
+        }));
+        this.userRepository.batchImportUsers(userBatchDataWithRider, {
+            include: [{
+                association: "rider"
+            }],
+            fields: ["email", "password", "roleId"]
+        });
+
+        const userBatchDataWithDriver: Array<Record<string, any>> = await Promise.all(riderBatchData.map(async (riderData: Record<string, any>) => {
+            return {
+                email: riderData.email,
+                password: await generatePasswordHash(riderData.firstName),
+                roleId: 4,
+                driver: {
+                    phoneNumber: riderData.countryCode.concat(riderData.mobileNumber),
+                    firstName: riderData.firstName,
+                    lastName: riderData.lastName,
+                    address: riderData.address,
+                    city: riderData.city,
+                    stateProvince: riderData.stateProvince,
+                    zipPostalCode: riderData.zipPostalCode,
+                }
+            }
+        }));
+        this.userRepository.batchImportUsers(userBatchDataWithDriver, {
+            include: [{
+                association: "driver"
+            }],
+            fields: ["email", "password", "roleId"]
+        });
 
         return { status: 200, data: { message: "Riders data successfully imported" } };
     }

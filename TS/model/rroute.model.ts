@@ -7,28 +7,25 @@ class RiderRoute extends Model {
             foreignKey: "nodeId",
             sourceKey: "originNode",
             as: "origin",
-            onDelete: "cascade"
         });
         RiderRoute.hasOne(models.Node, {
             foreignKey: "nodeId",
             sourceKey: "destinationNode",
             as: "destination",
-            onDelete: "cascade"
         });
         RiderRoute.belongsTo(models.Rider, {
             foreignKey: "riderId",
             targetKey: "riderId",
             as: "rider",
-            onDelete: "cascade"
         });
         RiderRoute.hasMany(models.RiderRouteNode, {
             foreignKey: "rrouteId",
             sourceKey: "rrouteId",
-            as: "rrouteNodes"
+            as: "rrouteNodes",
+            onDelete: "CASCADE"
         });
     }
 }
-
 
 RiderRoute.init(
     {

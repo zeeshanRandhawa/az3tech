@@ -1,5 +1,5 @@
 import { UserRepository } from "../repository/user.repository";
-import { SignupForm, CustomError, UserAttributes, LoginForm } from "../util/interface.utility";
+import { CustomError, UserAttributes, LoginForm, RiderDriverForm, SignupForm } from "../util/interface.utility";
 import { generatePasswordHash, comparePasswordHash, generateRandomToken } from "../util/helper.utility";
 import { SessionService } from "./session.service";
 import { SessionRepository } from "../repository/session.repository";
@@ -18,7 +18,8 @@ export class UserService {
         const existingUser: UserAttributes | null = await this.userRepository.findUser(
             {
                 where: {
-                    email: signUpFormData.email
+                    email: signUpFormData.email,
+                    roleId: 3
                 }
             });
         if (existingUser) {
@@ -32,7 +33,6 @@ export class UserService {
                     phoneNumber: signUpFormData.countryCode.concat(signUpFormData.mobileNumber),
                     firstName: signUpFormData.firstName,
                     lastName: signUpFormData.lastName,
-                    address: signUpFormData.address,
                     profilePicture: signUpFormData.profilePicture,
                 }
             }, {
@@ -41,6 +41,33 @@ export class UserService {
                 }],
                 fields: ["email", "password", "roleId"]
             });
+
+            const existingUser: UserAttributes | null = await this.userRepository.findUser(
+                {
+                    where: {
+                        email: signUpFormData.email,
+                        roleId: 4
+                    }
+                });
+            if (!existingUser) {
+                await this.userRepository.createUser({
+                    email: signUpFormData.email,
+                    password: await generatePasswordHash(signUpFormData.password),
+                    roleId: 4,
+                    driver: {
+                        phoneNumber: signUpFormData.countryCode.concat(signUpFormData.mobileNumber),
+                        firstName: signUpFormData.firstName,
+                        lastName: signUpFormData.lastName,
+                        profilePicture: signUpFormData.profilePicture,
+                        capacity: Math.floor(Math.random() * 5) + 1
+                    }
+                }, {
+                    include: [{
+                        association: "driver"
+                    }],
+                    fields: ["email", "password", "roleId"]
+                });
+            }
         }
     }
 
@@ -48,7 +75,6 @@ export class UserService {
         try {
             await this.sessionService.destroyExpiredSessions();
         } catch (error: any) { }
-
 
         const user: UserAttributes | null = await this.userRepository.findUser({
             where: {
@@ -68,15 +94,14 @@ export class UserService {
             throw new CustomError("Invalid password", 401);
         }
         const sessionExpireAt: Date = new Date(Date.now() + 3600000);
-        // sessionExpireAt.setHours(sessionExpireAt.getHours() + 1);
         const sessionToken: string = generateRandomToken(32);
 
         await this.sessionService.createSession({
-            email: user.email,
+            userId: user.userId,
             sessionToken: sessionToken,
             sessionExpireTimestamp: sessionExpireAt
         }, {
-            fields: ["email", "sessionToken", "sessionExpireTimestamp"]
+            fields: ["userId", "sessionToken", "sessionExpireTimestamp"]
         });
 
         return { status: 200, data: { message: "Login successful", sessionToken: { token: sessionToken, expireTime: sessionExpireAt } } };
@@ -95,7 +120,6 @@ export class UserService {
             return { status: 200, data: { message: "User logged out" } };
         }
         throw new CustomError("User not logged in", 401);
-        // return { status: 401, "data": { "message": "User not logged in" } };
     }
 
     async authenticateAdmin(loginFormData: LoginForm, userSessionToken?: string): Promise<Record<string, any>> {
@@ -105,7 +129,7 @@ export class UserService {
 
         if (userSessionToken !== null && (await (new SessionRepository()).findSession({
             where: {
-                sessionToken: userSessionToken
+                sessionToken: userSessionToken ? userSessionToken : ""
             }
         })) !== null) {
             throw new CustomError("Already authorized", 400);
@@ -129,20 +153,17 @@ export class UserService {
             throw new CustomError("Invalid password", 401);
         }
         const sessionExpireAt: Date = new Date(Date.now() + 21600000);
-        // sessionExpireAt.setHours(sessionExpireAt.getHours() + 1);
         const sessionToken: string = generateRandomToken(32);
 
         await this.sessionService.createSession({
-            email: admin.email,
+            userId: admin.userId,
             sessionToken: sessionToken,
             sessionExpireTimestamp: sessionExpireAt
         }, {
-            fields: ["email", "sessionToken", "sessionExpireTimestamp"]
+            fields: ["userId", "sessionToken", "sessionExpireTimestamp"]
         });
 
         return { status: 200, data: { message: "Login successful", sessionToken: { token: sessionToken, expireTime: sessionExpireAt } } };
-
-
     }
 
     async logoutAdmin(sessionToken?: string): Promise<any> {
@@ -159,18 +180,4 @@ export class UserService {
         }
         throw new CustomError("User not logged in", 401)
     }
-    // async getRoleByEmail(email?: string): Promise<Record<string, any>> {
-    //     const user: UserAttributes | null = await this.userRepository.findUser({
-    //         where: {
-    //             email: email
-    //         },
-    //         "include": [{
-    //             "association": "role"
-    //         }]
-    //     });
-    //     if (user) {
-    //         return { "status": 200, "data": user?.role?.roleType.trim() };
-    //     }
-    //     throw new CustomError("User not found", 401);
-    // }
 }

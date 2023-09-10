@@ -1,8 +1,12 @@
 import { QueryTypes } from "sequelize";
 import { sequelize } from "../util/db.config";
+import { UserRepository } from "./user.repository";
 
 export class DBSummaryRepository {
+    private userRepository: UserRepository;
+
     constructor() {
+        this.userRepository = new UserRepository();
     }
 
     async getTableNames(): Promise<Array<Record<string, string>> | null> {
@@ -21,9 +25,21 @@ export class DBSummaryRepository {
     }
 
     async deleteDBTable(tableName: string): Promise<void> {
-        if (tableName === "riders") {
-            await sequelize.query(`DELETE FROM"${tableName}"`);
+        if (tableName.trim() === "riders") {
+            await this.userRepository.deleteUser({
+                where: {
+                    roleId: 3
+                },
+                cascade: true
+            })
+        } else if (tableName === "drivers") {
+            await this.userRepository.deleteUser({
+                where: {
+                    roleId: 4
+                },
+                cascade: true
+            })
         }
-        await sequelize.query(`TRUNCATE TABLE "${tableName}" CASCADE`);
+        await sequelize.query(`TRUNCATE TABLE "${tableName.trim()}" CASCADE`);
     }
 }

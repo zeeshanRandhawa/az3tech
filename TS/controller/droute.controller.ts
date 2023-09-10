@@ -17,6 +17,7 @@ export class DriverRouteController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -30,6 +31,7 @@ export class DriverRouteController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -40,6 +42,7 @@ export class DriverRouteController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -53,9 +56,10 @@ export class DriverRouteController {
         try {
             return await this.driverRouteService.batchImportDriverRoutes(fileToImport, sessionToken);
         } catch (error: any) {
-            if (error instanceof (CustomError)) {
+            if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -72,9 +76,10 @@ export class DriverRouteController {
         try {
             return await this.driverRouteService.transitImportDriverRoutes(fileToImport, scheduledWeekdays!, scheduledStartDate!, scheduledEndDate!, sessionToken);
         } catch (error: any) {
-            if (error instanceof (CustomError)) {
+            if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -96,6 +101,7 @@ export class DriverRouteController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -106,6 +112,7 @@ export class DriverRouteController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -128,6 +135,7 @@ export class DriverRouteController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -138,6 +146,7 @@ export class DriverRouteController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -152,6 +161,7 @@ export class DriverRouteController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -179,10 +189,10 @@ export class DriverRouteController {
         try {
             return await this.driverRouteService.displayDriverRoutesAtNodeBetweenTimeFrame(nodeId, startDateTimeWindow, endDateTimeWindow, sessionToken!);
         } catch (error: any) {
-            console.log(error)
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 }

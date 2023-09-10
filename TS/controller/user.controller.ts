@@ -1,5 +1,5 @@
 import { UserService } from "../service/user.service"
-import { SignupForm, CustomError, LoginForm } from "../util/interface.utility"
+import { SignupForm, CustomError, LoginForm, RiderDriverForm } from "../util/interface.utility"
 
 
 export class UserController {
@@ -12,18 +12,17 @@ export class UserController {
 
     async signupRider(signupFormData: SignupForm): Promise<Record<string, any>> {
         try {
-            const requiredFields: (keyof SignupForm)[] = ["firstName", "lastName", "address", "email", "password", "mobileNumber", "countryCode", "profilePicture"];
+            const requiredFields: (keyof SignupForm)[] = ["firstName", "lastName", "email", "password", "mobileNumber", "countryCode", "profilePicture"];
             const missingFields = requiredFields.filter(field => !(field in signupFormData));
 
-            if (missingFields.length > 0) {
-                return { status: 422, data: { message: "Invalid Data" } };
+            if (missingFields.length > 0 || !signupFormData.firstName || !signupFormData.lastName) {
+                throw new CustomError("Invalid data", 422);
             }
             if (!signupFormData.password || !signupFormData.email || !signupFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-                return { status: 422, data: { message: "Invalid email or password" } };
+                throw new CustomError("Invalid email or password", 422);
             }
-            if ((!signupFormData.countryCode || !signupFormData.mobileNumber) &&
-                (signupFormData.countryCode || signupFormData.mobileNumber)) {
-                return { status: 422, data: { message: "Invalid phone number" } };
+            if ((!signupFormData.countryCode || !signupFormData.mobileNumber)) {
+                throw new CustomError("Invalid phone number", 422);
             }
             if (signupFormData.profilePicture && !signupFormData.profilePicture.includes("data:image/")) {
                 if (signupFormData.profilePicture.startsWith("/9j/")) {
@@ -32,15 +31,13 @@ export class UserController {
                     signupFormData.profilePicture = "data:image/png;base64,".concat(signupFormData.profilePicture);
                 }
             }
-            try {
-                await this.userService.createRiderWithUser(signupFormData);
-            } catch (error: any) {
-                if (error instanceof CustomError) {
-                    return { status: error.statusCode, data: { message: error.message } };
-                }
-            }
+            await this.userService.createRiderWithUser(signupFormData);
+
             return { status: 201, data: { message: "Rider account created successfully" } };
         } catch (error: any) {
+            if (error instanceof CustomError) {
+                return { status: error.statusCode, data: { message: error.message } };
+            }
             return { status: 500, data: { message: error.message } };
         }
     }
@@ -61,6 +58,7 @@ export class UserController {
                     if (error instanceof CustomError) {
                         return { status: error.statusCode, data: { message: error.message } };
                     }
+                    return { status: 500, data: { message: error.message } };
                 }
             }
         } catch (error: any) {
@@ -79,6 +77,7 @@ export class UserController {
                 if (error instanceof CustomError) {
                     return { status: error.statusCode, data: { message: error.message } };
                 }
+                return { status: 500, data: { message: error.message } };
             }
         } catch (error: any) {
             return { status: 500, data: { message: error.message } };
@@ -101,10 +100,10 @@ export class UserController {
             try {
                 return await this.userService.authenticateAdmin(loginFormData, userSessionToken);
             } catch (error: any) {
-
                 if (error instanceof CustomError) {
                     return { status: error.statusCode, data: { message: error.message } };
                 }
+                return { status: 500, data: { message: error.message } };
             }
         }
     }
@@ -120,6 +119,7 @@ export class UserController {
                 if (error instanceof CustomError) {
                     return { status: error.statusCode, data: { message: error.message } };
                 }
+                return { status: 500, data: { message: error.message } };
             }
         } catch (error: any) {
             return { status: 500, data: { message: error.message } };

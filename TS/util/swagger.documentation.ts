@@ -12,7 +12,7 @@ export const setupSwagger = (app: Application) => {
         description: 'All routes and operations defined here',
       },
     },
-    apis: ['**/*.ts'], // Include all your controller files here
+    apis: ['**/*.ts'],
   };
 
   const specs = swaggerJsdoc(options);

@@ -12,15 +12,13 @@ export class SessionService {
 
     async createSession(sessionToCreate: Record<string, any>, associations: Record<string, any>): Promise<void> {
         await this.sessionRepository.createSession(sessionToCreate, associations);
-        // const createdSession: SessionAttributes | null = await this.sessionRepository.createSession(sessionToCreate, associations);
-        // return createdSession as unknown as SessionAttributes;
+
     }
 
     async destroyExpiredSessions(): Promise<void> {
         const destroyCondition: Record<string, any> = {
             where: {
                 sessionExpireTimestamp: {
-                    // [Op.lt]: fn("LOCALTIMESTAMP", 0)
                     [Op.lt]: new Date()
                 }
             }
@@ -63,10 +61,13 @@ export class SessionService {
         const session: SessionAttributes | null = await this.sessionRepository.findSession({
             where: {
                 sessionToken: sessionToken
-            }
+            },
+            include: [{
+                association: "user"
+            }]
         });
         if (session) {
-            return { status: 200, data: { email: session?.email.trim() } };
+            return { status: 200, data: { email: session?.user?.email.trim() } };
         }
         throw new CustomError("Session not found", 401);
     }

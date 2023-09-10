@@ -17,27 +17,36 @@ export class DriverController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
     async createDriver(driverBio: RiderDriverForm): Promise<any> {
-
-        const requiredFields: (keyof RiderDriverForm)[] = ["firstName", "lastName", "description", "address", "city", "stateProvince", "zipPostalCode", "capacity", "profilePicture", "mobileNumber", "countryCode"];
-        const missingFields = requiredFields.filter(field => !(field in driverBio));
-
-        if (missingFields.length > 0) {
-            return { status: 422, data: { message: "Invalid Data" } };
-        }
-        if (driverBio.profilePicture && !driverBio.profilePicture.includes("data:image/")) {
-            if (driverBio.profilePicture.startsWith("/9j/")) {
-                driverBio.profilePicture = "data:image/jpeg;base64,".concat(driverBio.profilePicture);
-            } else {
-                driverBio.profilePicture = "data:image/png;base64,".concat(driverBio.profilePicture);
-            }
-        }
         try {
+            const requiredFields: (keyof RiderDriverForm)[] = ["firstName", "lastName", "email", "password", "address", "city", "stateProvince", "zipPostalCode", "profilePicture", "mobileNumber", "countryCode", "capacity", "description"];
+            const missingFields = requiredFields.filter(field => !(field in driverBio));
+
+            if (missingFields.length > 0) {
+                throw new CustomError("Invalid data", 422);
+            }
+            if (!driverBio.password || !driverBio.email || !driverBio.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                throw new CustomError("Invalid email or password", 422);
+            }
+            if ((!driverBio.countryCode || !driverBio.mobileNumber)) {
+                throw new CustomError("Invalid phone number", 422);
+            }
+            if (driverBio.profilePicture && !driverBio.profilePicture.includes("data:image/")) {
+                if (driverBio.profilePicture.startsWith("/9j/")) {
+                    driverBio.profilePicture = "data:image/jpeg;base64,".concat(driverBio.profilePicture);
+                } else {
+                    driverBio.profilePicture = "data:image/png;base64,".concat(driverBio.profilePicture);
+                }
+            }
             return await this.driverService.createDriver(driverBio);
         } catch (error: any) {
+            if (error instanceof CustomError) {
+                return { status: error.statusCode, data: { message: error.message } };
+            }
             return { status: 500, data: { message: error.message } };
         }
     }
@@ -59,9 +68,11 @@ export class DriverController {
         try {
             return await this.driverService.updateDriver(driverId, driverBio);
         } catch (error: any) {
-            if (error instanceof (CustomError)) {
+            if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
+
 
         }
     }
@@ -76,9 +87,10 @@ export class DriverController {
         try {
             return await this.driverService.batchImportDrivers(fileToImport);
         } catch (error: any) {
-            if (error instanceof (CustomError)) {
+            if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -92,6 +104,7 @@ export class DriverController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -102,6 +115,7 @@ export class DriverController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 }

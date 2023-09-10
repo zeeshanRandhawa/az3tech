@@ -85,7 +85,7 @@ export class RiderRouteService {
 
         let batchImportData: Array<Record<string, any>> = []
 
-        metaRiderRouteBulkData.forEach(async (routeMeta: Record<string, any>, index: number): Promise<void> => {
+        await Promise.all(metaRiderRouteBulkData.map(async (routeMeta: Record<string, any>, index: number): Promise<void> => {
             const originCityIdList: NodeAttributes[] = await this.nodeRepository.findNodes({
                 where: {
                     city: routeMeta.originCity
@@ -123,7 +123,7 @@ export class RiderRouteService {
                 }
             }
             this.riderRouteRepository.batchImportRiderRoutes(batchImportData);
-        });
+        }));
 
         return { status: 200, data: { message: "Rider Route data successfully imported" } };
 
@@ -190,7 +190,7 @@ export class RiderRouteService {
                 where: whereCondition
             });
         }
-        return { status: 200, data: { ridersCount: Math.ceil(riderRoutesCount) } };
+        return { status: 200, data: { riderRoutesCount: Math.ceil(riderRoutesCount) } };
     }
 
     async deleteRiderRoutesByFilters(filterFormData: FilterForm, riderId: number): Promise<Record<string, any>> {
@@ -270,7 +270,7 @@ export class RiderRouteService {
 
         for (let riderRoute of riderRoutes) {
             const parallelLinePoints: Array<Record<string, number>> = findParallelLinePoints({ longitude: riderRoute.origin?.long!, latitude: riderRoute.origin?.lat! }, { longitude: riderRoute.destination?.long!, latitude: riderRoute.destination?.lat! });
-            let nodesInAreaOfInterest: Array<Record<string, any> | undefined> = await findNodesOfInterestInArea(Object.values(parallelLinePoints[0]), Object.values(parallelLinePoints[1]), Object.values(parallelLinePoints[2]), Object.values(parallelLinePoints[3]))
+            let nodesInAreaOfInterest: Array<Record<string, any> | undefined> = await findNodesOfInterestInArea(Object.values(parallelLinePoints[0]), Object.values(parallelLinePoints[1]), Object.values(parallelLinePoints[2]), Object.values(parallelLinePoints[3]), [])
             const routeInfo: Record<string, any> = await getRouteDetailsByOSRM({ longitude: riderRoute.origin?.long!, latitude: riderRoute.origin?.lat! }, { longitude: riderRoute.destination?.long!, latitude: riderRoute.destination?.lat! });
 
             const waypointNodes: Array<Record<string, any>> = [];

@@ -46,7 +46,6 @@ export interface ProcessListEntry {
 export interface SignupForm {
     firstName: string;
     lastName?: string;
-    address?: string;
     email: string;
     password: string;
     mobileNumber: string;
@@ -56,12 +55,14 @@ export interface SignupForm {
 
 export interface RiderDriverForm {
     firstName: string;
-    lastName?: string;
+    lastName: string;
+    email: string;
+    password: string;
     address?: string;
-    city: string;
-    stateProvince: string;
+    city?: string;
+    stateProvince?: string;
     zipPostalCode?: number;
-    profilePicture?: string;
+    profilePicture?: string | null;
     mobileNumber: string;
     countryCode: string;
     description?: string;
@@ -82,7 +83,7 @@ export interface SessionAttributes {
     sessionId: number;
     sessionToken: string;
     sessionExpireTimestamp: Date;
-    email: string;
+    userId: number;
     user?: UserAttributes;
 }
 
@@ -142,8 +143,7 @@ export interface DriverRouteAttributes {
     drouteDbmTag?: string;
     drouteName?: string;
     departureFlexibility?: number;
-    scheduledWeekdays?: string;
-    isTransit?: boolean;
+    intermediateNodesList?: string;
     origin?: NodeAttributes;
     destination?: NodeAttributes;
     driver?: DriverAttributes;
@@ -151,7 +151,7 @@ export interface DriverRouteAttributes {
 }
 
 export interface DriverRouteNodeAttributes {
-    droutenodeId: number;
+    drouteNodeId: number;
     drouteId: number;
     outbDriverId: number;
     nodeId: number;
@@ -185,6 +185,7 @@ export interface RiderAttributes {
 }
 
 export interface RiderRouteAttributes {
+    rrouteNodeId: number;
     rrouteId: number;
     riderId: number;
     originNode: number;

@@ -11,17 +11,18 @@ export class MapController {
     }
 
 
-    async displayMapNodesInAreaOfInterest(upperLeftCorner: string, lowerLeftCorner: string, upperRightCorner: string, lowerRightCorner: string): Promise<any> {
+    async displayMapNodesInAreaOfInterest(upperLeftCorner: string, lowerLeftCorner: string, upperRightCorner: string, lowerRightCorner: string, descriptionFilterListStr: string | undefined): Promise<any> {
         if (!upperLeftCorner.trim() || !lowerLeftCorner.trim() || !upperRightCorner.trim() || !lowerRightCorner.trim()) {
             return { status: 200, data: { message: "Invalid data" } }
         }
 
         try {
-            return await this.mapService.displayMapNodesInAreaOfInterest(upperLeftCorner.split(",").map(coordinate => parseFloat(coordinate)), lowerLeftCorner.split(",").map(coordinate => parseFloat(coordinate)), upperRightCorner.split(",").map(coordinate => parseFloat(coordinate)), lowerRightCorner.split(",").map(coordinate => parseFloat(coordinate)));
+            return await this.mapService.displayMapNodesInAreaOfInterest(upperLeftCorner.split(",").map(coordinate => parseFloat(coordinate)), lowerLeftCorner.split(",").map(coordinate => parseFloat(coordinate)), upperRightCorner.split(",").map(coordinate => parseFloat(coordinate)), lowerRightCorner.split(",").map(coordinate => parseFloat(coordinate)), !descriptionFilterListStr ? "" : descriptionFilterListStr);
         } catch (error: any) {
             if (error instanceof CustomError) {
                 return { status: 200, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -36,6 +37,7 @@ export class MapController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -49,6 +51,7 @@ export class MapController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -62,6 +65,7 @@ export class MapController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -75,6 +79,7 @@ export class MapController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 }

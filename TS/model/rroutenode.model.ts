@@ -7,19 +7,23 @@ class RiderRouteNode extends Model {
             foreignKey: "nodeId",
             sourceKey: "nodeId",
             as: "node",
-            onDelete: "cascade"
         });
         RiderRouteNode.belongsTo(models.RiderRoute, {
             foreignKey: "rrouteId",
             targetKey: "rrouteId",
             as: "rroute",
-            onDelete: "cascade"
         });
     }
 }
 
 RiderRouteNode.init(
     {
+        rrouteNodeId: {
+            type: DataTypes.NUMBER,
+            allowNull: false,
+            primaryKey: true,
+            defaultValue: sequelize.literal("nextval(\'rroutenodes_rroute_node_id_seq\'::regclass)")
+        },
         rrouteId: {
             type: DataTypes.INTEGER,
             allowNull: false,
@@ -74,7 +78,5 @@ RiderRouteNode.init(
         underscored: true,
     }
 );
-
-RiderRouteNode.removeAttribute("id");
 
 export default RiderRouteNode;

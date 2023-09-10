@@ -7,7 +7,6 @@ class DriverRouteNode extends Model {
             foreignKey: "nodeId",
             sourceKey: "nodeId",
             as: "node",
-            onDelete: "cascade"
         });
         DriverRouteNode.belongsTo(models.DriverRoute, {
             foreignKey: "drouteId",
@@ -17,9 +16,14 @@ class DriverRouteNode extends Model {
     }
 }
 
-
 DriverRouteNode.init(
     {
+        drouteNodeId: {
+            type: DataTypes.NUMBER,
+            allowNull: false,
+            primaryKey: true,
+            defaultValue: sequelize.literal("nextval(\'droutenodes_droute_node_id_seq\'::regclass)")
+        },
         drouteId: {
             type: DataTypes.INTEGER,
             allowNull: false,
@@ -71,12 +75,6 @@ DriverRouteNode.init(
         status: {
             type: DataTypes.STRING(20),
             allowNull: true,
-        },
-        droutenodeId: {
-            type: DataTypes.NUMBER,
-            allowNull: false,
-            primaryKey: true,
-            defaultValue: sequelize.literal("nextval(\'droutenodes_droutenode_id_seq\'::regclass)")
         }
     },
     {
@@ -88,7 +86,5 @@ DriverRouteNode.init(
         underscored: true,
     }
 );
-
-// DriverRouteNode.removeAttribute("id");
 
 export default DriverRouteNode;

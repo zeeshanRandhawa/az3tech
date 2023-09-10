@@ -1,6 +1,3 @@
-First Name,Last Name,Description,Address,City,State Province,Zip Postal Code,Capacity
-Jane,Smith,Sed ut per,456 Elm St,Los Angele,CA,90001,4
-Jane,Smith,Sed ut per,456 Elm St,Los Angele,CA,90001,4
-Jane,Smith,Sed ut per,456 Elm St,Los Angele,CA,90001,4
-Jane,Smith,Sed ut per,456 Elm St,Los Angele,CA,90001,4
-Jane,Smith,Sed ut per,456 Elm St,Los Angele,CA,90001,4
+First Name,Last Name,Email,Description,Address,City,State Province,Zip Postal Code,Capacity,Country Code, Mobile Number
+Jane,Smith,jane123@gmail.com,Sed ut per,456 Elm St,Los Angele,CA,90001,4,92,3315256123
+Jane,Smith,jane456@gmail.com,Sed ut per,456 Elm St,Los Angele,CA,90001,4,92,3315256123

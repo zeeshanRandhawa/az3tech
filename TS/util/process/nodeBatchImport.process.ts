@@ -28,16 +28,16 @@ async function calculateCoordinatesFromAddressForBatchProcess(nodeBatchMetaData:
     const failedNodes: Array<Record<string, any>> = [];
     const nodesWithCoordinates: Array<Record<string, any>> = [];
     try {
-        for (let node of nodeBatchMetaData) {
-            let getneratedLatLong: Record<string, any> = await getGeographicCoordinatesByAddress(node.address.trim().concat(", ").concat(node.city.trim()).concat(", ").concat(node.stateProvince.trim()));
-            if (!getneratedLatLong.longitude || !getneratedLatLong.latitude) {
+        await Promise.all(nodeBatchMetaData.map(async (node) => {
+            let generatedLatLong: Record<string, any> = await getGeographicCoordinatesByAddress(node.address.trim().concat(", ").concat(node.city.trim()).concat(", ").concat(node.stateProvince.trim()));
+            if (!generatedLatLong.longitude || !generatedLatLong.latitude) {
                 failedNodes.push(node);
             } else {
-                node.lat = getneratedLatLong.latitude;
-                node.long = getneratedLatLong.longitude;
+                node.lat = generatedLatLong.latitude;
+                node.long = generatedLatLong.longitude;
                 nodesWithCoordinates.push(node);
             }
-        }
+        }));
         try {
             if (failedNodes.length) {
                 const csvStringifier: ObjectCsvStringifier = createObjectCsvStringifier({

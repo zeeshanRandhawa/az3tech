@@ -17,27 +17,38 @@ export class RiderController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
     async createRider(riderBio: RiderDriverForm): Promise<any> {
-
-        const requiredFields: (keyof RiderDriverForm)[] = ["firstName", "lastName", "address", "city", "stateProvince", "zipPostalCode", "profilePicture", "mobileNumber", "countryCode"];
-        const missingFields = requiredFields.filter(field => !(field in riderBio));
-
-        if (missingFields.length > 0) {
-            return { status: 422, data: { message: "Invalid Data" } };
-        }
-        if (riderBio.profilePicture && !riderBio.profilePicture.includes("data:image/")) {
-            if (riderBio.profilePicture.startsWith("/9j/")) {
-                riderBio.profilePicture = "data:image/jpeg;base64,".concat(riderBio.profilePicture);
-            } else {
-                riderBio.profilePicture = "data:image/png;base64,".concat(riderBio.profilePicture);
-            }
-        }
         try {
+            const requiredFields: (keyof RiderDriverForm)[] = ["firstName", "lastName", "email", "password", "address", "city", "stateProvince", "zipPostalCode", "profilePicture", "mobileNumber", "countryCode"];
+            const missingFields = requiredFields.filter(field => !(field in riderBio));
+
+            if (missingFields.length > 0) {
+                return { status: 422, data: { message: "Invalid Data" } };
+            }
+            if (!riderBio.password || !riderBio.email || !riderBio.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                throw new CustomError("Invalid email or password", 422);
+            }
+
+            if ((!riderBio.countryCode || !riderBio.mobileNumber)) {
+                throw new CustomError("Invalid phone number", 422);
+            }
+            if (riderBio.profilePicture && !riderBio.profilePicture.includes("data:image/")) {
+                if (riderBio.profilePicture.startsWith("/9j/")) {
+                    riderBio.profilePicture = "data:image/jpeg;base64,".concat(riderBio.profilePicture);
+                } else {
+                    riderBio.profilePicture = "data:image/png;base64,".concat(riderBio.profilePicture);
+                }
+            }
+
             return await this.riderService.createRider(riderBio);
         } catch (error: any) {
+            if (error instanceof CustomError) {
+                return { status: error.statusCode, data: { message: error.message } };
+            }
             return { status: 500, data: { message: error.message } };
         }
     }
@@ -59,10 +70,10 @@ export class RiderController {
         try {
             return await this.riderService.updateRider(riderId, riderBio);
         } catch (error: any) {
-            if (error instanceof (CustomError)) {
+            if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
-
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -76,9 +87,10 @@ export class RiderController {
         try {
             return await this.riderService.batchImportRiders(fileToImport);
         } catch (error: any) {
-            if (error instanceof (CustomError)) {
+            if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -92,6 +104,7 @@ export class RiderController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -102,6 +115,7 @@ export class RiderController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 }

@@ -22,7 +22,7 @@ export class DriverRouteNodeService {
         if (driverRouteNodeList.length < 1) {
             throw new CustomError("No Driver Route Node Found", 404);
         }
-        driverRouteNodeList.forEach(async (driverRouteNode) => {
+        driverRouteNodeList.map(async (driverRouteNode) => {
             driverRouteNode.departureTime = driverRouteNode.departureTime ? await normalizeTimeZone(driverRouteNode.departureTime as string) : driverRouteNode.departureTime;
             driverRouteNode.arrivalTime = driverRouteNode.arrivalTime ? await normalizeTimeZone(driverRouteNode.arrivalTime as string) : driverRouteNode.arrivalTime;
         });

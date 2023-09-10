@@ -1,13 +1,16 @@
 import { Op, literal } from "sequelize";
 import { DriverRepository } from "../repository/driver.repository";
-import { isValidFileHeader, prepareBatchBulkImportData } from "../util/helper.utility";
-import { CustomError, DriverAttributes, RiderDriverForm } from "../util/interface.utility";
+import { generatePasswordHash, isValidFileHeader, prepareBatchBulkImportData } from "../util/helper.utility";
+import { CustomError, DriverAttributes, RiderDriverForm, UserAttributes } from "../util/interface.utility";
+import { UserRepository } from "../repository/user.repository";
 
 export class DriverService {
 
     private driverRepository: DriverRepository;
+    private userRepository: UserRepository;
     constructor() {
         this.driverRepository = new DriverRepository();
+        this.userRepository = new UserRepository();
     }
 
     async listDrivers(pageNumber: number): Promise<any> {
@@ -25,21 +28,40 @@ export class DriverService {
     }
 
     async createDriver(driverBio: RiderDriverForm): Promise<Record<string, any>> {
-        await this.driverRepository.createDriver({
-            firstName: driverBio.firstName,
-            lastName: driverBio.lastName,
-            description: driverBio.description,
-            address: driverBio.address,
-            city: driverBio.city,
-            stateProvince: driverBio.stateProvince,
-            zipPostalCode: driverBio.zipPostalCode,
-            capacity: driverBio.capacity,
-            profilePicture: driverBio.profilePicture,
-            phoneNumber: driverBio.countryCode && driverBio.mobileNumber ? driverBio.countryCode.trim().concat(driverBio.mobileNumber.trim()) : null
-        }, {
-            fields: ["firstName", "lastName", "description", "address", "city", "stateProvince", "zipPostalCode", "capacity", "profilePicture", "phoneNumber"]
+
+        let existingUser: UserAttributes | null = await this.userRepository.findUser({
+            where: {
+                email: driverBio.email,
+                roleId: 4
+            }
         });
 
+        if (existingUser) {
+            throw new CustomError("User already exists", 409);
+        } else {
+            await this.userRepository.createUser({
+                email: driverBio.email,
+                password: await generatePasswordHash(driverBio.password),
+                roleId: 4,
+                driver: {
+                    phoneNumber: driverBio.countryCode.concat(driverBio.mobileNumber),
+                    firstName: driverBio.firstName,
+                    lastName: driverBio.lastName,
+                    address: driverBio.address,
+                    city: driverBio.city,
+                    stateProvince: driverBio.stateProvince,
+                    zipPostalCode: driverBio.zipPostalCode,
+                    profilePicture: driverBio.profilePicture,
+                    capacity: driverBio.capacity,
+                    description: driverBio.description
+                }
+            }, {
+                include: [{
+                    association: "driver"
+                }],
+                fields: ["email", "password", "roleId"]
+            });
+        }
         return { status: 201, data: { message: "Driver Created Successfully" } }
     }
 
@@ -69,12 +91,35 @@ export class DriverService {
 
     async batchImportDrivers(fileToImport: Express.Multer.File): Promise<Record<string, any>> {
 
-        if (!isValidFileHeader(fileToImport.buffer, ["First Name", "Last Name", "Description", "Address", "City", "State Province", "Zip Postal Code", "Capacity"])) {
+        if (!isValidFileHeader(fileToImport.buffer, ["First Name", "Last Name", "Email", "Description", "Address", "City", "State Province", "Zip Postal Code", "Capacity", "Country Code", "Mobile Number"])) {
             throw new CustomError("Invalid columns or column length", 422);
         }
-        const driverBatchData: Array<Record<string, any>> = prepareBatchBulkImportData(fileToImport.buffer, ["firstName", "lastName", "description", "address", "city", "stateProvince", "zipPostalCode", "capacity"]);
+        const driverBatchData: Array<Record<string, any>> = prepareBatchBulkImportData(fileToImport.buffer, ["firstName", "lastName", "email", "description", "address", "city", "stateProvince", "zipPostalCode", "capacity", "countryCode", "mobileNumber"]);
 
-        await this.driverRepository.batchImportDrivers(driverBatchData);
+        const userBatchDataWithDriver: Array<Record<string, any>> = await Promise.all(driverBatchData.map(async (driverData: Record<string, any>) => {
+            return {
+                email: driverData.email,
+                password: await generatePasswordHash(driverData.firstName),
+                roleId: 4,
+                driver: {
+                    phoneNumber: driverData.countryCode.concat(driverData.mobileNumber),
+                    firstName: driverData.firstName,
+                    lastName: driverData.lastName,
+                    address: driverData.address,
+                    city: driverData.city,
+                    stateProvince: driverData.stateProvince,
+                    zipPostalCode: driverData.zipPostalCode,
+                    description: driverData.description,
+                    capacity: driverData.capacity
+                }
+            }
+        }));
+        this.userRepository.batchImportUsers(userBatchDataWithDriver, {
+            include: [{
+                association: "driver"
+            }],
+            fields: ["email", "password", "roleId"]
+        });
 
         return { status: 200, data: { message: "Drivers data successfully imported" } };
     }

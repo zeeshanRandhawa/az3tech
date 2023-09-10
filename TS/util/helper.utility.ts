@@ -46,7 +46,7 @@ export function prepareBatchBulkImportData(fileBuffer: Buffer, dbColumnList: Arr
         const values: Array<string> = line.split(",").map((column => column));
         const rowData: Record<string, any> = {};
 
-        dbColumnList.forEach((dbColumn, index) => { rowData[dbColumn] = values[index].trim() });
+        dbColumnList.map(async (dbColumn, index) => { rowData[dbColumn] = values[index].trim() });
         return rowData;
     }).filter(Boolean) as Record<string, any>[];
     return batchData;
@@ -93,7 +93,7 @@ export async function getGeographicCoordinatesByAddress(address: string): Promis
     }
 }
 
-export async function findNodesOfInterestInArea(upperLeftCorner: Array<number>, lowerLeftCorner: Array<number>, upperRightCorner: Array<number>, lowerRightCorner: Array<number>): Promise<Array<NodeAttributes>> {
+export async function findNodesOfInterestInArea(upperLeftCorner: Array<number>, lowerLeftCorner: Array<number>, upperRightCorner: Array<number>, lowerRightCorner: Array<number>, descriptionFilterList: Array<string>): Promise<Array<NodeAttributes>> {
     const nodesToDisplay: Array<NodeAttributes> = await new NodeRepository().findNodes({
         where: {
             [Op.and]: [
@@ -101,9 +101,13 @@ export async function findNodesOfInterestInArea(upperLeftCorner: Array<number>, 
                 literal(`((${lowerLeftCorner[0]} - ${upperLeftCorner[0]}) * (long - ${upperLeftCorner[0]})) + ((${lowerLeftCorner[1]} - ${upperLeftCorner[1]}) * (lat - ${upperLeftCorner[1]})) <= ((${lowerLeftCorner[0]} - ${upperLeftCorner[0]}) * (${lowerLeftCorner[0]} - ${upperLeftCorner[0]})) + ((${lowerLeftCorner[1]} - ${upperLeftCorner[1]}) * (${lowerLeftCorner[1]} - ${upperLeftCorner[1]}))`),
                 literal(`((${upperRightCorner[0]} - ${lowerLeftCorner[0]}) * (long - ${lowerLeftCorner[0]})) + ((${upperRightCorner[1]} - ${lowerLeftCorner[1]}) * (lat - ${lowerLeftCorner[1]})) >= 0`),
                 literal(`((${upperRightCorner[0]} - ${lowerLeftCorner[0]}) * (long - ${lowerLeftCorner[0]})) + ((${upperRightCorner[1]} - ${lowerLeftCorner[1]}) * (lat - ${lowerLeftCorner[1]})) <= ((${upperRightCorner[0]} - ${lowerLeftCorner[0]}) * (${upperRightCorner[0]} - ${lowerLeftCorner[0]})) + ((${upperRightCorner[1]} - ${lowerLeftCorner[1]}) * (${upperRightCorner[1]} - ${lowerLeftCorner[1]}))`),
+                {
+                    description: {
+                        [Op.notIn]: descriptionFilterList.length ? descriptionFilterList.map((description: string) => description) : descriptionFilterList
+                    }
+                }
             ]
         },
-        // raw: true
     });
 
     return nodesToDisplay
@@ -180,7 +184,7 @@ export function hasSignificantCurve(coordinateList: Array<[number, number]>, thr
 export function getDistances(pointA: [number, number], pointB: [number, number], nodePoint: Record<string, any>, pointsListGIS: Array<[number, number]>): Record<string, any> {
     if (hasSignificantCurve(pointsListGIS)) {
         let smallest: number | null = null;
-        pointsListGIS.forEach((point: [number, number]) => {
+        pointsListGIS.forEach(async (point: [number, number]) => {
 
             let thisDistance: number = calculateDistanceBetweenPoints({ latitude: point[1], longitude: point[0] }, { latitude: nodePoint.lat!, longitude: nodePoint.long! })
 
@@ -226,9 +230,7 @@ export function calculateDistanceBetweenPoints(pointA: GeolibInputCoordinates, p
 
 export async function getNodeObjectByNodeId(nodeId: number): Promise<NodeAttributes | null> {
     const retrivedNode: NodeAttributes | null = await new NodeRepository().findNodeByPK(nodeId);
-
     return retrivedNode;
-    // return retrivedNode !== null ? { longitude: retrivedNode.long, latitude: retrivedNode.lat } as CoordinateAttribute : { longitude: null, latitude: null } as CoordinateAttribute;
 }
 
 export function extractOrigDestNodeId(routeNodes: Array<Record<string, any>>): Record<string, any> {
@@ -287,12 +289,12 @@ export async function importDriverRoutes(generatedDroutesWithDRouteNodes: Array<
 
         if (driverRouteIds.length) {
             const driverRouteNodesFinalObject: Array<Record<string, any>> = [];
-            generatedDroutesWithDRouteNodes.forEach((driverRoute, index) => {
-                driverRoute!.routeNodes.final.forEach((driverRouteNode: Record<string, any>) => {
+            await Promise.all(generatedDroutesWithDRouteNodes.map(async (driverRoute, index) => {
+                await Promise.all(driverRoute!.routeNodes.final.map(async (driverRouteNode: Record<string, any>) => {
                     driverRouteNode.drouteId = driverRouteIds[index];
                     driverRouteNodesFinalObject.push(driverRouteNode);
-                });
-            });
+                }));
+            }));
 
             const driverRouteNodeIds: Array<number> = await driverRouteNodeRepository.batchImportDriverRouteNodes(driverRouteNodesFinalObject, transaction);
             if (driverRouteNodeIds.length === driverRouteNodesFinalObject.length) {
@@ -314,9 +316,9 @@ export async function importDriverRoutes(generatedDroutesWithDRouteNodes: Array<
 }
 
 export function convertIntToColorCode(numValue: number): string {
-    const hue: number = (numValue * 200.5) % 360; // Vary hue based on the number
-    const saturation: number = 80; // You can adjust this as needed
-    const lightness: number = 50; // You can adjust this as needed
+    const hue: number = (numValue * 200.5) % 360;
+    const saturation: number = 80;
+    const lightness: number = 50;
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
@@ -341,4 +343,21 @@ export async function normalizeTimeZone(datetimestamp: string): Promise<string> 
         return convertedTimestamp.clone().format("HH:mm");
     }
     return convertedTimestamp.clone().format("YYYY-MM-DD HH:mm");
+}
+
+export function getActiveDateList(scheduledWeekdays: string, scheduledStartDate: string, scheduledEndDate: string): Array<string> {
+
+    const startDate = moment(scheduledStartDate.trim(), 'ddd, DD MMM YYYY HH:mm:ss Z');
+    const endDate = moment(scheduledEndDate.trim(), 'ddd, DD MMM YYYY HH:mm:ss Z');
+
+    const activeDates: Array<string> = [];
+    let currentDate = startDate.clone();
+    while (currentDate.isSameOrBefore(endDate)) {
+        if (scheduledWeekdays.charAt((currentDate.day() + 6) % 7) === '1') {
+            activeDates.push(currentDate.clone().format("YYYY-MM-DD"));
+        }
+        currentDate.add(1, 'days');
+    }
+
+    return activeDates;
 }

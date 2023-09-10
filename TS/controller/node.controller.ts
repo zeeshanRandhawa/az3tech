@@ -17,6 +17,7 @@ export class NodeController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -31,6 +32,7 @@ export class NodeController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -81,6 +83,7 @@ export class NodeController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -91,6 +94,7 @@ export class NodeController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -101,6 +105,7 @@ export class NodeController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -115,6 +120,7 @@ export class NodeController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -127,8 +133,8 @@ export class NodeController {
         } catch (error: any) {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
-
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -139,6 +145,7 @@ export class NodeController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -153,6 +160,7 @@ export class NodeController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -166,9 +174,10 @@ export class NodeController {
         try {
             return await this.nodeService.batchImportNodes(fileToImport, sessionToken);
         } catch (error: any) {
-            if (error instanceof (CustomError)) {
+            if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -183,6 +192,9 @@ export class NodeController {
             if (error instanceof CustomError) {
                 return { status: 200, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
+
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -193,46 +205,7 @@ export class NodeController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
-        }
-    }
-
-    // async getRouteWithIntermediateNodes(originPoint: string | undefined, destinationPoint: string | undefined): Promise<any> {
-    //     if (!originPoint?.trim() || !destinationPoint?.trim()) {
-    //         return { status: 422, data: { message: "Invalid data" } };
-    //     }
-    //     try {
-    //         return await this.nodeService.getRouteWithIntermediateNodes({ longitude: parseFloat(originPoint.split(",")[0]), latitude: parseFloat(originPoint.split(",")[1]) }, { longitude: parseFloat(destinationPoint.split(",")[0]), latitude: parseFloat(destinationPoint.split(",")[1]) });
-    //     } catch (error: any) {
-
-    //         if (error instanceof CustomError) {
-    //             return { status: error.statusCode, data: { message: error.message } };
-    //         }
-    //     }
-    // }
-
-    async getWaypointDistance(sessionToken?: string | undefined): Promise<any> {
-        if (!sessionToken || sessionToken.length == 0) {
-            return { status: 422, data: { message: "Invalid Data" } };
-        }
-        try {
-            return await this.nodeService.getWaypointDistance(sessionToken);
-        } catch (error: any) {
-            if (error instanceof CustomError) {
-                return { status: error.statusCode, data: { message: error.message } };
-            }
-        }
-    }
-
-    async setWaypointDistance(waypointDistance: number, sessionToken?: string | undefined): Promise<any> {
-        if (!sessionToken || sessionToken.length == 0 || !waypointDistance) {
-            return { status: 422, data: { message: "Invalid Data" } };
-        }
-        try {
-            return await this.nodeService.setWaypointDistance(waypointDistance, sessionToken);
-        } catch (error: any) {
-            if (error instanceof CustomError) {
-                return { status: error.statusCode, data: { message: error.message } };
-            }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -246,6 +219,7 @@ export class NodeController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 }

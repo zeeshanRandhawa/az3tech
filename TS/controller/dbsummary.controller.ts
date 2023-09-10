@@ -17,6 +17,7 @@ export class DBSummaryController {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
+            return { status: 500, data: { message: error.message } };
         }
     }
 
@@ -31,7 +32,6 @@ export class DBSummaryController {
             return await this.dbSummaryService.purgeTable(tableName);
         } catch (error: any) {
             return { status: 500, data: { message: error.message } };
-
         }
     }
 }

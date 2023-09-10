@@ -4,10 +4,9 @@ import { sequelize } from "../util/db.config";
 class Session extends Model {
     static associate(models: any) {
         Session.belongsTo(models.User, {
-            foreignKey: "email",
-            targetKey: "email",
-            as: "user",
-            onDelete: "cascade"
+            foreignKey: "userId",
+            targetKey: "userId",
+            as: "user"
         });
     }
 }
@@ -28,8 +27,8 @@ Session.init(
             type: DataTypes.DATE,
             allowNull: false,
         },
-        email: {
-            type: DataTypes.STRING(100),
+        userId: {
+            type: DataTypes.NUMBER,
             allowNull: false,
         },
     },
