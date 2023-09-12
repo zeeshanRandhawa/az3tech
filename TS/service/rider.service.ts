@@ -153,13 +153,14 @@ export class RiderService {
                 password: await generatePasswordHash(riderData.firstName),
                 roleId: 4,
                 driver: {
-                    phoneNumber: riderData.countryCode.concat(riderData.mobileNumber),
+                    phoneNumber: !riderData.countryCode || !riderData.mobileNumber ? null : riderData.countryCode.concat(riderData.mobileNumber),
                     firstName: riderData.firstName,
                     lastName: riderData.lastName,
                     address: riderData.address,
                     city: riderData.city,
                     stateProvince: riderData.stateProvince,
                     zipPostalCode: riderData.zipPostalCode,
+                    capacity: Math.floor(Math.random() * 5) + 1
                 }
             }
         }));

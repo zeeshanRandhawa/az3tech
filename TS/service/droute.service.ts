@@ -6,7 +6,7 @@ import { NodeRepository } from "../repository/node.repository";
 import {
     isValidFileHeader, prepareBatchBulkImportData, extractOrigDestNodeId, sortRouteNodeListByNodeStop, getNodeObjectByNodeId,
     getDistanceDurationBetweenNodes, importDriverRoutes, normalizeTimeZone, findNodesOfInterestInArea, findParallelLinePoints,
-    formatNodeData, getDistances, getRouteDetailsByOSRM, getActiveDateList
+    formatNodeData, getDistances, getRouteDetailsByOSRM, getActiveDateList, isRoutesDateSorted
 } from "../util/helper.utility";
 import { DriverRepository } from "../repository/driver.repository";
 import ProcessSocket from "../util/socketProcess.utility";
@@ -345,75 +345,75 @@ export class DriverRouteService {
             driverRouteTransitMetaDataGroupedArray = (await Promise.all(driverRouteTransitMetaDataGroupedArray.map(
                 async (driverRouteMeta: Record<string, any>) => {
 
-                    let distinctOriginDestinationRouteNodesId: Record<string, any> = extractOrigDestNodeId(driverRouteMeta.routeNodes.initial.slice(0, -1));
+                    // let distinctOriginDestinationRouteNodesId: Record<string, any> = extractOrigDestNodeId(driverRouteMeta.routeNodes.initial.slice(0, -1));
 
-                    if (distinctOriginDestinationRouteNodesId.originNode && distinctOriginDestinationRouteNodesId.destinationNode &&
-                        distinctOriginDestinationRouteNodesId.destinationNode === driverRouteMeta.routeNodes.initial[driverRouteMeta.routeNodes.initial.length - 1].originNode) {
+                    // if (distinctOriginDestinationRouteNodesId.originNode && distinctOriginDestinationRouteNodesId.destinationNode &&
+                    //     distinctOriginDestinationRouteNodesId.destinationNode === driverRouteMeta.routeNodes.initial[driverRouteMeta.routeNodes.initial.length - 1].originNode) {
 
-                        driverRouteMeta.routeNodes.initial = sortRouteNodeListByNodeStop(driverRouteMeta.routeNodes.initial, distinctOriginDestinationRouteNodesId.originNode);
+                    // driverRouteMeta.routeNodes.initial = sortRouteNodeListByNodeStop(driverRouteMeta.routeNodes.initial, distinctOriginDestinationRouteNodesId.originNode);
 
-                        driverRouteMeta.originNode = distinctOriginDestinationRouteNodesId.originNode;
-                        driverRouteMeta.destinationNode = distinctOriginDestinationRouteNodesId.destinationNode;
+                    // driverRouteMeta.originNode = distinctOriginD0stinationRouteNodesId.originNode;
+                    // driverRouteMeta.destinationNode = distinctOriginDestinationRouteNodesId.destinationNode;
 
-                        let departureTime: Moment = driverRouteMeta.departureTime;
+                    let departureTime: Moment = driverRouteMeta.departureTime;
 
-                        driverRouteMeta.departureTime = driverRouteMeta.departureTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00");
+                    driverRouteMeta.departureTime = driverRouteMeta.departureTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00");
 
-                        let arrivalTime: Moment | null = null;
+                    let arrivalTime: Moment | null = null;
 
-                        let temprouteNode: Record<string, any> = {
-                            drouteId: null, outbDriverId: driverRouteMeta.driverId, nodeId: distinctOriginDestinationRouteNodesId.originNode,
-                            arrivalTime: arrivalTime, departureTime: departureTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"),
-                            rank: 0, capacity: driverRouteMeta.capacity, capacityUsed: Math.floor(Math.random() * driverRouteMeta.capacity),
-                            cumDistance: 0, cumTime: 0, status: 'ORIGIN'
-                        };
+                    let temprouteNode: Record<string, any> = {
+                        drouteId: null, outbDriverId: driverRouteMeta.driverId, nodeId: driverRouteMeta.originNode,
+                        arrivalTime: arrivalTime, departureTime: departureTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"),
+                        rank: 0, capacity: driverRouteMeta.capacity, capacityUsed: Math.floor(Math.random() * driverRouteMeta.capacity),
+                        cumDistance: 0, cumTime: 0, status: 'ORIGIN'
+                    };
 
-                        driverRouteMeta.routeNodes.final.push(temprouteNode);
+                    driverRouteMeta.routeNodes.final.push(temprouteNode);
 
-                        let cumTime: number = 0;
-                        let cumDistance: number = 0;
+                    let cumTime: number = 0;
+                    let cumDistance: number = 0;
 
-                        for (let [index, rNode] of driverRouteMeta.routeNodes.initial.slice(1).entries()) {
+                    for (let [index, rNode] of driverRouteMeta.routeNodes.initial.slice(1).entries()) {
 
-                            let routeOriginNode: NodeAttributes | null = await getNodeObjectByNodeId(driverRouteMeta.routeNodes.initial[index].originNode);
-                            let routeDestinationNode: NodeAttributes | null = await getNodeObjectByNodeId(rNode.originNode)
+                        let routeOriginNode: NodeAttributes | null = await getNodeObjectByNodeId(driverRouteMeta.routeNodes.initial[index].originNode);
+                        let routeDestinationNode: NodeAttributes | null = await getNodeObjectByNodeId(rNode.originNode)
 
-                            if (routeOriginNode !== null && routeDestinationNode !== null) {
+                        if (routeOriginNode !== null && routeDestinationNode !== null) {
 
-                                let calculatedDistanceDurationBetweenNodes: Record<string, any> = await getDistanceDurationBetweenNodes({ longitude: routeOriginNode?.long, latitude: routeOriginNode?.lat }, { longitude: routeDestinationNode?.long, latitude: routeDestinationNode?.lat });
+                            let calculatedDistanceDurationBetweenNodes: Record<string, any> = await getDistanceDurationBetweenNodes({ longitude: routeOriginNode?.long, latitude: routeOriginNode?.lat }, { longitude: routeDestinationNode?.long, latitude: routeDestinationNode?.lat });
 
-                                if (Object.values(calculatedDistanceDurationBetweenNodes).every(value => value !== null)) {
+                            if (Object.values(calculatedDistanceDurationBetweenNodes).every(value => value !== null)) {
 
-                                    if (!rNode.departureTime) {
-                                        cumTime += (moment.duration(rNode.arrivalTime.diff(departureTime))).asMinutes();
-                                    } else {
-                                        cumTime += (moment.duration(rNode.departureTime.diff(departureTime))).asMinutes();
-                                    }
-                                    departureTime = rNode.departureTime;
-
-                                    cumDistance += calculatedDistanceDurationBetweenNodes.distance
-
-                                    if (index == driverRouteMeta.routeNodes.initial.length - 2) {
-                                        temprouteNode = {
-                                            drouteId: null, outbDriverId: driverRouteMeta.driverId, nodeId: rNode.originNode,
-                                            arrivalTime: rNode.arrivalTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"), departureTime: null, rank: index + 1,
-                                            capacity: driverRouteMeta.capacity, capacityUsed: Math.floor(Math.random() * driverRouteMeta.capacity),
-                                            cumDistance: cumDistance, cumTime: cumTime, status: 'DESTINATON'
-                                        };
-                                    } else {
-                                        temprouteNode = {
-                                            drouteId: null, outbDriverId: driverRouteMeta.driverId, nodeId: rNode.originNode,
-                                            arrivalTime: rNode.arrivalTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"),
-                                            departureTime: driverRouteMeta.routeNodes.initial[index + 1].departureTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"),
-                                            rank: index + 1, capacity: driverRouteMeta.capacity, capacityUsed: Math.floor(Math.random() * driverRouteMeta.capacity),
-                                            cumDistance: cumDistance, cumTime: cumTime, status: 'SCHEDULED'
-                                        };
-                                    }
-                                    driverRouteMeta.routeNodes.final.push(temprouteNode);
+                                if (!rNode.departureTime) {
+                                    cumTime += (moment.duration(rNode.arrivalTime.diff(departureTime))).asMinutes();
+                                } else {
+                                    cumTime += (moment.duration(rNode.departureTime.diff(departureTime))).asMinutes();
                                 }
+                                departureTime = rNode.departureTime;
+
+                                cumDistance += calculatedDistanceDurationBetweenNodes.distance
+
+                                if (index == driverRouteMeta.routeNodes.initial.length - 2) {
+                                    temprouteNode = {
+                                        drouteId: null, outbDriverId: driverRouteMeta.driverId, nodeId: rNode.originNode,
+                                        arrivalTime: rNode.arrivalTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"), departureTime: null, rank: index + 1,
+                                        capacity: driverRouteMeta.capacity, capacityUsed: Math.floor(Math.random() * driverRouteMeta.capacity),
+                                        cumDistance: cumDistance, cumTime: cumTime, status: 'DESTINATON'
+                                    };
+                                } else {
+                                    temprouteNode = {
+                                        drouteId: null, outbDriverId: driverRouteMeta.driverId, nodeId: rNode.originNode,
+                                        arrivalTime: rNode.arrivalTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"),
+                                        departureTime: driverRouteMeta.routeNodes.initial[index + 1].departureTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"),
+                                        rank: index + 1, capacity: driverRouteMeta.capacity, capacityUsed: Math.floor(Math.random() * driverRouteMeta.capacity),
+                                        cumDistance: cumDistance, cumTime: cumTime, status: 'SCHEDULED'
+                                    };
+                                }
+                                driverRouteMeta.routeNodes.final.push(temprouteNode);
                             }
                         }
                     }
+                    // }
                     return driverRouteMeta;
                 }))).filter(Boolean);
 
@@ -453,6 +453,12 @@ export class DriverRouteService {
                     driverRouteMetaTransitGroups[routeName].destinationNode = distinctOriginDestinationRouteNodesId.destinationNode;
 
                     if (await this.driverRepository.findDriverByPK(parseInt(driverRouteMetaTransitGroups[routeName].driverId, 10))) {
+                        driverRouteMetaTransitGroups[routeName].routeNodes.initial = sortRouteNodeListByNodeStop(driverRouteMetaTransitGroups[routeName].routeNodes.initial, distinctOriginDestinationRouteNodesId.originNode);
+
+                        if (!isRoutesDateSorted(driverRouteMetaTransitGroups[routeName].routeNodes.initial)) {
+                            failedRoutes.push({ failedRouteName: routeName, error: "Route Dates not sorted. Route Nodes have invalid dates" });
+                            keysToDelete.push(routeName);
+                        }
                     } else {
 
                         failedRoutes.push({ failedRouteName: routeName, error: "Invalid driver Id" });
@@ -604,8 +610,15 @@ export class DriverRouteService {
             let osrmRoute: Array<any> = [];
             let intermediateNodes: Array<Record<string, any>> = [];
 
-            for (let k = 0; k < driverRoute.drouteNodes!.length - 1; ++k) {
-                let nodePointA: DriverRouteNodeAttributes = driverRoute.drouteNodes![k];
+            let tmpOsrmRouteArray: Array<any> = new Array<any>(driverRoute.drouteNodes!.length - 1);
+            let tmpIntermediateNodesArray: Array<Record<string, any>> = new Array<Record<string, any>>(driverRoute.drouteNodes!.length - 1);
+
+
+            await Promise.all(driverRoute.drouteNodes!.slice(0, -1).map(async (drouteNode: DriverRouteNodeAttributes, k: number) => {
+
+                // for (let k = 0; k < driverRoute.drouteNodes!.length - 1; ++k) {
+                let nodePointA: DriverRouteNodeAttributes = drouteNode;
+                // driverRoute.drouteNodes![k];
                 let nodePointB: DriverRouteNodeAttributes = driverRoute.drouteNodes![k + 1];
 
                 const parallelLinePoints: Array<Record<string, number>> = findParallelLinePoints({ longitude: nodePointA.node?.long!, latitude: nodePointA.node?.lat! }, { longitude: nodePointB.node?.long!, latitude: nodePointB.node?.lat! });
@@ -614,41 +627,57 @@ export class DriverRouteService {
 
                 // let waypointNodes: Array<Record<string, any>> = [];
 
-                for (let i: number = 0; i < nodesInAreaOfInterest.length; ++i) {
-                    for (let j: number = 0; j < routeInfo.routes[0].legs[0].steps.length - 1; ++j) {
+                if (!driverRoute.fixedRoute) {
+                    for (let i: number = 0; i < nodesInAreaOfInterest.length; ++i) {
+                        for (let j: number = 0; j < routeInfo.routes[0].legs[0].steps.length - 1; ++j) {
 
-                        let subRoutePointsGIS: Array<[number, number]> = routeInfo.routes[0].legs[0].steps[j].geometry.coordinates;
+                            let subRoutePointsGIS: Array<[number, number]> = routeInfo.routes[0].legs[0].steps[j].geometry.coordinates;
 
-                        let waypointStart: [number, number] = subRoutePointsGIS[0]
-                        let waypointEnd: [number, number] = subRoutePointsGIS[routeInfo.routes[0].legs[0].steps[j].geometry.coordinates.length - 1];
-                        // waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
+                            let waypointStart: [number, number] = subRoutePointsGIS[0]
+                            let waypointEnd: [number, number] = subRoutePointsGIS[routeInfo.routes[0].legs[0].steps[j].geometry.coordinates.length - 1];
+                            // waypointNodes.push({ 'waypointStart': waypointStart, 'waypointEnd': waypointEnd });
 
-                        let calculatedintermediateNode: Record<string, any> = getDistances(waypointStart, waypointEnd, nodesInAreaOfInterest[i]!, subRoutePointsGIS);
+                            let calculatedintermediateNode: Record<string, any> = getDistances(waypointStart, waypointEnd, nodesInAreaOfInterest[i]!, subRoutePointsGIS);
 
-                        if (calculatedintermediateNode.intercepted === true) {
-                            if (Object.keys(nodesInAreaOfInterest[i]!).includes('isWaypoint')) {
-                                if (nodesInAreaOfInterest[i]!.distance > calculatedintermediateNode.distance) {
-                                    nodesInAreaOfInterest[i]!.distance = calculatedintermediateNode.distance;
+                            if (calculatedintermediateNode.intercepted === true) {
+                                if (Object.keys(nodesInAreaOfInterest[i]!).includes('isWaypoint')) {
+                                    if (nodesInAreaOfInterest[i]!.distance > calculatedintermediateNode.distance) {
+                                        nodesInAreaOfInterest[i]!.distance = calculatedintermediateNode.distance;
+                                    }
+                                } else {
+                                    nodesInAreaOfInterest[i] = { 'isWaypoint': true, 'distance': calculatedintermediateNode.distance, ...nodesInAreaOfInterest[i] };
                                 }
-                            } else {
-                                nodesInAreaOfInterest[i] = { 'isWaypoint': true, 'distance': calculatedintermediateNode.distance, ...nodesInAreaOfInterest[i] };
                             }
                         }
                     }
-                }
-                nodesInAreaOfInterest = formatNodeData(nodesInAreaOfInterest, waypointDistance).map((wpNode) => {
-                    if (wpNode.isWaypoint) {
-                        return wpNode;
-                    }
-                    return;
-                }).filter(Boolean).filter((iNode) => {
-                    return (nodePointA.node?.lat != iNode!.lat && nodePointA.node?.long != iNode!.long) && (nodePointA.node?.lat != iNode!.lat && nodePointB.node?.long != iNode!.long);
-                });
+                    nodesInAreaOfInterest = formatNodeData(nodesInAreaOfInterest, waypointDistance).map((wpNode) => {
+                        if (wpNode.isWaypoint) {
+                            return wpNode;
+                        }
+                        return;
+                    }).filter(Boolean).filter((iNode) => {
+                        return (nodePointA.node?.lat != iNode!.lat && nodePointA.node?.long != iNode!.long) && (nodePointA.node?.lat != iNode!.lat && nodePointB.node?.long != iNode!.long);
+                    }).filter(Boolean);
+                    tmpIntermediateNodesArray[k] = nodesInAreaOfInterest;
+                    // intermediateNodes = intermediateNodes.concat(nodesInAreaOfInterest);
 
-                intermediateNodes = intermediateNodes.concat(nodesInAreaOfInterest);
-                osrmRoute = osrmRoute.concat(routeInfo.routes[0].geometry.coordinates);
+                }
+                tmpOsrmRouteArray[k] = routeInfo.routes[0].geometry.coordinates;
+
+                // osrmRoute = osrmRoute.concat(routeInfo.routes[0].geometry.coordinates);
                 // GISWaypoints = GISWaypoints.concat(waypointNodes)
+                // }
+            }));
+
+            for (let i = 0; i < driverRoute.drouteNodes!.length - 1; ++i) {
+                intermediateNodes = intermediateNodes.concat(tmpIntermediateNodesArray[i]);
+                osrmRoute = osrmRoute.concat(tmpOsrmRouteArray[i])
             }
+
+            intermediateNodes = intermediateNodes.filter(Boolean).filter((iNode) => {
+                return (driverRoute.origin?.lat != iNode!.lat && driverRoute.origin?.long != iNode!.long) && (driverRoute.destination?.lat != iNode!.lat && driverRoute.destination?.long != iNode!.long);
+            }).filter(Boolean);
+
             // let distinctGISWaypoints: Array<Record<string, any>> = [];
             // let distinctCombinations: Set<String> | null = new Set<string>();
 

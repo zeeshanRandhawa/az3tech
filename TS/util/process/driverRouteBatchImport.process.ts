@@ -40,15 +40,11 @@ async function assertDriverRouteMetaBatchGroupData(driverRouteMetaBatchGroups: R
                     failedRoutes.push({ failedRouteName: routeName, error: "Invalid driver Id" });
                     keysToDelete.push(routeName);
                 }
-
             } else {
-
                 failedRoutes.push({ failedRouteName: routeName, error: "Invalid Node(s)" });
                 keysToDelete.push(routeName);
-
             }
         } else {
-
             failedRoutes.push({ failedRouteName: routeName, error: "Invalid Origin Destination Node" });
             keysToDelete.push(routeName);
         }
@@ -92,7 +88,6 @@ async function importGeneratedRouteNodes(): Promise<void> {
         process.send!("status:Generating route nodes based on route origin, destination from node pairs");
         let generatedDroutesWithDRouteNodes: Array<Record<string, any>> = await generateDroutesWithNodeFromDrouteMetaBatchGroupedData(Object.values(assertedDriverRouteMetaBatchGroups!), waypointDistance);
 
-
         process.send!("status:Asserting data generated");
         generatedDroutesWithDRouteNodes = generatedDroutesWithDRouteNodes.map((dRouteGroupNode) => {
             if (dRouteGroupNode!.fixedRoute && dRouteGroupNode!.routeNodes.initial.length == dRouteGroupNode!.routeNodes.final.length - 1) {
@@ -106,6 +101,9 @@ async function importGeneratedRouteNodes(): Promise<void> {
         process.send!("status:Inserting batch data in database");
         await importDriverRoutes(generatedDroutesWithDRouteNodes);
         process.send!("status:Batch data insertion completed");
+
+        await fsPromises.writeFile("./util/tempFiles/driverRouteTemp.json", "", { encoding: "utf8" });
+
 
     } catch (error) {
         process.send!("status:Error");
@@ -139,6 +137,9 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
                 let cumulativeTime: number = 0;
                 let cumulativeDistance: number = 0;
 
+                let departureTime: Moment = moment(driverRouteMeta!.departureTime, "YYYY-MM-DD HH:mm")
+
+
                 for (let [index, rNode] of driverRouteMeta!.routeNodes.initial.entries()) {
 
                     let routeOriginNode: NodeAttributes | null = await getNodeObjectByNodeId(rNode.originNode);
@@ -153,9 +154,8 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
 
                         if (Object.values(calculatedDistanceDurationBetweenNodes).every(value => value !== null)) {
 
-                            let arrivalTime: Moment = (moment(driverRouteMeta!.departureTime,
-                                "YYYY-MM-DD HH:mm").add(calculatedDistanceDurationBetweenNodes.duration, "seconds"));
-                            let departureTime: Moment = arrivalTime.clone().add(routeDestinationNode?.transitTime, "minutes");
+                            let arrivalTime: Moment = departureTime.clone().add(calculatedDistanceDurationBetweenNodes.duration, "seconds");
+                            departureTime = arrivalTime.clone().add(routeDestinationNode?.transitTime, "minutes");
 
                             cumulativeTime += calculatedDistanceDurationBetweenNodes.duration / 60;
                             cumulativeDistance += calculatedDistanceDurationBetweenNodes.distance;

@@ -237,6 +237,7 @@ export function extractOrigDestNodeId(routeNodes: Array<Record<string, any>>): R
     const originNodeList: Array<number> = routeNodes.map(rNode => rNode.originNode);
     const destinationNodeList: Array<number> = routeNodes.map(rNode => rNode.destinationNode);
 
+
     let actualOriginNodes: Array<number> = [];
     let actualDestinationNodes: Array<number> = [];
 
@@ -252,7 +253,7 @@ export function extractOrigDestNodeId(routeNodes: Array<Record<string, any>>): R
     return (actualOriginNodes.length !== 1 || actualDestinationNodes.length !== 1) ? { originNode: null, destinationNode: null } : { originNode: actualOriginNodes[0], destinationNode: actualDestinationNodes[0] };
 }
 
-export function sortRouteNodeListByNodeStop(routeNodes: Array<Record<string, any>>, routeOriginatingNodeId: number) {
+export function sortRouteNodeListByNodeStop(routeNodes: Array<Record<string, any>>, routeOriginatingNodeId: number): Array<Record<string, any>> {
 
     const reorderedRouteNodes: Array<Record<string, any>> = [];
     let nextNode: number = routeOriginatingNodeId;
@@ -267,6 +268,18 @@ export function sortRouteNodeListByNodeStop(routeNodes: Array<Record<string, any
         nextNode = nextDict.destinationNode;
     }
     return reorderedRouteNodes;
+}
+
+export function isRoutesDateSorted(routeNodes: Array<Record<string, any>>): boolean {
+    for (let i = 0; i < routeNodes.length - 1; ++i) {
+        if (routeNodes[i].departureTime < routeNodes[i].arrivalTime) {
+            return false;
+        }
+        if (routeNodes[i].departureTime > routeNodes[i + 1].arrivalTime) {
+            return false;
+        }
+    }
+    return true;
 }
 
 export async function importDriverRoutes(generatedDroutesWithDRouteNodes: Array<Record<string, any>>): Promise<boolean> {

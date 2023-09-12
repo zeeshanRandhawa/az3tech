@@ -102,7 +102,7 @@ export class DriverService {
                 password: await generatePasswordHash(driverData.firstName),
                 roleId: 4,
                 driver: {
-                    phoneNumber: driverData.countryCode.concat(driverData.mobileNumber),
+                    phoneNumber: !driverData.countryCode || !driverData.mobileNumber ? null : driverData.countryCode.concat(driverData.mobileNumber),
                     firstName: driverData.firstName,
                     lastName: driverData.lastName,
                     address: driverData.address,
@@ -110,7 +110,7 @@ export class DriverService {
                     stateProvince: driverData.stateProvince,
                     zipPostalCode: driverData.zipPostalCode,
                     description: driverData.description,
-                    capacity: driverData.capacity
+                    capacity: !driverData.capacity ? Math.floor(Math.random() * 5) + 1 : driverData.capacity
                 }
             }
         }));
