@@ -1,9 +1,0 @@
-Route Name,Origin Node Id,Destination Node Id,Arrival Time,Departure Time,Driver Id,Passenger Capacity,Database Management Tag
-BART SF SHORT,2511,2501,,9:01,35,100,IMPORT TEST 1
-BART SF SHORT,2501,2504,9:12,9:13,35,100,IMPORT TEST 1
-BART SF SHORT,2504,2523,9:23,9:24,35,100,IMPORT TEST 1
-BART SF SHORT,2523,2507,9:33,9:34,35,100,IMPORT TEST 1
-BART SF SHORT,2507,,9:40,,35,100,IMPORT TEST 1
-,,,,,,,
-,,,,,,,
-,,,,,,,

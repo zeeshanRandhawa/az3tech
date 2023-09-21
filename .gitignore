@@ -48,3 +48,9 @@ Thumbs.db
 *.mov
 *.wmv
 
+
+# Custom Files
+.clinic
+__tests__
+testFiles
+util/logs/*
