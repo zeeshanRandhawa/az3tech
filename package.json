@@ -7,8 +7,8 @@
     "start": "ts-node index.ts",
     "dev": "nodemon --exec ts-node index.ts",
     "build": "tsc",
-    "build:app:local": "rmdir /s /q public && mkdir public && cd public && mkdir build && cd ../../React-Dashboard-TS && npm i -f && npm run build:local && cd ../AZ3-TS",
-    "build:app:production": "rmdir /s /q public && mkdir public && cd public && mkdir build && cd ../../React-Dashboard-TS && npm i -f && npm run build:production && cd ../AZ3-TS",
+    "build:app:local": "rmdir /s /q public && mkdir public && cd ../React-Dashboard-TS && npm i -f && npm run build:local && cd ../AZ3-TS",
+    "build:app:production": "rmdir /s /q public && mkdir public && cd ../React-Dashboard-TS && npm i -f && npm run build:production && cd ../AZ3-TS",
     "test": "jest --coverage --detectOpenHandles --testPathPattern=user\\.route\\.test\\.ts$"
   },
   "author": "AZ3 Technologies",

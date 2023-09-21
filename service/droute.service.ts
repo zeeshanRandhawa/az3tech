@@ -767,7 +767,7 @@ export class DriverRouteService {
                                     }
                                 ]
                             },
-                            // { nodeId: nodeId }
+                            { nodeId: nodeId }
                         ]
                     }
                 ]

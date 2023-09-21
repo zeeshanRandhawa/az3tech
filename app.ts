@@ -76,7 +76,7 @@ class App {
         this.express.use(express.json({ limit: "50mb" }));
         this.express.use(express.urlencoded({ limit: "50mb", extended: true }));
         if (process.env.IS_PROD === "true") {
-            this.express.use(express.static(path.resolve(__dirname, "./public/build")));
+            this.express.use(express.static(path.resolve(__dirname, "./public")));
         }
     }
 
@@ -107,7 +107,7 @@ class App {
 
         if (process.env.IS_PROD === "true") {
             this.express.get("*", (_req: Request, res: Response) => {
-                res.sendFile(path.resolve(__dirname, "./public/build", "index.html"));
+                res.sendFile(path.resolve(__dirname, "./public", "index.html"));
             });
         }
     }
