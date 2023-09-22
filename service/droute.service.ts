@@ -403,7 +403,7 @@ export class DriverRouteService {
                                         drouteId: null, outbDriverId: driverRouteMeta.driverId, nodeId: rNode.originNode,
                                         arrivalTime: rNode.arrivalTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"), departureTime: null, rank: index + 1,
                                         capacity: driverRouteMeta.capacity, capacityUsed: 0,
-                                        cumDistance: cumDistance / 1609.344, cumTime: cumTime, status: "DESTINATION"
+                                        cumDistance: (cumDistance / 1609.344).toFixed(2), cumTime: cumTime, status: "DESTINATION"
                                     };
                                 } else {
                                     temprouteNode = {
@@ -411,7 +411,7 @@ export class DriverRouteService {
                                         arrivalTime: rNode.arrivalTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"),
                                         departureTime: driverRouteMeta.routeNodes.initial[index + 1].departureTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"),
                                         rank: index + 1, capacity: driverRouteMeta.capacity, capacityUsed: 0,
-                                        cumDistance: cumDistance / 1609.344, cumTime: cumTime, status: "SCHEDULED"
+                                        cumDistance: (cumDistance / 1609.344).toFixed(2), cumTime: cumTime, status: "SCHEDULED"
                                     };
                                 }
                                 driverRouteMeta.routeNodes.final.push(temprouteNode);
@@ -805,8 +805,6 @@ export class DriverRouteService {
             ],
             order: [["drouteNodes", "rank", "ASC"]]
         });
-
-
 
 
         // const session: SessionAttributes | null = await this.sessionRepository.findSession({

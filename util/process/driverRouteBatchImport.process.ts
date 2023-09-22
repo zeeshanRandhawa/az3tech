@@ -105,7 +105,7 @@ async function importGeneratedRouteNodes(): Promise<void> {
         await fsPromises.writeFile("./util/tempFiles/driverRouteTemp.json", "", { encoding: "utf8" });
 
 
-    } catch (error) {
+    } catch (error: any) {
         process.send!("status:Error");
     }
 }
@@ -166,7 +166,7 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
                                     drouteId: null, outbDriverId: driverRouteMeta!.driverId, nodeId: rNode.destinationNode,
                                     arrivalTime: arrivalTime.format("YYYY-MM-DD HH:mm").concat(":00 +00:00"), departureTime: null, maxWait: driverRouteMeta!.maxWait,
                                     rank: index + 1, capacity: driverRouteMeta!.capacity, capacityUsed: 0,
-                                    cumDistance: cumulativeDistance / 1609.344, cumTime: cumulativeTime, status: "DESTINATION"
+                                    cumDistance: (cumulativeDistance / 1609.344).toFixed(2), cumTime: cumulativeTime, status: "DESTINATION"
                                 };
 
                             } else {
@@ -176,7 +176,7 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
                                     arrivalTime: arrivalTime.format("YYYY-MM-DD HH:mm").concat(":00 +00:00"),
                                     departureTime: departureTime.format("YYYY-MM-DD HH:mm").concat(":00 +00:00"), maxWait: driverRouteMeta!.maxWait, rank: index + 1,
                                     capacity: driverRouteMeta!.capacity, capacityUsed: 0,
-                                    cumDistance: cumulativeDistance / 1609.344,
+                                    cumDistance: (cumulativeDistance / 1609.344).toFixed(2),
                                     cumTime: cumulativeTime, status: "SCHEDULED"
                                 };
                             }
@@ -232,7 +232,7 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
                             drouteId: null, outbDriverId: driverRouteMeta!.driverId, nodeId: driverRouteMeta!.routeNodes.initial[0].destinationNode,
                             arrivalTime: arrivalTime.format("YYYY-MM-DD HH:mm").concat(":00 +00:00"), departureTime: null, maxWait: driverRouteMeta!.maxWait, rank: rank,
                             capacity: driverRouteMeta!.capacity, capacityUsed: 0,
-                            cumDistance: calculatedDistanceDurationBetweenNodes.distance, cumTime: calculatedDistanceDurationBetweenNodes.duration / 60,
+                            cumDistance: parseFloat((calculatedDistanceDurationBetweenNodes.distance / 1609.34).toFixed(2)), cumTime: calculatedDistanceDurationBetweenNodes.duration / 60,
                             status: "DESTINATION"
                         };
 
@@ -255,14 +255,14 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
                                     drouteId: null, outbDriverId: driverRouteMeta!.driverId, nodeId: interNode!.nodeId,
                                     arrivalTime: arrivalTime.format("YYYY-MM-DD HH:mm").concat(":00 +00:00"), departureTime: null, maxWait: driverRouteMeta!.maxWait, rank: null,
                                     capacity: driverRouteMeta!.capacity, capacityUsed: 0,
-                                    cumDistance: calculatedDistanceDurationBetweenNodes.distance, cumTime: calculatedDistanceDurationBetweenNodes.duration / 60,
+                                    cumDistance: parseFloat((calculatedDistanceDurationBetweenNodes.distance / 1609.34).toFixed(2)), cumTime: calculatedDistanceDurationBetweenNodes.duration / 60,
                                     status: "POTENTIAL"
                                 };
 
                                 driverRouteMeta!.routeNodes.final.push(temprouteNode);
                             }
                         }
-                        await driverRouteMeta.routeNodes.final.sort((a: Record<string, any>, b: Record<string, any>) => a.arrivalTime.localeCompare(b.arrivalTime));
+                        await driverRouteMeta.routeNodes.final.sort((a: Record<string, any>, b: Record<string, any>) => a.cumDistance - b.cumDistance);
 
                         await Promise.all(driverRouteMeta.routeNodes.final.map(async (tmpRNode: Record<string, any>) => {
                             if (tmpRNode.status === "POTENTIAL") {
