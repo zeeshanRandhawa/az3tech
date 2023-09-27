@@ -5,7 +5,7 @@ import querystring from 'querystring';
 import { sequelize } from "./db.config";
 import axios, { AxiosResponse } from "axios";
 import { Op, Transaction, literal } from "sequelize";
-import { NodeAttributes } from "./interface.utility";
+import { CoordinateAttribute, DriverRouteAttributes, NodeAttributes } from "./interface.utility";
 import { GeolibInputCoordinates } from "geolib/es/types";
 import { NodeRepository } from "../repository/node.repository";
 import { DriverRouteRepository } from "../repository/droute.repository";
@@ -373,4 +373,133 @@ export function getActiveDateList(scheduledWeekdays: string, scheduledStartDate:
     }
 
     return activeDates;
+}
+
+export async function getDriverRoutesBetweenTimeFrame(startDateTimeWindow: string, endDateTimeWindow: string, nodeIdList: Array<number>): Promise<Array<DriverRouteAttributes>> {
+    const searchQueryWithNodeIds: Array<any> = [
+        {
+            [Op.or]: [
+                {
+                    [Op.and]: [
+                        {
+                            [Op.or]: [
+                                {
+                                    departureTime: {
+                                        [Op.and]: [
+                                            { [Op.gte]: startDateTimeWindow },
+                                            { [Op.lte]: endDateTimeWindow }
+                                        ]
+                                    }
+                                },
+                                {
+                                    [Op.and]: [
+                                        literal(`"DriverRouteNode"."departure_time" + ((CASE WHEN "droute"."departure_flexibility" > 0 THEN "droute"."departure_flexibility" ELSE 0 END) * interval '1 minute') >= '${startDateTimeWindow}'`),
+                                        literal(`"DriverRouteNode"."departure_time" + ((CASE WHEN "droute"."departure_flexibility" > 0 THEN "droute"."departure_flexibility" ELSE 0 END) * interval '1 minute') <= '${endDateTimeWindow}'`)
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            status: "ORIGIN"
+                        }
+                    ]
+                },
+                {
+                    [Op.and]: [
+                        {
+                            arrivalTime: {
+                                [Op.and]: [
+                                    { [Op.gte]: startDateTimeWindow },
+                                    { [Op.lte]: endDateTimeWindow }
+                                ]
+                            }
+                        },
+                        {
+                            [Op.or]: [
+                                {
+                                    status: "SCHEDULED"
+                                },
+                                {
+                                    status: "POTENTIAL"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+
+    if (nodeIdList.length) {
+        searchQueryWithNodeIds.push({ nodeId: nodeIdList });
+    }
+
+    const driverRouteNodeIds: Array<Record<string, any>> = await new DriverRouteNodeRepository().findDriverRouteNodes({
+        attributes: [["droute_id", "drouteIdByDrouteNode"]],
+        where: {
+            [Op.and]: [
+                {
+                    [Op.and]: searchQueryWithNodeIds
+                }
+            ]
+        },
+        include: [
+            {
+                association: "droute",
+                attributes: [],
+                required: true
+            }
+        ]
+    });
+
+    if (!driverRouteNodeIds.length) {
+        return [];
+    }
+
+    const driverRoutes: Array<DriverRouteAttributes> = await new DriverRouteRepository().findDriverRoutes({
+        where: {
+            drouteId:
+            {
+                [Op.in]: Array.from(new Set(driverRouteNodeIds.map(dRouteNodeNT => parseInt(dRouteNodeNT.drouteIdByDrouteNode, 10))))
+            },
+        },
+        include: [
+            { association: "origin" },
+            { association: "destination" },
+            {
+                association: "drouteNodes",
+                required: true,
+                include: [
+                    { association: "node" }
+                ]
+            }
+        ],
+        order: [["drouteNodes", "rank", "ASC"]]
+    });
+
+    return driverRoutes;
+}
+
+export async function findNearestNode(coordinateData: CoordinateAttribute): Promise<Record<string, any>> {
+    const smallestDistanceCoordinate: Record<string, any> = {
+        distance: Infinity,
+        smallestDistanceNode: undefined
+    };
+
+    const nodeList: Array<NodeAttributes> = await new NodeRepository().findNodes({});
+    if (nodeList.length < 1) {
+        return smallestDistanceCoordinate;
+    }
+
+    await Promise.all(nodeList.map(async (node: NodeAttributes) => {
+        if (node.lat !== undefined || node.long !== undefined) {
+            let distance: number = calculateDistanceBetweenPoints({ latitude: node.lat!, longitude: node.long! }, { latitude: coordinateData.latitude!, longitude: coordinateData.longitude! })
+            if (distance <= smallestDistanceCoordinate.distance) {
+                smallestDistanceCoordinate.distance = distance;
+                smallestDistanceCoordinate.smallestDistanceNode = node
+            }
+        }
+    }));
+
+    return smallestDistanceCoordinate;
 }

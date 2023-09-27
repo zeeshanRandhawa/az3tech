@@ -8,7 +8,7 @@ import { SessionRepository } from "../repository/session.repository";
 import moment from "moment-timezone";
 import { ObjectCsvStringifier } from "csv-writer/src/lib/csv-stringifiers/object";
 import { createObjectCsvStringifier } from "csv-writer";
-import { createReadStream, promises as fsPromises } from "fs";
+import { promises as fsPromises } from "fs";
 export class RiderRouteService {
     private riderRouteRepository: RiderRouteRepository;
     private riderRepository: RiderRepository;
@@ -35,6 +35,11 @@ export class RiderRouteService {
         }
         const riderRouteList: RiderRouteAttributes[] = await this.riderRouteRepository.findRiderRoutes({
             where: whereCondition,
+            include: [{
+                association: "origin"
+            }, {
+                association: "destination"
+            }],
             order: [["riderId", "ASC"], ["rrouteId", "ASC"]],
             limit: 10,
             offset: (pageNumber - 1) * 10,
@@ -57,6 +62,11 @@ export class RiderRouteService {
             where: {
                 riderId: riderId
             },
+            include: [{
+                association: "origin"
+            }, {
+                association: "destination"
+            }],
             order: [["riderId", "ASC"], ["rrouteId", "ASC"]],
             limit: 10,
             offset: (pageNumber - 1) * 10,

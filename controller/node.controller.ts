@@ -208,18 +208,4 @@ export class NodeController {
             return { status: 500, data: { message: error.message } };
         }
     }
-
-    async getNearestNode(longitude: number, latitude: number): Promise<any> {
-        if (!longitude || !latitude || (latitude <= -90 && latitude >= 90) || (longitude <= -180 && longitude >= 180)) {
-            return { status: 422, data: { message: "Invalid coordinates" } };
-        }
-        try {
-            return await this.nodeService.getNearestNode({ longitude: longitude, latitude: latitude } as CoordinateAttribute);
-        } catch (error: any) {
-            if (error instanceof CustomError) {
-                return { status: error.statusCode, data: { message: error.message } };
-            }
-            return { status: 500, data: { message: error.message } };
-        }
-    }
 }

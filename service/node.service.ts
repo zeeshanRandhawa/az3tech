@@ -7,9 +7,8 @@ import path from "path";
 import archiver, { Archiver } from "archiver";
 import ProcessSocket from "../util/socketProcess.utility";
 import { NodeRepository } from "../repository/node.repository";
-import { CoordinateAttribute, CustomError, NodeAttributes, NodeForm, SessionAttributes } from "../util/interface.utility";
+import { CustomError, NodeAttributes, NodeForm, SessionAttributes } from "../util/interface.utility";
 import {
-    calculateDistanceBetweenPoints,
     findNodesOfInterestInArea, getGeographicCoordinatesByAddress,
     isValidFileHeader, prepareBatchBulkImportData
 } from "../util/helper.utility";
@@ -313,28 +312,4 @@ export class NodeService {
             return { status: 404, data: { message: "No node found in this area" } };
         }
     }
-
-    async getNearestNode(coordinateData: CoordinateAttribute): Promise<Record<string, any>> {
-        const nodeList: Array<NodeAttributes> = await this.nodeRepository.findNodes({});
-        if (nodeList.length < 1) {
-            throw new CustomError("No Node Found", 404);
-        }
-
-        const smallestDistanceCoordinate: Record<string, any> = {
-            distance: Infinity,
-            coordinates: {}
-        };
-        await Promise.all(nodeList.map(async (node: NodeAttributes) => {
-            if (node.lat !== undefined || node.long !== undefined) {
-                let distance: number = calculateDistanceBetweenPoints({ latitude: node.lat!, longitude: node.long! }, { latitude: coordinateData.latitude!, longitude: coordinateData.longitude! })
-                if (distance <= smallestDistanceCoordinate.distance) {
-                    smallestDistanceCoordinate.distance = distance;
-                    smallestDistanceCoordinate.coordinates = { latitude: node.lat, longitude: node.long }
-                }
-            }
-        }));
-
-        return { status: 200, data: smallestDistanceCoordinate };
-    }
 }
-

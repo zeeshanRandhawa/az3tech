@@ -6,7 +6,7 @@ import { NodeRepository } from "../repository/node.repository";
 import {
     isValidFileHeader, prepareBatchBulkImportData, extractOrigDestNodeId, sortRouteNodeListByNodeStop, getNodeObjectByNodeId,
     getDistanceDurationBetweenNodes, importDriverRoutes, normalizeTimeZone, findNodesOfInterestInArea, findParallelLinePoints,
-    formatNodeData, getDistances, getRouteDetailsByOSRM, getActiveDateList, isRoutesDateSorted
+    formatNodeData, getDistances, getRouteDetailsByOSRM, getActiveDateList, isRoutesDateSorted, getDriverRoutesBetweenTimeFrame
 } from "../util/helper.utility";
 import { DriverRepository } from "../repository/driver.repository";
 import ProcessSocket from "../util/socketProcess.utility";
@@ -72,6 +72,11 @@ export class DriverRouteService {
             where: {
                 driverId: driverId
             },
+            include: [{
+                association: "origin"
+            }, {
+                association: "destination"
+            }],
             order: [["driverId", "ASC"], ["drouteId", "ASC"]],
             limit: 10,
             offset: (pageNumber - 1) * 10,
@@ -710,102 +715,107 @@ export class DriverRouteService {
     //old
     async displayDriverRoutesAtNodeBetweenTimeFrame(nodeId: number, startDateTimeWindow: string, endDateTimeWindow: string, sessionToken: string): Promise<Record<string, any>> {
 
-        const driverRouteNodeIds: Array<Record<string, any>> = await this.driverRouteNodeRepository.findDriverRouteNodes({
-            attributes: [["droute_id", "drouteNodeId"]],
-            where: {
-                [Op.and]: [
-                    {
-                        [Op.and]: [
-                            {
-                                [Op.or]: [
-                                    {
-                                        [Op.and]: [
-                                            {
-                                                [Op.or]: [
-                                                    {
-                                                        departureTime: {
-                                                            [Op.and]: [
-                                                                { [Op.gte]: startDateTimeWindow },
-                                                                { [Op.lte]: endDateTimeWindow }
-                                                            ]
-                                                        }
-                                                    },
-                                                    {
-                                                        [Op.and]: [
-                                                            literal(`"DriverRouteNode"."departure_time" + ((CASE WHEN "droute"."departure_flexibility" > 0 THEN "droute"."departure_flexibility" ELSE 0 END) * interval '1 minute') >= '${startDateTimeWindow}'`),
-                                                            literal(`"DriverRouteNode"."departure_time" + ((CASE WHEN "droute"."departure_flexibility" > 0 THEN "droute"."departure_flexibility" ELSE 0 END) * interval '1 minute') <= '${endDateTimeWindow}'`)
-                                                        ]
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                status: "ORIGIN"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        [Op.and]: [
-                                            {
-                                                arrivalTime: {
-                                                    [Op.and]: [
-                                                        { [Op.gte]: startDateTimeWindow },
-                                                        { [Op.lte]: endDateTimeWindow }
-                                                    ]
-                                                }
-                                            },
-                                            {
-                                                [Op.or]: [
-                                                    {
-                                                        status: "SCHEDULED"
-                                                    },
-                                                    {
-                                                        status: "POTENTIAL"
-                                                    }
-                                                ]
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            { nodeId: nodeId }
-                        ]
-                    }
-                ]
-            },
-            include: [
-                {
-                    association: "droute",
-                    attributes: [],
-                    required: true
-                }
-            ]
-        });
+        // const driverRouteNodeIds: Array<Record<string, any>> = await this.driverRouteNodeRepository.findDriverRouteNodes({
+        //     attributes: [["droute_id", "drouteNodeId"]],
+        //     where: {
+        //         [Op.and]: [
+        //             {
+        //                 [Op.and]: [
+        //                     {
+        //                         [Op.or]: [
+        //                             {
+        //                                 [Op.and]: [
+        //                                     {
+        //                                         [Op.or]: [
+        //                                             {
+        //                                                 departureTime: {
+        //                                                     [Op.and]: [
+        //                                                         { [Op.gte]: startDateTimeWindow },
+        //                                                         { [Op.lte]: endDateTimeWindow }
+        //                                                     ]
+        //                                                 }
+        //                                             },
+        //                                             {
+        //                                                 [Op.and]: [
+        //                                                     literal(`"DriverRouteNode"."departure_time" + ((CASE WHEN "droute"."departure_flexibility" > 0 THEN "droute"."departure_flexibility" ELSE 0 END) * interval '1 minute') >= '${startDateTimeWindow}'`),
+        //                                                     literal(`"DriverRouteNode"."departure_time" + ((CASE WHEN "droute"."departure_flexibility" > 0 THEN "droute"."departure_flexibility" ELSE 0 END) * interval '1 minute') <= '${endDateTimeWindow}'`)
+        //                                                 ]
+        //                                             }
+        //                                         ]
+        //                                     },
+        //                                     {
+        //                                         status: "ORIGIN"
+        //                                     }
+        //                                 ]
+        //                             },
+        //                             {
+        //                                 [Op.and]: [
+        //                                     {
+        //                                         arrivalTime: {
+        //                                             [Op.and]: [
+        //                                                 { [Op.gte]: startDateTimeWindow },
+        //                                                 { [Op.lte]: endDateTimeWindow }
+        //                                             ]
+        //                                         }
+        //                                     },
+        //                                     {
+        //                                         [Op.or]: [
+        //                                             {
+        //                                                 status: "SCHEDULED"
+        //                                             },
+        //                                             {
+        //                                                 status: "POTENTIAL"
+        //                                             }
+        //                                         ]
+        //                                     }
+        //                                 ]
+        //                             }
+        //                         ]
+        //                     },
+        //                     { nodeId: nodeId }
+        //                 ]
+        //             }
+        //         ]
+        //     },
+        //     include: [
+        //         {
+        //             association: "droute",
+        //             attributes: [],
+        //             required: true
+        //         }
+        //     ]
+        // });
 
-        if (!driverRouteNodeIds.length) {
+        // if (!driverRouteNodeIds.length) {
+        //     throw new CustomError("No Driver Route found in on this node in given time window", 404);
+        // }
+
+        // const driverRoutes: Array<DriverRouteAttributes> = await this.driverRouteRepository.findDriverRoutes({
+        //     where: {
+        //         drouteId:
+        //         {
+        //             [Op.in]: Array.from(new Set(driverRouteNodeIds.map(dRouteNodeNT => parseInt(dRouteNodeNT.drouteNodeId, 10))))
+        //         },
+        //     },
+        //     include: [
+        //         { association: "origin" },
+        //         { association: "destination" },
+        //         {
+        //             association: "drouteNodes",
+        //             required: true,
+        //             include: [
+        //                 { association: "node" }
+        //             ]
+        //         }
+        //     ],
+        //     order: [["drouteNodes", "rank", "ASC"]]
+        // });
+
+        const driverRoutes: Array<DriverRouteAttributes> = await getDriverRoutesBetweenTimeFrame(startDateTimeWindow, endDateTimeWindow, [nodeId]);
+
+        if (!driverRoutes.length) {
             throw new CustomError("No Driver Route found in on this node in given time window", 404);
         }
-
-        const driverRoutes: Array<DriverRouteAttributes> = await this.driverRouteRepository.findDriverRoutes({
-            where: {
-                drouteId:
-                {
-                    [Op.in]: driverRouteNodeIds.map(dRouteNodeNT => parseInt(dRouteNodeNT.drouteNodeId, 10))
-                },
-            },
-            include: [
-                { association: "origin" },
-                { association: "destination" },
-                {
-                    association: "drouteNodes",
-                    required: true,
-                    include: [
-                        { association: "node" }
-                    ]
-                }
-            ],
-            order: [["drouteNodes", "rank", "ASC"]]
-        });
-
 
         // const session: SessionAttributes | null = await this.sessionRepository.findSession({
         //     where: {

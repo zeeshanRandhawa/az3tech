@@ -3,7 +3,7 @@ import { CoordinateAttribute, CustomError, NodeAttributes, SessionAttributes } f
 import {
     calculateDistanceBetweenPoints,
     findNodesOfInterestInArea, findParallelLinePoints, formatNodeData, getDistances,
-    getRouteDetailsByOSRM, convertColorCodeToInteger, convertIntToColorCode
+    getRouteDetailsByOSRM, convertColorCodeToInteger, convertIntToColorCode, findNearestNode
 } from "../util/helper.utility";
 import { SessionRepository } from "../repository/session.repository";
 import { UserRepository } from "../repository/user.repository";
@@ -126,24 +126,18 @@ export class MapService {
     }
 
     async displayMapNearestNode(coordinateData: CoordinateAttribute): Promise<Record<string, any>> {
-        const nodeList: Array<NodeAttributes> = await this.nodeRepository.findNodes({});
-        if (nodeList.length < 1) {
+
+        const smallestDistanceCoordinateData: Record<string, any> = await findNearestNode(coordinateData);
+
+        if (smallestDistanceCoordinateData.distance === Infinity) {
             throw new CustomError("No Node Found", 404);
         }
 
-        const smallestDistanceCoordinate: Record<string, any> = {
-            distance: Infinity,
-            coordinates: {}
-        };
-        await Promise.all(nodeList.map(async (node: NodeAttributes) => {
-            if (node.lat !== undefined || node.long !== undefined) {
-                let distance: number = calculateDistanceBetweenPoints({ latitude: node.lat!, longitude: node.long! }, { latitude: coordinateData.latitude!, longitude: coordinateData.longitude! })
-                if (distance <= smallestDistanceCoordinate.distance) {
-                    smallestDistanceCoordinate.distance = distance;
-                    smallestDistanceCoordinate.coordinates = { latitude: node.lat, longitude: node.long }
-                }
+        return {
+            status: 200, data: {
+                distance: smallestDistanceCoordinateData.distance,
+                coordinates: { latitude: smallestDistanceCoordinateData.smallestDistanceNode.lat, longitude: smallestDistanceCoordinateData.smallestDistanceNode.long }
             }
-        }));
-        return { status: 200, data: smallestDistanceCoordinate };
+        };
     }
 }
