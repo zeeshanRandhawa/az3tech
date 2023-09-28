@@ -1,20 +1,20 @@
 import { DriverRouteNode, sequelize } from "../util/db.config"
-import { DriverRouteNodeAttributes } from "../util/interface.utility";
+import { DriverRouteNodeAssocitedAttributes } from "../util/interface.utility";
 import { Transaction } from "sequelize"
 
 export class DriverRouteNodeRepository {
     constructor() {
     }
 
-    async createDriverRouteNode(driverRouteNodeToCreate: Record<string, any>, associations: Record<string, any>): Promise<DriverRouteNodeAttributes> {
+    async createDriverRouteNode(driverRouteNodeToCreate: Record<string, any>, associations: Record<string, any>): Promise<DriverRouteNodeAssocitedAttributes> {
         const createdDriverRouteNode: DriverRouteNode | null = await DriverRouteNode.create(driverRouteNodeToCreate, associations);
-        return createdDriverRouteNode?.toJSON() as DriverRouteNodeAttributes ?? null;
+        return createdDriverRouteNode?.toJSON() as DriverRouteNodeAssocitedAttributes ?? null;
     }
 
-    async findDriverRouteNodes(whereConditionPaginatedAttributed: Record<string, any>): Promise<DriverRouteNodeAttributes[]> {
+    async findDriverRouteNodes(whereConditionPaginatedAttributed: Record<string, any>): Promise<DriverRouteNodeAssocitedAttributes[]> {
         const driverRouteNodeList: DriverRouteNode[] = await DriverRouteNode.findAll(whereConditionPaginatedAttributed);
 
-        const plainDriverRouteNodeList: DriverRouteNodeAttributes[] = driverRouteNodeList.map(routeNode => routeNode.toJSON());
+        const plainDriverRouteNodeList: DriverRouteNodeAssocitedAttributes[] = driverRouteNodeList.map(routeNode => routeNode.toJSON());
         return plainDriverRouteNodeList;
     }
 

@@ -5,7 +5,7 @@ import querystring from 'querystring';
 import { sequelize } from "./db.config";
 import axios, { AxiosResponse } from "axios";
 import { Op, Transaction, literal } from "sequelize";
-import { CoordinateAttribute, DriverRouteAttributes, NodeAttributes } from "./interface.utility";
+import { CoordinateAttribute, DriverRouteAssociatedNodeAttributes, NodeAttributes } from "./interface.utility";
 import { GeolibInputCoordinates } from "geolib/es/types";
 import { NodeRepository } from "../repository/node.repository";
 import { DriverRouteRepository } from "../repository/droute.repository";
@@ -375,7 +375,7 @@ export function getActiveDateList(scheduledWeekdays: string, scheduledStartDate:
     return activeDates;
 }
 
-export async function getDriverRoutesBetweenTimeFrame(startDateTimeWindow: string, endDateTimeWindow: string, nodeIdList: Array<number>): Promise<Array<DriverRouteAttributes>> {
+export async function getDriverRoutesBetweenTimeFrame(startDateTimeWindow: string, endDateTimeWindow: string, nodeIdList: Array<number>): Promise<Array<DriverRouteAssociatedNodeAttributes>> {
     const searchQueryWithNodeIds: Array<any> = [
         {
             [Op.or]: [
@@ -456,7 +456,7 @@ export async function getDriverRoutesBetweenTimeFrame(startDateTimeWindow: strin
         return [];
     }
 
-    const driverRoutes: Array<DriverRouteAttributes> = await new DriverRouteRepository().findDriverRoutes({
+    const driverRoutes: Array<DriverRouteAssociatedNodeAttributes> = await new DriverRouteRepository().findDriverRoutes({
         where: {
             drouteId:
             {

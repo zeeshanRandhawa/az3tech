@@ -1,14 +1,18 @@
 import { Router, Request, Response } from "express";
 import { MapController } from "../controller/map.controller";
+import { DriverRouteController } from "../controller/droute.controller";
 
 export class MapRouter {
 
     private router: Router;
     private nodeController: MapController;
+    private driverRouteController: DriverRouteController;
 
 
     constructor() {
         this.nodeController = new MapController();
+        this.driverRouteController = new DriverRouteController();
+
         this.router = Router();
         this.initializeRoutes();
     }
@@ -18,6 +22,10 @@ export class MapRouter {
     }
 
     private initializeRoutes() {
+        this.router.get("/droute/display/:drouteId", (req: Request, res: Response) => {
+            this.driverRouteController.displayDriverRouteById(parseInt(req.params.drouteId as string, 10) as number).then(data => res.status(data.status).json(data.data));
+        });
+
         this.router.patch("/waypointdistance", (req: Request, res: Response) => {
             this.nodeController.setWaypointDistance(parseFloat(req.body.waypointDistance as string) as number, req.headers.cookies as string | undefined).then(data => res.status(data.status).json(data.data));
         });
@@ -37,6 +45,7 @@ export class MapRouter {
         this.router.get("/waypointdistance", (req: Request, res: Response) => {
             this.nodeController.getWaypointDistance(req.headers.cookies as string | undefined).then(data => res.status(data.status).json(data.data));
         });
+
     }
 }
 

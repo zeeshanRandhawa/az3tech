@@ -127,7 +127,7 @@ export interface DriverAttributes {
     userId?: number;
     phoneNumber?: string;
     user?: UserAttributes;
-    droutes?: Array<DriverRouteAttributes>;
+    droutes?: Array<DriverRouteAssociatedNodeAttributes>;
 }
 
 export interface DriverRouteAttributes {
@@ -147,7 +147,9 @@ export interface DriverRouteAttributes {
     origin?: NodeAttributes;
     destination?: NodeAttributes;
     driver?: DriverAttributes;
-    drouteNodes?: Array<DriverRouteNodeAttributes>;
+}
+export interface DriverRouteAssociatedNodeAttributes extends DriverRouteAttributes {
+    drouteNodes?: Array<DriverRouteNodeAssocitedAttributes>;
 }
 
 export interface DriverRouteNodeAttributes {
@@ -166,7 +168,10 @@ export interface DriverRouteNodeAttributes {
     cumTime?: number;
     status?: string;
     node?: NodeAttributes;
-    droute?: DriverRouteAttributes;
+}
+
+export interface DriverRouteNodeAssocitedAttributes extends DriverRouteNodeAttributes {
+    droute?: DriverRouteAssociatedNodeAttributes;
 }
 
 export interface RiderAttributes {

@@ -1,3 +1,4 @@
+import moment from "moment-timezone";
 import { DriverRouteService } from "../service/droute.service"
 import { CustomError, FilterForm } from "../util/interface.utility";
 
@@ -187,6 +188,24 @@ export class DriverRouteController {
         }
         try {
             return await this.driverRouteService.displayDriverRoutesAtNodeBetweenTimeFrame(nodeId, startDateTimeWindow.concat(":00 +00:00"), endDateTimeWindow.concat(":00 +00:00"), sessionToken!);
+        } catch (error: any) {
+            if (error instanceof CustomError) {
+                return { status: error.statusCode, data: { message: error.message } };
+            }
+            return { status: 500, data: { message: error.message } };
+        }
+    }
+
+    // async findMatchingDriverRoutes(originLatitude: number, originLongitude: number, destinationLatitude: number, destinationLongitude: number, departureTime: string, sessionToken: string | undefined): Promise<any> {
+    //     return await this.driverRouteService.findMatchingDriverRoutes({ latitude: originLatitude, longitude: originLongitude }, { latitude: destinationLatitude, longitude: destinationLongitude }, moment(departureTime, "YYYY-MM-DD HH:mm"), sessionToken);
+    // }
+
+    async displayDriverRouteById(drouteId: number): Promise<any> {
+        if (!drouteId) {
+            return { status: 422, data: { message: "Invalid data" } };
+        }
+        try {
+            return await this.driverRouteService.displayDriverRouteById(drouteId);
         } catch (error: any) {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
