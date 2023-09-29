@@ -137,7 +137,7 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
                 let cumulativeTime: number = 0;
                 let cumulativeDistance: number = 0;
 
-                let departureTime: Moment = moment(driverRouteMeta!.departureTime, "YYYY-MM-DD HH:mm")
+                let departureTime: Moment = moment(driverRouteMeta!.departureTime, "YYYY-MM-DD HH:mm:ss[Z]");
 
 
                 for (let [index, rNode] of driverRouteMeta!.routeNodes.initial.entries()) {
@@ -164,20 +164,20 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
 
                                 temprouteNode = {
                                     drouteId: null, outbDriverId: driverRouteMeta!.driverId, nodeId: rNode.destinationNode,
-                                    arrivalTime: arrivalTime.format("YYYY-MM-DD HH:mm").concat(":00 +00:00"), departureTime: null, maxWait: driverRouteMeta!.maxWait,
+                                    arrivalTime: arrivalTime.format("YYYY-MM-DD HH:mm:ss[Z]"), departureTime: null, maxWait: driverRouteMeta!.maxWait,
                                     rank: index + 1, capacity: driverRouteMeta!.capacity, capacityUsed: 0,
-                                    cumDistance: (cumulativeDistance / 1609.344).toFixed(2), cumTime: cumulativeTime, status: "DESTINATION"
+                                    cumDistance: (cumulativeDistance / 1609.344).toFixed(2), cumTime: cumulativeTime.toFixed(2), status: "DESTINATION"
                                 };
 
                             } else {
 
                                 temprouteNode = {
                                     drouteId: null, outbDriverId: driverRouteMeta!.driverId, nodeId: rNode.destinationNode,
-                                    arrivalTime: arrivalTime.format("YYYY-MM-DD HH:mm").concat(":00 +00:00"),
-                                    departureTime: departureTime.format("YYYY-MM-DD HH:mm").concat(":00 +00:00"), maxWait: driverRouteMeta!.maxWait, rank: index + 1,
+                                    arrivalTime: arrivalTime.format("YYYY-MM-DD HH:mm:ss[Z]"),
+                                    departureTime: departureTime.format("YYYY-MM-DD HH:mm:ss[Z]"), maxWait: driverRouteMeta!.maxWait, rank: index + 1,
                                     capacity: driverRouteMeta!.capacity, capacityUsed: 0,
                                     cumDistance: (cumulativeDistance / 1609.344).toFixed(2),
-                                    cumTime: cumulativeTime, status: "SCHEDULED"
+                                    cumTime: cumulativeTime.toFixed(2), status: "SCHEDULED"
                                 };
                             }
 
@@ -225,15 +225,15 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
                     if (Object.values(calculatedDistanceDurationBetweenNodes).every(value => value !== null)) {
 
                         let arrivalTime: Moment = (moment(driverRouteMeta!.departureTime,
-                            "YYYY-MM-DD HH:mm").add(calculatedDistanceDurationBetweenNodes.duration, "seconds"));
+                            "YYYY-MM-DD HH:mm:ss[Z]").add(calculatedDistanceDurationBetweenNodes.duration, "seconds"));
 
                         rank = rank + 1;
                         temprouteNode = {
                             drouteId: null, outbDriverId: driverRouteMeta!.driverId, nodeId: driverRouteMeta!.routeNodes.initial[0].destinationNode,
-                            arrivalTime: arrivalTime.format("YYYY-MM-DD HH:mm").concat(":00 +00:00"), departureTime: null, maxWait: driverRouteMeta!.maxWait, rank: rank,
+                            arrivalTime: arrivalTime.format("YYYY-MM-DD HH:mm:ss[Z]"), departureTime: null, maxWait: driverRouteMeta!.maxWait, rank: rank,
                             capacity: driverRouteMeta!.capacity, capacityUsed: 0,
-                            cumDistance: parseFloat((calculatedDistanceDurationBetweenNodes.distance / 1609.34).toFixed(2)), cumTime: calculatedDistanceDurationBetweenNodes.duration / 60,
-                            status: "DESTINATION"
+                            cumDistance: parseFloat((calculatedDistanceDurationBetweenNodes.distance / 1609.34).toFixed(2)),
+                            cumTime: (calculatedDistanceDurationBetweenNodes.duration / 60).toFixed(2), status: "DESTINATION"
                         };
 
                         driverRouteMeta!.routeNodes.final.push(temprouteNode);
@@ -249,14 +249,14 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
                                     { longitude: interNode!.long, latitude: interNode!.lat }
                                 );
                                 let arrivalTime: Moment = (moment(driverRouteMeta!.departureTime,
-                                    "YYYY-MM-DD HH:mm").add(calculatedDistanceDurationBetweenNodes.duration, "seconds"));
+                                    "YYYY-MM-DD HH:mm:ss[Z]").add(calculatedDistanceDurationBetweenNodes.duration, "seconds"));
 
                                 let temprouteNode = {
                                     drouteId: null, outbDriverId: driverRouteMeta!.driverId, nodeId: interNode!.nodeId,
-                                    arrivalTime: arrivalTime.format("YYYY-MM-DD HH:mm").concat(":00 +00:00"), departureTime: null, maxWait: driverRouteMeta!.maxWait, rank: null,
+                                    arrivalTime: arrivalTime.format("YYYY-MM-DD HH:mm:ss[Z]"), departureTime: null, maxWait: driverRouteMeta!.maxWait, rank: null,
                                     capacity: driverRouteMeta!.capacity, capacityUsed: 0,
-                                    cumDistance: parseFloat((calculatedDistanceDurationBetweenNodes.distance / 1609.34).toFixed(2)), cumTime: calculatedDistanceDurationBetweenNodes.duration / 60,
-                                    status: "POTENTIAL"
+                                    cumDistance: parseFloat((calculatedDistanceDurationBetweenNodes.distance / 1609.34).toFixed(2)),
+                                    cumTime: (calculatedDistanceDurationBetweenNodes.duration / 60).toFixed(2), status: "POTENTIAL"
                                 };
 
                                 driverRouteMeta!.routeNodes.final.push(temprouteNode);
@@ -337,7 +337,7 @@ async function findNodesOfInterestInAreaWithinRange(routeOriginNode: NodeAttribu
 function prepareDriverRouteBatchMetaData(initialFileData: Array<Record<string, any>>): Record<string, any> {
     const driverRouteBatchGroups: Record<string, any> = {}
     for (let line of initialFileData) {
-        line.departureTime = moment(line.departureTime, "M/D/YYYY H:mm").format("YYYY-MM-DD HH:mm").concat(":00 +00:00")
+        line.departureTime = moment(line.departureTime, "M/D/YYYY H:mm").utcOffset(0, true).format("YYYY-MM-DD HH:mm:ss[z]")
 
         if (!Object.keys(driverRouteBatchGroups).includes(line.routeName)) {
 

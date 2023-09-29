@@ -16,6 +16,7 @@ import path from "path";
 import archiver, { Archiver } from "archiver";
 import { createObjectCsvStringifier } from "csv-writer";
 import { ObjectCsvStringifier } from "csv-writer/src/lib/csv-stringifiers/object";
+import { RiderDriverRouteMatchingStrategy } from "./driverRiderMatchingAlgorithm/riderDriverRouteMatchingStrategy.class";
 // import { RiderDriverRouteMatchingAlgorithmDefault } from "./driverRiderMatchingAlgorithm/riderDriverRouteMatchingAlgorithm";
 
 export class DriverRouteService {
@@ -324,8 +325,8 @@ export class DriverRouteService {
                 const oldActiveDateTime: string = activeDates[i];
 
                 await Promise.all(driverRouteTransitMetaData.map(async (routeMeta: Record<string, any>, index: number) => {
-                    let arrivalDateTime: Moment | null = !routeMeta.arrivalTime.trim() ? null : moment(activeDates[i].concat(" ").concat(routeMeta.arrivalTime.trim()), "YYYY-MM-DD HH:mm");
-                    let departureDateTime: Moment | null = !routeMeta.departureTime.trim() ? null : moment(activeDates[i].concat(" ").concat(routeMeta.departureTime.trim()), "YYYY-MM-DD HH:mm");
+                    let arrivalDateTime: Moment | null = !routeMeta.arrivalTime.trim() ? null : moment(activeDates[i].concat(" ").concat(routeMeta.arrivalTime.trim()), "YYYY-MM-DD HH:mm").utcOffset(0, true);
+                    let departureDateTime: Moment | null = !routeMeta.departureTime.trim() ? null : moment(activeDates[i].concat(" ").concat(routeMeta.departureTime.trim()), "YYYY-MM-DD HH:mm").utcOffset(0, true);
 
                     if (!Object.keys(driverRouteTransitMetaDataGrouped).includes(routeMeta.routeName.concat(i))) {
                         driverRouteTransitMetaDataGrouped[routeMeta.routeName.concat(i)] = {
@@ -386,13 +387,13 @@ export class DriverRouteService {
 
                 let departureTime: Moment = driverRouteMeta.departureTime;
 
-                driverRouteMeta.departureTime = driverRouteMeta.departureTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00");
+                driverRouteMeta.departureTime = driverRouteMeta.departureTime.clone().format("YYYY-MM-DD HH:mm:ss[z]");
 
                 let arrivalTime: Moment | null = null;
 
                 let temprouteNode: Record<string, any> = {
                     drouteId: null, outbDriverId: driverRouteMeta.driverId, nodeId: driverRouteMeta.originNode, arrivalTime: arrivalTime,
-                    departureTime: departureTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"), rank: 0, capacity: driverRouteMeta.capacity,
+                    departureTime: departureTime.clone().format("YYYY-MM-DD HH:mm:ss[z]"), rank: 0, capacity: driverRouteMeta.capacity,
                     capacityUsed: 0, cumDistance: 0, cumTime: 0, status: "ORIGIN",
                 };
 
@@ -423,17 +424,17 @@ export class DriverRouteService {
                             ) {
                                 temprouteNode = {
                                     drouteId: null, outbDriverId: driverRouteMeta.driverId, nodeId: rNode.originNode,
-                                    arrivalTime: rNode.arrivalTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"),
+                                    arrivalTime: rNode.arrivalTime.clone().format("YYYY-MM-DD HH:mm:ss[z]"),
                                     departureTime: null, rank: index + 1, capacity: driverRouteMeta.capacity, capacityUsed: 0,
-                                    cumDistance: (cumDistance / 1609.344).toFixed(2), cumTime: cumTime, status: "DESTINATION"
+                                    cumDistance: (cumDistance / 1609.344).toFixed(2), cumTime: cumTime.toFixed(2), status: "DESTINATION"
                                 };
                             } else {
                                 temprouteNode = {
                                     drouteId: null, outbDriverId: driverRouteMeta.driverId, nodeId: rNode.originNode,
-                                    arrivalTime: rNode.arrivalTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"),
-                                    departureTime: driverRouteMeta.routeNodes.initial[index + 1].departureTime.clone().format("YYYY-MM-DD HH:mm").concat(":00 +00:00"),
+                                    arrivalTime: rNode.arrivalTime.clone().format("YYYY-MM-DD HH:mm:ss[z]"),
+                                    departureTime: driverRouteMeta.routeNodes.initial[index + 1].departureTime.clone().format("YYYY-MM-DD HH:mm:ss[z]"),
                                     rank: index + 1, capacity: driverRouteMeta.capacity, capacityUsed: 0, cumDistance: (cumDistance / 1609.344).toFixed(2),
-                                    cumTime: cumTime, status: "SCHEDULED"
+                                    cumTime: cumTime.toFixed(2), status: "SCHEDULED"
                                 };
                             }
                             driverRouteMeta.routeNodes.final.push(temprouteNode);
@@ -991,11 +992,16 @@ export class DriverRouteService {
         return { status: 200, data: { driverRouteData: { ...driverRoute, osrmRoute: osrmRoute, } } };
     }
 
-    // async findMatchingDriverRoutes(originCoordinates: CoordinateAttribute, destinationCoordinates: CoordinateAttribute, departureDateTime: Moment, sessionToken: string | undefined): Promise<any> {
-    //     try {
-    //         let result: RiderDriverRouteMatchingAlgorithmDefault = new RiderDriverRouteMatchingAlgorithmDefault();
-    //         result.calculatePrimaryRoutesAtDepth0(departureDateTime.clone().subtract(1, "minutes").utcOffset(0, true).format("YYYY-MM-DD HH:mm:ss[Z]"), departureDateTime.clone().add(1, "minutes").utcOffset(0, true).format("YYYY-MM-DD HH:mm:ss[Z]"), originCoordinates, destinationCoordinates);
-    //     } catch (error: any) { }
-    //     return { status: 200, data: { message: "OK" } };
-    // }
+    async findMatchingDriverRoutes(originCoordinates: CoordinateAttribute, destinationCoordinates: CoordinateAttribute, departureDateTime: Moment, sessionToken: string | undefined): Promise<any> {
+        try {
+
+            let routeStrategy: RiderDriverRouteMatchingStrategy = new RiderDriverRouteMatchingStrategy();
+
+            routeStrategy.getRiderDriverRoutes(departureDateTime.clone().subtract(1, "minutes").utcOffset(0, true).format("YYYY-MM-DD HH:mm:ss[Z]"),
+                departureDateTime.clone().add(1, "minutes").utcOffset(0, true).format("YYYY-MM-DD HH:mm:ss[Z]"), originCoordinates, destinationCoordinates
+            );
+
+        } catch (error: any) { }
+        return { status: 200, data: { message: "OK" } };
+    }
 }

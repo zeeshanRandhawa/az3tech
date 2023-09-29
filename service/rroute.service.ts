@@ -196,7 +196,7 @@ export class RiderRouteService {
                     return {
                         riderId: metaRiderRoute.riderId, originNode: originSmallestDistanceNode.node.nodeId,
                         destinationNode: destinationSmallestDistanceNode.node.nodeId,
-                        departureTime: moment(metaRiderRoute.departureTime, "M/D/YYYY H:mm").format("YYYY-MM-DD HH:mm").concat(":00 +00:00"),
+                        departureTime: moment(metaRiderRoute.departureTime, "M/D/YYYY H:mm").utcOffset(0, true).format("YYYY-MM-DD HH:mm:ss[Z]"),
                         status: "REQUESTED", rrouteDbmTag: metaRiderRoute.databaseManagementTag, timeFlexibility: metaRiderRoute.timeFlexibility
                     }
                 } else {

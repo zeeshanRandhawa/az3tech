@@ -54,3 +54,4 @@ Thumbs.db
 __tests__
 testFiles
 util/logs/*
+Package-lock.json

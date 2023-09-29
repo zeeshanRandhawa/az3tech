@@ -187,7 +187,7 @@ export class DriverRouteController {
             return { status: 422, data: { message: "Invalid data" } };
         }
         try {
-            return await this.driverRouteService.displayDriverRoutesAtNodeBetweenTimeFrame(nodeId, startDateTimeWindow.concat(":00 +00:00"), endDateTimeWindow.concat(":00 +00:00"), sessionToken!);
+            return await this.driverRouteService.displayDriverRoutesAtNodeBetweenTimeFrame(nodeId, moment(startDateTimeWindow, "YYYY-MM-DD HH:mm").clone().utcOffset(0, true).format("YYYY-MM-DD HH:mm:ss[Z]"), moment(endDateTimeWindow, "YYYY-MM-DD HH:mm").clone().utcOffset(0, true).format("YYYY-MM-DD HH:mm:ss[Z]"), sessionToken!);
         } catch (error: any) {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
@@ -196,9 +196,9 @@ export class DriverRouteController {
         }
     }
 
-    // async findMatchingDriverRoutes(originLatitude: number, originLongitude: number, destinationLatitude: number, destinationLongitude: number, departureTime: string, sessionToken: string | undefined): Promise<any> {
-    //     return await this.driverRouteService.findMatchingDriverRoutes({ latitude: originLatitude, longitude: originLongitude }, { latitude: destinationLatitude, longitude: destinationLongitude }, moment(departureTime, "YYYY-MM-DD HH:mm"), sessionToken);
-    // }
+    async findMatchingDriverRoutes(originLatitude: number, originLongitude: number, destinationLatitude: number, destinationLongitude: number, departureTime: string, sessionToken: string | undefined): Promise<any> {
+        return await this.driverRouteService.findMatchingDriverRoutes({ latitude: originLatitude, longitude: originLongitude }, { latitude: destinationLatitude, longitude: destinationLongitude }, moment(departureTime, "YYYY-MM-DD HH:mm"), sessionToken);
+    }
 
     async displayDriverRouteById(drouteId: number): Promise<any> {
         if (!drouteId) {

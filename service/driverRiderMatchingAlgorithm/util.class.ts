@@ -1,6 +1,22 @@
-// import { DriverAttributes, DriverRouteAttributes, DriverRouteNodeAttributes, NodeAttributes } from "../../util/interface.utility";
-
 import { DriverRouteNodeAssocitedAttributes } from "../../util/interface.utility";
+
+enum RouteClassification {
+    Primary,
+    Secondary,
+    Tertiary
+}
+
+export class ClassifiedRoute {
+    private driverRoute: DriverRouteNodeAssocitedAttributes;
+    private classification: RouteClassification;
+    private hasDestination: boolean;
+    constructor(driverRoute: DriverRouteNodeAssocitedAttributes, classification: RouteClassification) {
+        this.hasDestination = false;
+        this.driverRoute = driverRoute;
+        this.classification = classification;
+    }
+}
+
 
 // export class PrimaryRoute implements DriverRouteAttributes {
 
@@ -156,18 +172,3 @@ import { DriverRouteNodeAssocitedAttributes } from "../../util/interface.utility
 
 //     }
 // }
-
-enum Classification {
-    Primary,
-    Secondary,
-    Tertiary
-}
-
-export class ClassifiedRoute {
-    private driverRoute!: DriverRouteNodeAssocitedAttributes;
-    private classification!: Classification;
-    private hasDestination: boolean;
-    constructor() {
-        this.hasDestination = false;
-    }
-}
