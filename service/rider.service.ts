@@ -132,13 +132,54 @@ export class RiderService {
     }
 
     async batchImportRiders(fileToImport: Express.Multer.File): Promise<Record<string, any>> {
+        let failedRiderImportData: Array<Record<string, any>> = []
+
         if (!isValidFileHeader(fileToImport.buffer, ["First Name", "Last Name", "Email", "Address", "City", "State/Province", "Zip/Postal Code", "Country Code", "Mobile Number"])) {
             throw new CustomError("Invalid columns or column length", 422);
         }
-        const riderBatchData: Array<Record<string, any>> = prepareBatchBulkImportData(fileToImport.buffer, ["firstName", "lastName", "email", "address", "city", "stateProvince", "zipPostalCode", "countryCode", "mobileNumber"]);
+        let riderBatchData: Array<Record<string, any>> = prepareBatchBulkImportData(fileToImport.buffer, ["firstName", "lastName", "email", "address", "city", "stateProvince", "zipPostalCode", "countryCode", "mobileNumber"]);
 
-        const userBatchDataWithRider: Array<Record<string, any>> = (await Promise.all(riderBatchData.map(async (riderData: Record<string, any>) => {
-            if (riderData.email && riderData.firstName && riderData.lastName && riderData.mobileNumber && riderData.countryCode) {
+        const duplicateRiders: Array<Record<string, any>> = riderBatchData.filter(
+            (rider, index, self) =>
+                index !== self.findIndex((d) => d.email === rider.email)
+        );
+        const duplicateRiderEmailList: Array<string> = Array.from(new Set(await Promise.all(duplicateRiders.map(d => d.email))));
+
+        riderBatchData = (await Promise.all(riderBatchData.map(async (riderData: Record<string, any>) => {
+            if (!riderData.email || !riderData.firstName || !riderData.lastName || !riderData.mobileNumber || !riderData.countryCode) {
+                failedRiderImportData.push({ ...riderData, message: "Invalid Data" });
+                return {};
+            }
+            else if (duplicateRiderEmailList.includes(riderData.email)) {
+                failedRiderImportData.push({ ...riderData, message: "Duplicate email in batch data" });
+                return {};
+            } else {
+                return riderData;
+            }
+        }))).filter(rider => Object.keys(rider).length > 0);
+
+        if (riderBatchData.length) {
+
+            const existingRiderList: string[] = await Promise.all(
+                (await this.userRepository.findUsers({
+                    where: {
+                        email: (await Promise.all(riderBatchData.map(async (rider: Record<string, any>) => rider.email))),
+                        roleId: 3
+                    }
+                })).map(async (user: UserAttributes) => {
+                    return user.email;
+                }));
+            riderBatchData = (await Promise.all(riderBatchData.map(async (riderData: Record<string, any>) => {
+                if (existingRiderList.includes(riderData.email)) {
+                    failedRiderImportData.push({ ...riderData, message: "Email already exists" });
+                    return {};
+                }
+                return riderData
+            }))).filter(rider => Object.keys(rider).length > 0);
+
+
+            const userBatchDataWithRider: Array<Record<string, any>> = await Promise.all(riderBatchData.map(async (riderData: Record<string, any>) => {
+                // if (riderData.email && riderData.firstName && riderData.lastName && riderData.mobileNumber && riderData.countryCode) {
 
                 return {
                     email: riderData.email,
@@ -155,18 +196,20 @@ export class RiderService {
                     }
                 }
             }
-            return {};
-        }))).filter(rider => Object.keys(rider).length > 0);
-        if (userBatchDataWithRider.length) {
-            await this.userRepository.batchImportUsers(userBatchDataWithRider, {
-                include: [{
-                    association: "rider"
-                }],
-                fields: ["email", "password", "roleId"]
-            });
+                // return {};
+                // }
+            ))
+            // ).filter(rider => Object.keys(rider).length > 0);
+            if (userBatchDataWithRider.length) {
+                await this.userRepository.batchImportUsers(userBatchDataWithRider, {
+                    include: [{
+                        association: "rider"
+                    }],
+                    fields: ["email", "password", "roleId"]
+                });
 
-            const userBatchDataWithDriver: Array<Record<string, any>> = (await Promise.all(riderBatchData.map(async (riderData: Record<string, any>) => {
-                if (riderData.email && riderData.firstName && riderData.lastName && riderData.mobileNumber && riderData.countryCode) {
+                const userBatchDataWithDriver: Array<Record<string, any>> = await Promise.all(riderBatchData.map(async (riderData: Record<string, any>) => {
+                    // if (riderData.email && riderData.firstName && riderData.lastName && riderData.mobileNumber && riderData.countryCode) {
 
                     return {
                         email: riderData.email,
@@ -184,19 +227,22 @@ export class RiderService {
                         }
                     }
                 }
-                return {}
-            }))).filter(driver => Object.keys(driver).length > 0);
-            if (userBatchDataWithDriver.length) {
-                this.userRepository.batchImportUsers(userBatchDataWithDriver, {
-                    include: [{
-                        association: "driver"
-                    }],
-                    fields: ["email", "password", "roleId"]
-                });
+                    // return {}
+                    // }
+                ))
+                // ).filter(driver => Object.keys(driver).length > 0);
+                if (userBatchDataWithDriver.length) {
+                    this.userRepository.batchImportUsers(userBatchDataWithDriver, {
+                        include: [{
+                            association: "driver"
+                        }],
+                        fields: ["email", "password", "roleId"]
+                    });
 
-                return { status: 200, data: { message: "Riders data successfully imported" } };
+                    return { status: 200, data: { message: "Riders data successfully imported" } };
+                }
+                return { status: 200, data: { message: "No Driver data found to import" } }
             }
-            return { status: 200, data: { message: "No Driver data found to import" } }
         }
         return { status: 200, data: { message: "No Rider data found  to import" } }
     }

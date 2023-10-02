@@ -8,6 +8,12 @@ export class UserRepository {
     constructor() {
     }
 
+    async findUsers(whereConditionPaginatedAttributed: Record<string, any>): Promise<Array<UserAttributes>> {
+        const userList: Array<User> = await User.findAll(whereConditionPaginatedAttributed);
+        const plainUserList: Array<UserAttributes> = userList.map((user: User) => user.toJSON());
+        return plainUserList;
+    }
+
     async findUser(whereCondition: Record<string, any>): Promise<UserAttributes | null> {
 
         const user: User | null = await User.findOne(whereCondition);

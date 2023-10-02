@@ -3,6 +3,7 @@ import { DriverRepository } from "../repository/driver.repository";
 import { generatePasswordHash, isValidFileHeader, prepareBatchBulkImportData } from "../util/helper.utility";
 import { CustomError, DriverAttributes, RiderDriverForm, UserAttributes } from "../util/interface.utility";
 import { UserRepository } from "../repository/user.repository";
+import { promiseHooks } from "v8";
 
 export class DriverService {
 
@@ -103,14 +104,53 @@ export class DriverService {
     }
 
     async batchImportDrivers(fileToImport: Express.Multer.File): Promise<Record<string, any>> {
+        let failedDriverImportData: Array<Record<string, any>> = [];
 
         if (!isValidFileHeader(fileToImport.buffer, ["First Name", "Last Name", "Email", "Description", "Address", "City", "State Province", "Zip Postal Code", "Capacity", "Country Code", "Mobile Number"])) {
             throw new CustomError("Invalid columns or column length", 422);
         }
-        const driverBatchData: Array<Record<string, any>> = prepareBatchBulkImportData(fileToImport.buffer, ["firstName", "lastName", "email", "description", "address", "city", "stateProvince", "zipPostalCode", "capacity", "countryCode", "mobileNumber"]);
+        let driverBatchData: Array<Record<string, any>> = prepareBatchBulkImportData(fileToImport.buffer, ["firstName", "lastName", "email", "description", "address", "city", "stateProvince", "zipPostalCode", "capacity", "countryCode", "mobileNumber"]);
 
-        const userBatchDataWithDriver: Array<Record<string, any>> = (await Promise.all(driverBatchData.map(async (driverData: Record<string, any>) => {
-            if (driverData.email && driverData.firstName && driverData.lastName && driverData.mobileNumber && driverData.countryCode) {
+        const duplicateDrivers: Array<Record<string, any>> = driverBatchData.filter(
+            (driver, index, self) =>
+                index !== self.findIndex((d) => d.email === driver.email)
+        );
+        const duplicateDriverEmailList: Array<string> = Array.from(new Set(await Promise.all(duplicateDrivers.map(d => d.email))));
+
+        driverBatchData = (await Promise.all(driverBatchData.map(async (driverData: Record<string, any>) => {
+            if (!driverData.email || !driverData.firstName || !driverData.lastName || !driverData.mobileNumber || !driverData.countryCode) {
+                failedDriverImportData.push({ ...driverData, message: "Invalid Data" });
+                return {};
+            }
+            else if (duplicateDriverEmailList.includes(driverData.email)) {
+                failedDriverImportData.push({ ...driverData, message: "Duplicate email in batch data" });
+                return {};
+            } else {
+                return driverData;
+            }
+        }))).filter(driver => Object.keys(driver).length > 0);
+
+        if (driverBatchData.length) {
+
+            const existingDriverList: string[] = await Promise.all(
+                (await this.userRepository.findUsers({
+                    where: {
+                        email: (await Promise.all(driverBatchData.map(async (driver: Record<string, any>) => driver.email))),
+                        roleId: 4
+                    }
+                })).map(async (user: UserAttributes) => {
+                    return user.email;
+                }));
+            driverBatchData = (await Promise.all(driverBatchData.map(async (driverData: Record<string, any>) => {
+                if (existingDriverList.includes(driverData.email)) {
+                    failedDriverImportData.push({ ...driverData, message: "Email already exists" });
+                    return {};
+                }
+                return driverData
+            }))).filter(driver => Object.keys(driver).length > 0);
+
+            const userBatchDataWithDriver: Array<Record<string, any>> = await Promise.all(driverBatchData.map(async (driverData: Record<string, any>) => {
+                // if (driverData.email && driverData.firstName && driverData.lastName && driverData.mobileNumber && driverData.countryCode) {
                 return {
                     email: driverData.email,
                     password: await generatePasswordHash(driverData.firstName),
@@ -127,20 +167,22 @@ export class DriverService {
                         capacity: !driverData.capacity ? Math.floor(Math.random() * 5) + 1 : driverData.capacity
                     }
                 }
+                // }
+                // return {};
+            }))
+            // ).filter(driver => Object.keys(driver).length > 0);
+
+            if (userBatchDataWithDriver.length) {
+
+                await this.userRepository.batchImportUsers(userBatchDataWithDriver, {
+                    include: [{
+                        association: "driver"
+                    }],
+                    fields: ["email", "password", "roleId"]
+                });
+
+                return { status: 200, data: { message: "Drivers data successfully imported" } };
             }
-            return {};
-        }))).filter(driver => Object.keys(driver).length > 0);
-
-        if (userBatchDataWithDriver.length) {
-
-            await this.userRepository.batchImportUsers(userBatchDataWithDriver, {
-                include: [{
-                    association: "driver"
-                }],
-                fields: ["email", "password", "roleId"]
-            });
-
-            return { status: 200, data: { message: "Drivers data successfully imported" } };
         }
         return { status: 200, data: { message: "No Driver data found to import" } };
 
