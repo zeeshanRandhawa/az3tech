@@ -196,10 +196,6 @@ export class DriverRouteController {
         }
     }
 
-    async findMatchingDriverRoutes(originLatitude: number, originLongitude: number, destinationLatitude: number, destinationLongitude: number, departureTime: string, sessionToken: string | undefined): Promise<any> {
-        return await this.driverRouteService.findMatchingDriverRoutes({ latitude: originLatitude, longitude: originLongitude }, { latitude: destinationLatitude, longitude: destinationLongitude }, moment(departureTime, "YYYY-MM-DD HH:mm"), sessionToken);
-    }
-
     async displayDriverRouteById(drouteId: number): Promise<any> {
         if (!drouteId) {
             return { status: 422, data: { message: "Invalid data" } };
@@ -213,4 +209,10 @@ export class DriverRouteController {
             return { status: 500, data: { message: error.message } };
         }
     }
+
+    async findMatchingDriverRoutes(originLatitude: number, originLongitude: number, destinationLatitude: number, destinationLongitude: number, departureTime: string, sessionToken: string | undefined): Promise<any> {
+        return await this.driverRouteService.findMatchingDriverRoutes({ latitude: originLatitude, longitude: originLongitude }, { latitude: destinationLatitude, longitude: destinationLongitude }, moment(departureTime, "YYYY-MM-DD HH:mm"), sessionToken);
+    }
+
+
 }

@@ -25,5 +25,6 @@ export class RiderDriverRouteMatchingStrategy {
         this.originNode = await defaultStrategy.findNearestOriginNode(originCoordinates);
 
         this.primaryRoutes = await defaultStrategy.findRoutesPassingAtNode(startDateTimeWindow, endDateTimeWindow, this.originNode.nodeId);
+
     }
 }

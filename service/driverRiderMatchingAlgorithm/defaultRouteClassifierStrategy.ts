@@ -27,11 +27,11 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
             }));
             if (rank !== Infinity) {
                 passingRoute.drouteNodes = passingRoute.drouteNodes?.filter((dRouteNode: DriverRouteNodeAssocitedAttributes) => {
-                    dRouteNode.rank! > rank;
+                    return dRouteNode.rank! > rank;
                 });
             }
         }))
-        console.log(passingRoutesAtNode);
 
+        return passingRoutesAtNode;
     }
 }
