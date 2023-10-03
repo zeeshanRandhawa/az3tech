@@ -830,7 +830,7 @@ export class DriverRouteService {
         //     order: [["drouteNodes", "rank", "ASC"]]
         // });
 
-        const driverRoutes: Array<DriverRouteAssociatedNodeAttributes> = await getDriverRoutesBetweenTimeFrame(startDateTimeWindow, endDateTimeWindow, []);
+        const driverRoutes: Array<DriverRouteAssociatedNodeAttributes> = await getDriverRoutesBetweenTimeFrame(startDateTimeWindow, endDateTimeWindow, [nodeId]);
 
         if (!driverRoutes.length) {
             throw new CustomError("No Driver Route found in on this node in given time window", 404);
