@@ -1,21 +1,15 @@
-import { findNearestNode, getDriverRoutesBetweenTimeFrame } from "../../util/helper.utility";
-import { CoordinateAttribute, DriverRouteAssociatedNodeAttributes, NodeAttributes } from "../../util/interface.utility"
+import { CoordinateAttribute, DriverRouteNodeAssocitedAttributes, NodeAttributes } from "../../util/interface.utility"
 import { DefaultRouteClassifierStrategy } from "./defaultRouteClassifierStrategy";
-import { RouteClassifierStrategy } from "./routeClassifierStarategy.class";
-import { ClassifiedRoute } from "./util.class";
+import { ClassifiedRoute, RouteClassification } from "./util.class";
 
 export class RiderDriverRouteMatchingStrategy {
 
 
     private originNode!: NodeAttributes;
     private destnationNode!: NodeAttributes;
-    private primaryRoutes: Array<ClassifiedRoute>;
-    private secondaryRoutes: Array<ClassifiedRoute>;
-    private tertiaryRoutes: Array<ClassifiedRoute>;
+    private classifiedRoutes: Array<ClassifiedRoute>;
     constructor() {
-        this.primaryRoutes = [];
-        this.secondaryRoutes = [];
-        this.tertiaryRoutes = [];
+        this.classifiedRoutes = [];
     }
 
     async getRiderDriverRoutes(startDateTimeWindow: string, endDateTimeWindow: string, originCoordinates: CoordinateAttribute, destinationCoordinates: CoordinateAttribute): Promise<any> {
@@ -24,7 +18,11 @@ export class RiderDriverRouteMatchingStrategy {
         this.destnationNode = await defaultStrategy.findNearestDestinationNode(destinationCoordinates);
         this.originNode = await defaultStrategy.findNearestOriginNode(originCoordinates);
 
-        this.primaryRoutes = await defaultStrategy.findRoutesPassingAtNode(startDateTimeWindow, endDateTimeWindow, this.originNode.nodeId);
-
+        this.classifiedRoutes = await defaultStrategy.findRoutesPassingAtNode(startDateTimeWindow, endDateTimeWindow, this.originNode.nodeId, RouteClassification.Primary);
+        await Promise.all(this.classifiedRoutes.map(async (primaryRoute: ClassifiedRoute) => {
+            await Promise.all(primaryRoute.driverRoute.drouteNodes!.map(async (drouteNode: DriverRouteNodeAssocitedAttributes) => {
+                // this.secondaryRoutes.concat(await defaultStrategy.findRoutesPassingAtNode(startDateTimeWindow, endDateTimeWindow, this.originNode.nodeId, RouteClassification.Secondary))
+            }));
+        }));
     }
 }

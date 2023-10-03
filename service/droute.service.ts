@@ -55,6 +55,10 @@ export class DriverRouteService {
                     {
                         association: "destination",
                     },
+                    {
+                        association: "driver",
+                        attributes: ["firstName", "lastName"]
+                    },
                 ],
                 order: [
                     ["driverId", "ASC"],
@@ -86,6 +90,10 @@ export class DriverRouteService {
                     },
                     {
                         association: "destination",
+                    },
+                    {
+                        association: "driver",
+                        attributes: ["firstName", "lastName"]
                     },
                 ],
                 order: [
@@ -305,8 +313,7 @@ export class DriverRouteService {
         }
 
         const driverRouteTransitMetaData: Array<Record<string, any>> = prepareBatchBulkImportData(fileToImport.buffer, ["routeName", "originNodeId", "destinationNodeId", "arrivalTime", "departureTime", "driverId", "passengerCapacity", "databaseManagementTag"]);
-        const driverRouteTransitMetaDataGrouped: Record<string, any> =
-            await this.prepareTransitRouteMetaBatchData(driverRouteTransitMetaData, scheduledWeekdays, scheduledStartDate, scheduledEndDate);
+        const driverRouteTransitMetaDataGrouped: Record<string, any> = await this.prepareTransitRouteMetaBatchData(driverRouteTransitMetaData, scheduledWeekdays, scheduledStartDate, scheduledEndDate);
         const assertedDriverRouteTransitMetaDataGrouped: Record<string, any> = await this.assertDriverRouteMetaTransitGroupData(driverRouteTransitMetaDataGrouped);
         const finalTransitRoutesToImport: Array<Record<string, any>> = await this.prepareFinalTrnsitRouteGroupToImport(Object.values(assertedDriverRouteTransitMetaDataGrouped));
 
@@ -321,6 +328,7 @@ export class DriverRouteService {
             const activeDates: Array<string> = getActiveDateList(scheduledWeekdays, scheduledStartDate, scheduledEndDate);
             const driverRouteTransitMetaDataGrouped: Record<string, any> = {};
 
+            let key: any;
             await Promise.all(activeDates.map(async (activeDate: string, i: number) => {
                 const oldActiveDateTime: string = activeDates[i];
 
@@ -328,20 +336,24 @@ export class DriverRouteService {
                     let arrivalDateTime: Moment | null = !routeMeta.arrivalTime.trim() ? null : moment(activeDates[i].concat(" ").concat(routeMeta.arrivalTime.trim()), "YYYY-MM-DD HH:mm").utcOffset(0, true);
                     let departureDateTime: Moment | null = !routeMeta.departureTime.trim() ? null : moment(activeDates[i].concat(" ").concat(routeMeta.departureTime.trim()), "YYYY-MM-DD HH:mm").utcOffset(0, true);
 
-                    if (!Object.keys(driverRouteTransitMetaDataGrouped).includes(routeMeta.routeName.concat(i))) {
-                        driverRouteTransitMetaDataGrouped[routeMeta.routeName.concat(i)] = {
+                    if (!arrivalDateTime) {
+                        key = departureDateTime?.clone().format("YYYY-MM-DD HH:mm:ss[z]");
+                    }
+
+                    if (!Object.keys(driverRouteTransitMetaDataGrouped).includes(routeMeta.routeName.concat(i).concat(key))) {
+                        driverRouteTransitMetaDataGrouped[routeMeta.routeName.concat(i).concat(key)] = {
                             originNode: null, destinationNode: null,
                             departureTime: departureDateTime, capacity: routeMeta.passengerCapacity, status: "NEW", driverId: routeMeta.driverId,
                             drouteDbmTag: routeMeta.databaseManagementTag, drouteName: routeMeta.routeName, intermediateNodesList: null,
                             fixedRoute: true, routeNodes: { initial: [], final: [] }
                         };
 
-                        driverRouteTransitMetaDataGrouped[routeMeta.routeName.concat(i)].routeNodes.initial.push({
+                        driverRouteTransitMetaDataGrouped[routeMeta.routeName.concat(i).concat(key)].routeNodes.initial.push({
                             originNode: parseInt(routeMeta.originNodeId, 10), destinationNode: parseInt(routeMeta.destinationNodeId, 10),
                             arrivalTime: arrivalDateTime, departureTime: departureDateTime,
                         });
                     } else {
-                        let previousDepartureDateTime: any = driverRouteTransitMetaDataGrouped[routeMeta.routeName.concat(i)].routeNodes.initial.slice(-1)[0].departureTime;
+                        let previousDepartureDateTime: any = driverRouteTransitMetaDataGrouped[routeMeta.routeName.concat(i).concat(key)].routeNodes.initial.slice(-1)[0].departureTime;
                         if (previousDepartureDateTime > arrivalDateTime!) {
                             while (previousDepartureDateTime > arrivalDateTime!) {
                                 arrivalDateTime = arrivalDateTime!.clone().add(1, "days");
@@ -355,7 +367,7 @@ export class DriverRouteService {
                             activeDates[i] = departureDateTime.clone().format("YYYY-MM-DD");
                         }
 
-                        driverRouteTransitMetaDataGrouped[routeMeta.routeName.concat(i)].routeNodes.initial.push({
+                        driverRouteTransitMetaDataGrouped[routeMeta.routeName.concat(i).concat(key)].routeNodes.initial.push({
                             originNode: parseInt(routeMeta.originNodeId, 10),
                             destinationNode: routeMeta.destinationNodeId ? parseInt(routeMeta.destinationNodeId, 10) : null, arrivalTime: arrivalDateTime,
                             departureTime: departureDateTime,
@@ -818,7 +830,7 @@ export class DriverRouteService {
         //     order: [["drouteNodes", "rank", "ASC"]]
         // });
 
-        const driverRoutes: Array<DriverRouteAssociatedNodeAttributes> = await getDriverRoutesBetweenTimeFrame(startDateTimeWindow, endDateTimeWindow, [nodeId]);
+        const driverRoutes: Array<DriverRouteAssociatedNodeAttributes> = await getDriverRoutesBetweenTimeFrame(startDateTimeWindow, endDateTimeWindow, []);
 
         if (!driverRoutes.length) {
             throw new CustomError("No Driver Route found in on this node in given time window", 404);

@@ -1,6 +1,7 @@
 import { findNearestNode, getDriverRoutesBetweenTimeFrame } from "../../util/helper.utility";
 import { CoordinateAttribute, DriverRouteAssociatedNodeAttributes, DriverRouteNodeAssocitedAttributes, NodeAttributes } from "../../util/interface.utility";
 import { RouteClassifierStrategy } from "./routeClassifierStarategy.class";
+import { ClassifiedRoute, RouteClassification } from "./util.class";
 
 export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
     constructor() {
@@ -15,10 +16,10 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
         return (await findNearestNode(coordinateData)).smallestDistanceNode;
     }
 
-    async findRoutesPassingAtNode(startDateTimeWindow: string, endDateTimeWindow: string, nodeId: number): Promise<any> {
+    async findRoutesPassingAtNode(startDateTimeWindow: string, endDateTimeWindow: string, nodeId: number, routeClassification: RouteClassification): Promise<Array<ClassifiedRoute>> {
         const passingRoutesAtNode: Array<DriverRouteAssociatedNodeAttributes> = await getDriverRoutesBetweenTimeFrame(startDateTimeWindow, endDateTimeWindow, [nodeId]);
 
-        await Promise.all(passingRoutesAtNode.map(async (passingRoute: DriverRouteAssociatedNodeAttributes) => {
+        const passingRoutesAtNodeClassified: Array<ClassifiedRoute> = await Promise.all(passingRoutesAtNode.map(async (passingRoute: DriverRouteAssociatedNodeAttributes) => {
             let rank: number = Infinity;
             await Promise.all(passingRoute.drouteNodes!.map(async (drouteNode: DriverRouteNodeAssocitedAttributes) => {
                 if (drouteNode.nodeId === nodeId) {
@@ -30,8 +31,9 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                     return dRouteNode.rank! > rank;
                 });
             }
-        }))
+            return new ClassifiedRoute(passingRoute, routeClassification)
+        }));
 
-        return passingRoutesAtNode;
+        return passingRoutesAtNodeClassified;
     }
 }

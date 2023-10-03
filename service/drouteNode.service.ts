@@ -16,9 +16,15 @@ export class DriverRouteNodeService {
             },
             include: [{
                 association: "node"
-            }, {
+            },
+            {
                 association: "droute"
-            }],
+            },
+            {
+                association: "driver",
+                attributes: ["firstName", "lastName"]
+            },
+            ],
             order: [["rank", "ASC"]],
             limit: 10,
             offset: (pageNumber - 1) * 10,

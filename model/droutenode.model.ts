@@ -13,6 +13,11 @@ class DriverRouteNode extends Model {
             targetKey: "drouteId",
             as: "droute"
         });
+        DriverRouteNode.belongsTo(models.Driver, {
+            foreignKey: "outbDriverId",
+            targetKey: "driverId",
+            as: "driver"
+        });
     }
 }
 

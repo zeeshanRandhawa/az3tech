@@ -46,6 +46,6 @@ RiderRouteNode.associate({ Node, RiderRoute });
 
 Driver.associate({ User, DriverRoute });
 DriverRoute.associate({ Node, Driver, DriverRouteNode });
-DriverRouteNode.associate({ Node, DriverRoute });
+DriverRouteNode.associate({ Node, DriverRoute, Driver });
 
 export { User, Role, Session, Rider, Driver, Node, RiderRoute, DriverRoute, RiderRouteNode, DriverRouteNode };

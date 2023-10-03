@@ -168,6 +168,7 @@ export interface DriverRouteNodeAttributes {
     cumTime?: number;
     status?: string;
     node?: NodeAttributes;
+    driver?: DriverAttributes;
 }
 
 export interface DriverRouteNodeAssocitedAttributes extends DriverRouteNodeAttributes {
