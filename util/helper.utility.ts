@@ -150,7 +150,7 @@ export async function getRouteDetailsByOSRM(pointA: Record<string, any>, pointB:
     }
 }
 
-export async function getDistanceDurationBetweenNodes(pointA: Record<string, any>, pointB: Record<string, any>, maxRetries: number = 4): Promise<Record<string, any>> {
+export async function getDistanceDurationBetweenNodes(pointA: Record<string, any>, pointB: Record<string, any>): Promise<Record<string, any>> {
     try {
         const url: string = `http://143.110.152.222:5000/route/v1/driving/${pointA.longitude},${pointA.latitude};${pointB.longitude},${pointB.latitude}?geometries=geojson&overview=false`
         const response: AxiosResponse<any, any> = await axios.get(url);
@@ -161,8 +161,9 @@ export async function getDistanceDurationBetweenNodes(pointA: Record<string, any
             throw new Error();
         }
     } catch (error: any) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        return await getDistanceDurationBetweenNodes(pointA, pointB, maxRetries - 1);
+        console.log(error)
+        await new Promise(resolve => setTimeout(resolve, 250));
+        return await getDistanceDurationBetweenNodes(pointA, pointB);
     }
 }
 

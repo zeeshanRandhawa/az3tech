@@ -336,27 +336,32 @@ async function findNodesOfInterestInAreaWithinRange(routeOriginNode: NodeAttribu
 
 function prepareDriverRouteBatchMetaData(initialFileData: Array<Record<string, any>>): Record<string, any> {
     const driverRouteBatchGroups: Record<string, any> = {}
-    for (let line of initialFileData) {
-        line.departureTime = moment(line.departureTime, "M/D/YYYY H:mm").utcOffset(0, true).format("YYYY-MM-DD HH:mm:ss[z]")
+    let departureTime!: string;
+    for (let routePoint of initialFileData) {
+        if (routePoint.departureTime) {
+            departureTime = routePoint.departureTime
+        }
 
-        if (!Object.keys(driverRouteBatchGroups).includes(line.routeName)) {
+        routePoint.departureTime = moment(routePoint.departureTime, "M/D/YYYY H:mm").utcOffset(0, true).format("YYYY-MM-DD HH:mm:ss[z]");
 
-            driverRouteBatchGroups[line.routeName] = {
-                originNode: null, destinationNode: null, departureTime: line.departureTime,
-                capacity: line.passengerCapacity, maxWait: line.maxWait, status: "NEW", driverId: line.driverId, drouteDbmTag: line.databaseManagementTag,
-                drouteName: line.routeName, departureFlexibility: line.departureFlexibility,
-                fixedRoute: line.fixedRoute === "1" ? true : false, routeNodes: { initial: [], final: [] }
+        if (!Object.keys(driverRouteBatchGroups).includes(routePoint.routeName.concat(" ").concat(departureTime))) {
+
+            driverRouteBatchGroups[routePoint.routeName.concat(" ").concat(departureTime)] = {
+                originNode: null, destinationNode: null, departureTime: routePoint.departureTime,
+                capacity: routePoint.passengerCapacity, maxWait: routePoint.maxWait, status: "NEW", driverId: routePoint.driverId, drouteDbmTag: routePoint.databaseManagementTag,
+                drouteName: routePoint.routeName.concat(" ").concat(departureTime), departureFlexibility: routePoint.departureFlexibility,
+                fixedRoute: routePoint.fixedRoute === "1" ? true : false, routeNodes: { initial: [], final: [] }
             }
 
-            driverRouteBatchGroups[line.routeName].routeNodes.initial.push({
-                originNode: parseInt(line.originNodeId, 10),
-                destinationNode: parseInt(line.destinationNodeId, 10)
+            driverRouteBatchGroups[routePoint.routeName.concat(" ").concat(departureTime)].routeNodes.initial.push({
+                originNode: parseInt(routePoint.originNodeId, 10),
+                destinationNode: parseInt(routePoint.destinationNodeId, 10)
             });
-            driverRouteBatchGroups[line.routeName].routeNodes.final = []
+            driverRouteBatchGroups[routePoint.routeName.concat(" ").concat(departureTime)].routeNodes.final = []
         } else {
-            driverRouteBatchGroups[line.routeName].routeNodes.initial.push({
-                originNode: parseInt(line.originNodeId, 10),
-                destinationNode: parseInt(line.destinationNodeId, 10)
+            driverRouteBatchGroups[routePoint.routeName.concat(" ").concat(departureTime)].routeNodes.initial.push({
+                originNode: parseInt(routePoint.originNodeId, 10),
+                destinationNode: parseInt(routePoint.destinationNodeId, 10)
             });
         }
     };

@@ -40,6 +40,6 @@ export class DBSummaryRepository {
                 cascade: true
             })
         }
-        await sequelize.query(`TRUNCATE TABLE "${tableName.trim()}" CASCADE`);
+        await sequelize.query(`TRUNCATE TABLE "${tableName.trim()}" RESTART IDENTITY CASCADE `);
     }
 }
