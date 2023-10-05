@@ -52,11 +52,11 @@ RiderRoute.init(
             allowNull: true,
         },
         status: {
-            type: DataTypes.STRING(20),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         rrouteDbmTag: {
-            type: DataTypes.STRING(15),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         timeFlexibility: {

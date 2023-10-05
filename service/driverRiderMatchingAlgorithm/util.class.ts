@@ -11,8 +11,8 @@ export class ClassifiedRoute {
     public classification: RouteClassification;
     public hasDestination: boolean;
     public intersectigRoutes: Array<ClassifiedRoute>;
-    constructor(driverRoute: DriverRouteAssociatedNodeAttributes, classification: RouteClassification) {
-        this.hasDestination = false;
+    constructor(driverRoute: DriverRouteAssociatedNodeAttributes, classification: RouteClassification, hasDestination: boolean = false) {
+        this.hasDestination = hasDestination;
         this.driverRoute = driverRoute;
         this.classification = classification;
         this.intersectigRoutes = [];

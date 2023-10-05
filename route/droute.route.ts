@@ -85,7 +85,7 @@ export class DriverRouteRouter {
         });
 
         this.router.get("/dr/match", (req: Request, res: Response) => {
-            this.driverRouteController.findMatchingDriverRoutes(parseFloat(req.query.originLatitude as string), parseFloat(req.query.originLongitude as string), parseFloat(req.query.destinationLatitude as string), parseFloat(req.query.destinationLongitude as string), req.query.departureTime as string, req.headers.cookies as string).then(data => res.status(data.status).json(data.data));
+            this.driverRouteController.findMatchingDriverRoutes(parseFloat(req.query.originLatitude as string), parseFloat(req.query.originLongitude as string), parseFloat(req.query.destinationLatitude as string), parseFloat(req.query.destinationLongitude as string), req.query.departureTime as string, parseInt(req.query.departureFlexibility as string, 10) as number, req.headers.cookies as string).then(data => res.status(data.status).json(data.data));
         });
     }
 }

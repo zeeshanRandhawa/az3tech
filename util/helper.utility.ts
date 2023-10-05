@@ -161,7 +161,6 @@ export async function getDistanceDurationBetweenNodes(pointA: Record<string, any
             throw new Error();
         }
     } catch (error: any) {
-        console.log(error)
         await new Promise(resolve => setTimeout(resolve, 250));
         return await getDistanceDurationBetweenNodes(pointA, pointB);
     }

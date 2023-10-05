@@ -61,7 +61,7 @@ DriverRoute.init(
             defaultValue: true
         },
         status: {
-            type: DataTypes.STRING(20),
+            type: DataTypes.TEXT,
             allowNull: true
         },
         driverId: {
@@ -69,11 +69,11 @@ DriverRoute.init(
             allowNull: false
         },
         drouteDbmTag: {
-            type: DataTypes.STRING(15),
+            type: DataTypes.TEXT,
             allowNull: true
         },
         drouteName: {
-            type: DataTypes.STRING(150),
+            type: DataTypes.TEXT,
             allowNull: true
         },
         departureFlexibility: {

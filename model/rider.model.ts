@@ -26,27 +26,27 @@ Rider.init(
             defaultValue: sequelize.literal("nextval(\'riders_rider_id_seq\'::regclass)"),
         },
         firstName: {
-            type: DataTypes.STRING(50),
+            type: DataTypes.TEXT,
             allowNull: false,
         },
         lastName: {
-            type: DataTypes.STRING(50),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         address: {
-            type: DataTypes.STRING(50),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         city: {
-            type: DataTypes.STRING(50),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         stateProvince: {
-            type: DataTypes.STRING(50),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         zipPostalCode: {
-            type: DataTypes.STRING(10),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         profilePicture: {
@@ -59,7 +59,7 @@ Rider.init(
             unique: true
         },
         phoneNumber: {
-            type: DataTypes.STRING(20),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
     },

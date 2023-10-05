@@ -33,7 +33,7 @@ class User extends Model {
 User.init(
     {
         email: {
-            type: DataTypes.STRING(100),
+            type: DataTypes.TEXT,
             allowNull: false,
             primaryKey: true,
         },

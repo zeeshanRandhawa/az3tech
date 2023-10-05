@@ -65,7 +65,7 @@ RiderRouteNode.init(
             allowNull: true,
         },
         status: {
-            type: DataTypes.STRING(20),
+            type: DataTypes.TEXT,
             allowNull: true,
         }
     },

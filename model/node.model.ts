@@ -47,7 +47,7 @@ Node.init(
             allowNull: true,
         },
         locid: {
-            type: DataTypes.STRING(10),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         transitTime: {

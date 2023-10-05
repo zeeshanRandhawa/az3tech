@@ -1004,16 +1004,14 @@ export class DriverRouteService {
         return { status: 200, data: { driverRouteData: { ...driverRoute, osrmRoute: osrmRoute, } } };
     }
 
-    async findMatchingDriverRoutes(originCoordinates: CoordinateAttribute, destinationCoordinates: CoordinateAttribute, departureDateTime: Moment, sessionToken: string | undefined): Promise<any> {
-        try {
+    async findMatchingDriverRoutes(originCoordinates: CoordinateAttribute, destinationCoordinates: CoordinateAttribute, departureDateTime: string, departureFlexibility: number, sessionToken: string | undefined): Promise<any> {
 
-            let routeStrategy: RiderDriverRouteMatchingStrategy = new RiderDriverRouteMatchingStrategy();
+        let routeStrategy: RiderDriverRouteMatchingStrategy = new RiderDriverRouteMatchingStrategy();
 
-            routeStrategy.getRiderDriverRoutes(departureDateTime.clone().subtract(1, "minutes").utcOffset(0, true).format("YYYY-MM-DD HH:mm:ss[Z]"),
-                departureDateTime.clone().add(1, "minutes").utcOffset(0, true).format("YYYY-MM-DD HH:mm:ss[Z]"), originCoordinates, destinationCoordinates
-            );
 
-        } catch (error: any) { }
-        return { status: 200, data: { message: "OK" } };
+        const data: any = await routeStrategy.getRiderDriverRoutes(departureDateTime, departureFlexibility, originCoordinates, destinationCoordinates);
+
+        return { status: 200, data: { message: data } };
+
     }
 }
