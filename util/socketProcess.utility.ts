@@ -1,6 +1,6 @@
 import { ChildProcess, fork } from "child_process";
 import { SessionService } from "../service/session.service";
-import { ProcessListEntry, SessionAttributes } from "./interface.utility"
+import { ProcessListEntry, SessionDto } from "./interface.utility"
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { SessionController } from "../controller/session.controller";
 import { SessionRepository } from "../repository/session.repository";
@@ -21,7 +21,7 @@ class ProcessSocket {
     private setupSocketListenerEmitter(): void {
         this.io.on("connect", (socket: Socket) => {
             socket.on("sessionTokenNode", async (message: string) => {
-                const session: SessionAttributes | null = await this.sessionRepository.findSession({
+                const session: SessionDto | null = await this.sessionRepository.findSession({
                     where: {
                         sessionToken: message
                     },
@@ -38,7 +38,7 @@ class ProcessSocket {
                 }
             });
             socket.on("poolStatusNode", async (message) => {
-                const session: SessionAttributes | null = await this.sessionRepository.findSession({
+                const session: SessionDto | null = await this.sessionRepository.findSession({
                     where: {
                         sessionToken: message
                     },
@@ -54,7 +54,7 @@ class ProcessSocket {
                 }
             });
             socket.on("sessionTokenDriverRouteBatch", async (message: string) => {
-                const session: SessionAttributes | null = await this.sessionRepository.findSession({
+                const session: SessionDto | null = await this.sessionRepository.findSession({
                     where: {
                         sessionToken: message
                     },
@@ -71,7 +71,7 @@ class ProcessSocket {
                 }
             });
             socket.on("poolStatusDriverRouteBatch", async (message) => {
-                const session: SessionAttributes | null = await this.sessionRepository.findSession({
+                const session: SessionDto | null = await this.sessionRepository.findSession({
                     where: {
                         sessionToken: message
                     },
@@ -144,7 +144,7 @@ class ProcessSocket {
     public async isProcessRunningForToken(sessionToken: string, opType: string): Promise<boolean> {
         let flag: boolean = false;
         try {
-            const session: SessionAttributes | null = await this.sessionRepository.findSession({
+            const session: SessionDto | null = await this.sessionRepository.findSession({
                 where: {
                     sessionToken: sessionToken
                 },

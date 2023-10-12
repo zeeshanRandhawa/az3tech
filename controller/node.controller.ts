@@ -1,5 +1,5 @@
 import { NodeService } from "../service/node.service"
-import { CoordinateAttribute, CustomError, NodeForm } from "../util/interface.utility"
+import { CoordinateDto, CustomError, NodeForm } from "../util/interface.utility"
 
 
 export class NodeController {

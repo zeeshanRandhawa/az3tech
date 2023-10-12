@@ -1,5 +1,5 @@
 import { NodeRepository } from "../repository/node.repository";
-import { CoordinateAttribute, CustomError, NodeAttributes, SessionAttributes } from "../util/interface.utility";
+import { CoordinateDto, CustomError, NodeDto, SessionDto } from "../util/interface.utility";
 import {
     calculateDistanceBetweenPoints,
     findNodesOfInterestInArea, findParallelLinePoints, formatNodeData, getDistances,
@@ -71,7 +71,7 @@ export class MapService {
             }));
         }));
 
-        const session: SessionAttributes | null = await this.sessionRepository.findSession({
+        const session: SessionDto | null = await this.sessionRepository.findSession({
             where: {
                 sessionToken: sessionToken
             },
@@ -89,7 +89,7 @@ export class MapService {
     }
 
     async getWaypointDistance(sessionToken: string): Promise<Record<string, any>> {
-        const session: SessionAttributes | null = await this.sessionRepository.findSession({
+        const session: SessionDto | null = await this.sessionRepository.findSession({
             where: {
                 sessionToken: sessionToken
             },
@@ -104,7 +104,7 @@ export class MapService {
     }
 
     async setWaypointDistance(waypointDistance: number, sessionToken: string): Promise<Record<string, any>> {
-        const session: SessionAttributes | null = await this.sessionRepository.findSession({
+        const session: SessionDto | null = await this.sessionRepository.findSession({
             where: {
                 sessionToken: sessionToken
             },
@@ -125,7 +125,7 @@ export class MapService {
         return { status: 200, data: { message: "Updated successfullt" } }
     }
 
-    async displayMapNearestNode(coordinateData: CoordinateAttribute): Promise<Record<string, any>> {
+    async displayMapNearestNode(coordinateData: CoordinateDto): Promise<Record<string, any>> {
 
         const smallestDistanceCoordinateData: Record<string, any> = await findNearestNode(coordinateData);
 

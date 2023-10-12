@@ -1,13 +1,13 @@
 import { RiderRoute } from "../util/db.config"
-import { RiderRouteAttributes } from "../util/interface.utility";
+import { RiderRouteDto } from "../util/interface.utility";
 
 export class RiderRouteRepository {
     constructor() {
     }
 
-    async findRiderRoutes(whereConditionPaginatedAttributed: Record<string, any>): Promise<RiderRouteAttributes[]> {
-        const riderRouteList: RiderRoute[] = await RiderRoute.findAll(whereConditionPaginatedAttributed);
-        const plainRiderRouteList: RiderRouteAttributes[] = riderRouteList.map(route => route.toJSON());
+    async findRiderRoutes(whereConditionPaginatedDtod: Record<string, any>): Promise<RiderRouteDto[]> {
+        const riderRouteList: RiderRoute[] = await RiderRoute.findAll(whereConditionPaginatedDtod);
+        const plainRiderRouteList: RiderRouteDto[] = riderRouteList.map(route => route.toJSON());
         return plainRiderRouteList;
     }
 

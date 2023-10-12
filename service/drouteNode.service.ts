@@ -1,6 +1,6 @@
 import { DriverRouteNodeRepository } from "../repository/drouteNode.repository";
 import { normalizeTimeZone } from "../util/helper.utility";
-import { CustomError, DriverRouteNodeAssocitedAttributes } from "../util/interface.utility";
+import { CustomError, DriverRouteNodeAssocitedDto } from "../util/interface.utility";
 
 export class DriverRouteNodeService {
     private driverRouteNodeRepository: DriverRouteNodeRepository;
@@ -10,7 +10,7 @@ export class DriverRouteNodeService {
     }
 
     async listDriverRouteNodesByDriverRouteId(driverRouteId: number, pageNumber: number): Promise<Record<string, any>> {
-        const driverRouteNodeList: DriverRouteNodeAssocitedAttributes[] = await this.driverRouteNodeRepository.findDriverRouteNodes({
+        const driverRouteNodeList: DriverRouteNodeAssocitedDto[] = await this.driverRouteNodeRepository.findDriverRouteNodes({
             where: {
                 drouteId: driverRouteId
             },

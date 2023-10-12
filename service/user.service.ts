@@ -1,5 +1,5 @@
 import { UserRepository } from "../repository/user.repository";
-import { CustomError, UserAttributes, LoginForm, RiderDriverForm, SignupForm } from "../util/interface.utility";
+import { CustomError, UserDto, LoginForm, RiderDriverForm, SignupForm } from "../util/interface.utility";
 import { generatePasswordHash, comparePasswordHash, generateRandomToken } from "../util/helper.utility";
 import { SessionService } from "./session.service";
 import { SessionRepository } from "../repository/session.repository";
@@ -15,7 +15,7 @@ export class UserService {
     }
 
     async createRiderWithUser(signUpFormData: SignupForm): Promise<void> {
-        const existingUser: UserAttributes | null = await this.userRepository.findUser(
+        const existingUser: UserDto | null = await this.userRepository.findUser(
             {
                 where: {
                     email: signUpFormData.email,
@@ -42,7 +42,7 @@ export class UserService {
                 fields: ["email", "password", "roleId"]
             });
 
-            const existingUser: UserAttributes | null = await this.userRepository.findUser(
+            const existingUser: UserDto | null = await this.userRepository.findUser(
                 {
                     where: {
                         email: signUpFormData.email,
@@ -76,7 +76,7 @@ export class UserService {
             await this.sessionService.destroyExpiredSessions();
         } catch (error: any) { }
 
-        const user: UserAttributes | null = await this.userRepository.findUser({
+        const user: UserDto | null = await this.userRepository.findUser({
             where: {
                 email: loginFormData.email
             },
@@ -135,7 +135,7 @@ export class UserService {
             throw new CustomError("Already authorized", 400);
         }
 
-        const admin: UserAttributes | null = await this.userRepository.findUser({
+        const admin: UserDto | null = await this.userRepository.findUser({
             where: {
                 email: loginFormData.email
             },

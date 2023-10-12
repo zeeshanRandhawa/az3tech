@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { SessionService } from "../service/session.service";
-import { CustomError, SessionAttributes } from "../util/interface.utility";
+import { CustomError, SessionDto } from "../util/interface.utility";
 import { SessionRepository } from "../repository/session.repository";
 
 // req.headers.cookies
@@ -23,7 +23,7 @@ export class AuthMiddleware {
             if (!req.headers.cookies) {
                 res.status(403).json({ message: "Access denied" });
             } else {
-                const session: SessionAttributes | null = await new SessionRepository().findSession({
+                const session: SessionDto | null = await new SessionRepository().findSession({
                     "where": {
                         sessionToken: req.headers.cookies
                     }

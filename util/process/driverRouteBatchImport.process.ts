@@ -6,7 +6,7 @@ import {
     extractOrigDestNodeId, findNodesOfInterestInArea, findParallelLinePoints, formatNodeData, getDistanceDurationBetweenNodes,
     getDistances, getNodeObjectByNodeId, getRouteDetailsByOSRM, importDriverRoutes, sortRouteNodeListByNodeStop
 } from "../helper.utility";
-import { NodeAttributes } from "../interface.utility";
+import { NodeDto } from "../interface.utility";
 import { DriverRepository } from "../../repository/driver.repository";
 import { NodeRepository } from "../../repository/node.repository";
 
@@ -142,8 +142,8 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
 
                 for (let [index, rNode] of driverRouteMeta!.routeNodes.initial.entries()) {
 
-                    let routeOriginNode: NodeAttributes | null = await getNodeObjectByNodeId(rNode.originNode);
-                    let routeDestinationNode: NodeAttributes | null = await getNodeObjectByNodeId(rNode.destinationNode)
+                    let routeOriginNode: NodeDto | null = await getNodeObjectByNodeId(rNode.originNode);
+                    let routeDestinationNode: NodeDto | null = await getNodeObjectByNodeId(rNode.destinationNode)
 
                     if (routeOriginNode !== null && routeDestinationNode !== null) {
 
@@ -213,8 +213,8 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
 
                 driverRouteMeta!.routeNodes.final.push(temprouteNode);
 
-                let routeOriginNode: NodeAttributes | null = await getNodeObjectByNodeId(driverRouteMeta!.routeNodes.initial[0].originNode);
-                let routeDestinationNode: NodeAttributes | null = await getNodeObjectByNodeId(driverRouteMeta!.routeNodes.initial[0].destinationNode);
+                let routeOriginNode: NodeDto | null = await getNodeObjectByNodeId(driverRouteMeta!.routeNodes.initial[0].originNode);
+                let routeDestinationNode: NodeDto | null = await getNodeObjectByNodeId(driverRouteMeta!.routeNodes.initial[0].destinationNode);
 
                 if (routeOriginNode !== null && routeDestinationNode !== null) {
 
@@ -284,7 +284,7 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
     return driverRouteBatchGroups;
 }
 
-async function findNodesOfInterestInAreaWithinRange(routeOriginNode: NodeAttributes, routeDestinationNode: NodeAttributes, waypointDistance: number): Promise<Array<Record<string, any> | undefined>> {
+async function findNodesOfInterestInAreaWithinRange(routeOriginNode: NodeDto, routeDestinationNode: NodeDto, waypointDistance: number): Promise<Array<Record<string, any> | undefined>> {
     const parallelLinePoints: Array<Record<string, number>> = findParallelLinePoints(
         { longitude: routeOriginNode.long!, latitude: routeOriginNode.lat! },
         { longitude: routeDestinationNode.long!, latitude: routeDestinationNode.lat! }

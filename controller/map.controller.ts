@@ -1,5 +1,5 @@
 import { MapService } from "../service/map.service"
-import { CoordinateAttribute, CustomError } from "../util/interface.utility"
+import { CoordinateDto, CustomError } from "../util/interface.utility"
 
 
 export class MapController {
@@ -74,7 +74,7 @@ export class MapController {
             return { status: 422, data: { message: "Invalid coordinates" } };
         }
         try {
-            return await this.mapService.displayMapNearestNode({ longitude: longitude, latitude: latitude } as CoordinateAttribute);
+            return await this.mapService.displayMapNearestNode({ longitude: longitude, latitude: latitude } as CoordinateDto);
         } catch (error: any) {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };

@@ -1,24 +1,24 @@
 import { Node, sequelize } from "../util/db.config"
-import { NodeAttributes } from "../util/interface.utility";
+import { NodeDto } from "../util/interface.utility";
 
 export class NodeRepository {
     constructor() {
     }
 
-    async createNode(nodeToCreate: Record<string, any>, associations: Record<string, any>): Promise<NodeAttributes> {
+    async createNode(nodeToCreate: Record<string, any>, associations: Record<string, any>): Promise<NodeDto> {
         const createdNode: Node | null = await Node.create(nodeToCreate, associations);
-        return createdNode as unknown as NodeAttributes;
+        return createdNode as unknown as NodeDto;
     }
 
-    async findNodes(whereConditionPaginatedAttributed: Record<string, any>): Promise<NodeAttributes[]> {
-        const nodeList: Node[] = await Node.findAll(whereConditionPaginatedAttributed);
-        const plainNodeList: NodeAttributes[] = nodeList.map(node => node.toJSON());
+    async findNodes(whereConditionPaginatedDtod: Record<string, any>): Promise<NodeDto[]> {
+        const nodeList: Node[] = await Node.findAll(whereConditionPaginatedDtod);
+        const plainNodeList: NodeDto[] = nodeList.map(node => node.toJSON());
         return plainNodeList;
     }
 
-    async findNodeByPK(nodeId: number): Promise<NodeAttributes | null> {
+    async findNodeByPK(nodeId: number): Promise<NodeDto | null> {
         const node: Node | null = await Node.findByPk(nodeId);
-        return node?.toJSON() as NodeAttributes ?? null;
+        return node?.toJSON() as NodeDto ?? null;
     }
 
     async updateNode(nodeToUpdate: Record<string, any>, whereCondition: Record<string, any>): Promise<void> {
@@ -34,9 +34,9 @@ export class NodeRepository {
         return await Node.destroy(destroyCondition);
     }
 
-    async findDistinctGroupByAttributed(distinctGroupByConditionAttributed: Record<string, any>): Promise<Array<NodeAttributes>> {
-        const distinctList: Array<Node> = await Node.findAll(distinctGroupByConditionAttributed);
-        const plainNodeDistinctList: NodeAttributes[] = distinctList.map(distinctNode => distinctNode.toJSON());
+    async findDistinctGroupByDtod(distinctGroupByConditionDtod: Record<string, any>): Promise<Array<NodeDto>> {
+        const distinctList: Array<Node> = await Node.findAll(distinctGroupByConditionDtod);
+        const plainNodeDistinctList: NodeDto[] = distinctList.map(distinctNode => distinctNode.toJSON());
         return plainNodeDistinctList;
     }
 

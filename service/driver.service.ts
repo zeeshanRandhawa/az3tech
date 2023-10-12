@@ -1,7 +1,7 @@
 import { Op, literal } from "sequelize";
 import { DriverRepository } from "../repository/driver.repository";
 import { generatePasswordHash, isValidFileHeader, prepareBatchBulkImportData } from "../util/helper.utility";
-import { CustomError, DriverAttributes, RiderDriverForm, UserAttributes } from "../util/interface.utility";
+import { CustomError, DriverDto, RiderDriverForm, UserDto } from "../util/interface.utility";
 import { UserRepository } from "../repository/user.repository";
 import { promiseHooks } from "v8";
 
@@ -15,7 +15,7 @@ export class DriverService {
     }
 
     async listDrivers(pageNumber: number): Promise<any> {
-        const driverList: DriverAttributes[] = await this.driverRepository.findDrivers({
+        const driverList: DriverDto[] = await this.driverRepository.findDrivers({
             attributes: ["driverId", "firstName", "lastName", "address", "city", "stateProvince", "zipPostalCode", "profilePicture", "phoneNumber", "capacity", "description"],
             order: [["driverId", "ASC"]],
             limit: 10,
@@ -42,7 +42,7 @@ export class DriverService {
 
     async createDriver(driverBio: RiderDriverForm): Promise<Record<string, any>> {
 
-        let existingUser: UserAttributes | null = await this.userRepository.findUser({
+        let existingUser: UserDto | null = await this.userRepository.findUser({
             where: {
                 email: driverBio.email,
                 roleId: 4
@@ -79,7 +79,7 @@ export class DriverService {
     }
 
     async updateDriver(driverId: number, driverBio: RiderDriverForm): Promise<any> {
-        const driver: DriverAttributes | null = await this.driverRepository.findDriverByPK(driverId);
+        const driver: DriverDto | null = await this.driverRepository.findDriverByPK(driverId);
 
         if (!driver) {
             throw new CustomError("Driver does not exist", 404);
@@ -138,7 +138,7 @@ export class DriverService {
                         email: (await Promise.all(driverBatchData.map(async (driver: Record<string, any>) => driver.email))),
                         roleId: 4
                     }
-                })).map(async (user: UserAttributes) => {
+                })).map(async (user: UserDto) => {
                     return user.email;
                 }));
             driverBatchData = (await Promise.all(driverBatchData.map(async (driverData: Record<string, any>) => {
@@ -189,7 +189,7 @@ export class DriverService {
     }
 
     async listDriversByName(driverName: string, pageNumber: number): Promise<Record<string, any>> {
-        const driverList: DriverAttributes[] = await this.driverRepository.findDrivers({
+        const driverList: DriverDto[] = await this.driverRepository.findDrivers({
             attributes: ["driverId", "firstName", "lastName", "address", "city", "stateProvince", "zipPostalCode", "profilePicture", "phoneNumber", "capacity", "description"],
             where: {
                 [Op.or]: [

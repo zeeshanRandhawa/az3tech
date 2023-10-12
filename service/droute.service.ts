@@ -2,11 +2,12 @@ import { Op, col, fn } from "sequelize";
 import { createReadStream, promises as fsPromises } from "fs";
 import { DriverRouteRepository } from "../repository/droute.repository";
 import {
-    CoordinateAttribute, CustomError, DriverRouteAssociatedNodeAttributes, DriverRouteNodeAssocitedAttributes, FilterForm, NodeAttributes, SessionAttributes,
+    ClassifiedRouteDto,
+    CoordinateDto, CustomError, DriverRouteAssociatedNodeDto, DriverRouteNodeAssocitedDto, FilterForm, NodeDto, RouteOption, SessionDto,
 } from "../util/interface.utility";
 import { NodeRepository } from "../repository/node.repository";
 import {
-    isValidFileHeader, prepareBatchBulkImportData, extractOrigDestNodeId, sortRouteNodeListByNodeStop, getNodeObjectByNodeId, getDistanceDurationBetweenNodes, importDriverRoutes, normalizeTimeZone, getRouteDetailsByOSRM, getActiveDateList, isRoutesDateSorted, getDriverRoutesBetweenTimeFrame,
+    isValidFileHeader, prepareBatchBulkImportData, extractOrigDestNodeId, sortRouteNodeListByNodeStop, getNodeObjectByNodeId, getDistanceDurationBetweenNodes, importDriverRoutes, normalizeTimeZone, getRouteDetailsByOSRM, getActiveDateList, isRoutesDateSorted, getDriverRoutesBetweenTimeFrame, findNearestNode,
 } from "../util/helper.utility";
 import { DriverRepository } from "../repository/driver.repository";
 import ProcessSocket from "../util/socketProcess.utility";
@@ -17,7 +18,6 @@ import archiver, { Archiver } from "archiver";
 import { createObjectCsvStringifier } from "csv-writer";
 import { ObjectCsvStringifier } from "csv-writer/src/lib/csv-stringifiers/object";
 import { RiderDriverRouteMatchingStrategy } from "./driverRiderMatchingAlgorithm/riderDriverRouteMatchingStrategy.class";
-// import { RiderDriverRouteMatchingAlgorithmDefault } from "./driverRiderMatchingAlgorithm/riderDriverRouteMatchingAlgorithm";
 
 export class DriverRouteService {
     private driverRouteRepository: DriverRouteRepository;
@@ -45,7 +45,7 @@ export class DriverRouteService {
             };
         }
 
-        const driverRouteList: DriverRouteAssociatedNodeAttributes[] =
+        const driverRouteList: DriverRouteAssociatedNodeDto[] =
             await this.driverRouteRepository.findDriverRoutes({
                 where: whereCondition,
                 include: [
@@ -79,7 +79,7 @@ export class DriverRouteService {
     }
 
     async listDriverRoutesByDriverId(driverId: number, pageNumber: number): Promise<Record<string, any>> {
-        const driverRouteList: DriverRouteAssociatedNodeAttributes[] =
+        const driverRouteList: DriverRouteAssociatedNodeDto[] =
             await this.driverRouteRepository.findDriverRoutes({
                 where: {
                     driverId: driverId,
@@ -145,7 +145,7 @@ export class DriverRouteService {
         const driverRouteBatchMetaData: Array<Record<string, any>> = prepareBatchBulkImportData(fileToImport.buffer, ["routeName", "originNodeId", "destinationNodeId", "departureTime", "departureFlexibility", "driverId", "passengerCapacity", "maxWait", "fixedRoute", "databaseManagementTag",]);
 
         await fsPromises.writeFile("./util/tempFiles/driverRouteTemp.json", JSON.stringify(driverRouteBatchMetaData), { encoding: "utf8" });
-        const session: SessionAttributes | null = await this.sessionRepository.findSession({
+        const session: SessionDto | null = await this.sessionRepository.findSession({
             where: {
                 sessionToken: sessionToken,
             },
@@ -164,7 +164,7 @@ export class DriverRouteService {
     }
 
     async getDriverRouteDistinctTagList(): Promise<Record<string, any>> {
-        const driverRouteTagListRaw: DriverRouteAssociatedNodeAttributes[] = await this.driverRouteRepository.findDriverRoutes({
+        const driverRouteTagListRaw: DriverRouteAssociatedNodeDto[] = await this.driverRouteRepository.findDriverRoutes({
             attributes: [[fn("DISTINCT", col("droute_dbm_tag")), "drouteDbmTag"]],
             order: [["drouteDbmTag", "ASC"]],
         });
@@ -415,8 +415,8 @@ export class DriverRouteService {
                 let cumDistance: number = 0;
 
                 for (let [index, rNode] of driverRouteMeta.routeNodes.initial.slice(1).entries()) {
-                    let routeOriginNode: NodeAttributes | null = await getNodeObjectByNodeId(driverRouteMeta.routeNodes.initial[index].originNode);
-                    let routeDestinationNode: NodeAttributes | null = await getNodeObjectByNodeId(rNode.originNode);
+                    let routeOriginNode: NodeDto | null = await getNodeObjectByNodeId(driverRouteMeta.routeNodes.initial[index].originNode);
+                    let routeDestinationNode: NodeDto | null = await getNodeObjectByNodeId(rNode.originNode);
 
                     if (routeOriginNode !== null && routeDestinationNode !== null) {
                         let calculatedDistanceDurationBetweenNodes: Record<string, any> = await getDistanceDurationBetweenNodes({ longitude: routeOriginNode?.long, latitude: routeOriginNode?.lat }, { longitude: routeDestinationNode?.long, latitude: routeDestinationNode?.lat });
@@ -606,7 +606,7 @@ export class DriverRouteService {
     //         throw new CustomError("No Driver Route found in on this node in given time window", 404);
     //     }
 
-    //     const driverRoutes: Array<DriverRouteAssociatedNodeAttributes> = await this.driverRouteRepository.findDriverRoutes({
+    //     const driverRoutes: Array<DriverRouteAssociatedNodeDto> = await this.driverRouteRepository.findDriverRoutes({
     //         where: {
     //             drouteId:
     //             {
@@ -627,7 +627,7 @@ export class DriverRouteService {
     //         order: [["drouteNodes", "rank", "ASC"]]
     //     });
 
-    //     const session: SessionAttributes | null = await this.sessionRepository.findSession({
+    //     const session: SessionDto | null = await this.sessionRepository.findSession({
     //         where: {
     //             sessionToken: !sessionToken ? "" : sessionToken
     //         },
@@ -637,7 +637,7 @@ export class DriverRouteService {
     //     });
     //     let waypointDistance: number = session?.user?.waypointDistance ?? 1609.34;
 
-    //     const driverRouteDataPlainJSON: Array<Record<string, any>> = await Promise.all(driverRoutes.map(async (driverRoute: DriverRouteAssociatedNodeAttributes) => {
+    //     const driverRouteDataPlainJSON: Array<Record<string, any>> = await Promise.all(driverRoutes.map(async (driverRoute: DriverRouteAssociatedNodeDto) => {
     //         // let GISWaypoints: Array<Record<string, any>> = [];
     //         let osrmRoute: Array<any> = [];
     //         let intermediateNodes: Array<Record<string, any>> = [];
@@ -645,12 +645,12 @@ export class DriverRouteService {
     //         let tmpOsrmRouteArray: Array<any> = new Array<any>(driverRoute.drouteNodes!.length - 1);
     //         let tmpIntermediateNodesArray: Array<Record<string, any>> = new Array<Record<string, any>>(driverRoute.drouteNodes!.length - 1);
 
-    //         await Promise.all(driverRoute.drouteNodes!.slice(0, -1).map(async (drouteNode: DriverRouteNodeAssocitedAttributes, k: number) => {
+    //         await Promise.all(driverRoute.drouteNodes!.slice(0, -1).map(async (drouteNode: DriverRouteNodeAssocitedDto, k: number) => {
 
     //             // for (let k = 0; k < driverRoute.drouteNodes!.length - 1; ++k) {
-    //             let nodePointA: DriverRouteNodeAssocitedAttributes = drouteNode;
+    //             let nodePointA: DriverRouteNodeAssocitedDto = drouteNode;
     //             // driverRoute.drouteNodes![k];
-    //             let nodePointB: DriverRouteNodeAssocitedAttributes = driverRoute.drouteNodes![k + 1];
+    //             let nodePointB: DriverRouteNodeAssocitedDto = driverRoute.drouteNodes![k + 1];
 
     //             const parallelLinePoints: Array<Record<string, number>> = findParallelLinePoints({ longitude: nodePointA.node?.long!, latitude: nodePointA.node?.lat! }, { longitude: nodePointB.node?.long!, latitude: nodePointB.node?.lat! });
     //             let nodesInAreaOfInterest: Array<Record<string, any> | undefined> = await findNodesOfInterestInArea(Object.values(parallelLinePoints[0]), Object.values(parallelLinePoints[1]), Object.values(parallelLinePoints[2]), Object.values(parallelLinePoints[3]), [])
@@ -809,7 +809,7 @@ export class DriverRouteService {
         //     throw new CustomError("No Driver Route found in on this node in given time window", 404);
         // }
 
-        // const driverRoutes: Array<DriverRouteAssociatedNodeAttributes> = await this.driverRouteRepository.findDriverRoutes({
+        // const driverRoutes: Array<DriverRouteAssociatedNodeDto> = await this.driverRouteRepository.findDriverRoutes({
         //     where: {
         //         drouteId:
         //         {
@@ -830,13 +830,13 @@ export class DriverRouteService {
         //     order: [["drouteNodes", "rank", "ASC"]]
         // });
 
-        const driverRoutes: Array<DriverRouteAssociatedNodeAttributes> = await getDriverRoutesBetweenTimeFrame(startDateTimeWindow, endDateTimeWindow, [nodeId]);
+        const driverRoutes: Array<DriverRouteAssociatedNodeDto> = await getDriverRoutesBetweenTimeFrame(startDateTimeWindow, endDateTimeWindow, [nodeId]);
 
         if (!driverRoutes.length) {
             throw new CustomError("No Driver Route found in on this node in given time window", 404);
         }
 
-        // const session: SessionAttributes | null = await this.sessionRepository.findSession({
+        // const session: SessionDto | null = await this.sessionRepository.findSession({
         //     where: {
         //         sessionToken: !sessionToken ? "" : sessionToken
         //     },
@@ -846,7 +846,7 @@ export class DriverRouteService {
         // });
         // let waypointDistance: number = session?.user?.waypointDistance ?? 1609.34;
 
-        const driverRouteDataPlainJSON: Array<Record<string, any>> = await Promise.all(driverRoutes.map(async (driverRoute: DriverRouteAssociatedNodeAttributes) => {
+        const driverRouteDataPlainJSON: Array<Record<string, any>> = await Promise.all(driverRoutes.map(async (driverRoute: DriverRouteAssociatedNodeDto) => {
             // let GISWaypoints: Array<Record<string, any>> = [];
             let osrmRoute: Array<any> = [];
             // let intermediateNodes: Array<Record<string, any>> = [];
@@ -854,9 +854,9 @@ export class DriverRouteService {
             let tmpOsrmRouteArray: Array<any> = new Array<any>(driverRoute.drouteNodes!.length - 1);
             // let tmpIntermediateNodesArray: Array<Record<string, any>> = new Array<Record<string, any>>(driverRoute.drouteNodes!.length - 1);
 
-            let driverRouteNodesHavingOSRMRoute: Array<NodeAttributes> = [];
+            let driverRouteNodesHavingOSRMRoute: Array<NodeDto> = [];
 
-            driverRoute.drouteNodes!.forEach((drouteNode: DriverRouteNodeAssocitedAttributes) => {
+            driverRoute.drouteNodes!.forEach((drouteNode: DriverRouteNodeAssocitedDto) => {
                 if (["SCHEDULED", "ORIGIN", "DESTINATION"].includes(drouteNode.status!.trim())) {
                     driverRouteNodesHavingOSRMRoute.push(drouteNode.node!);
                 }
@@ -864,11 +864,11 @@ export class DriverRouteService {
 
             //  = driverRoute.drouteNodes![1];
 
-            await Promise.all(driverRouteNodesHavingOSRMRoute!.slice(0, -1).map(async (drouteNode: NodeAttributes, k: number) => {
+            await Promise.all(driverRouteNodesHavingOSRMRoute!.slice(0, -1).map(async (drouteNode: NodeDto, k: number) => {
                 // for (let k = 0; k < driverRoute.drouteNodes!.length - 1; ++k) {
-                // let nodePointA: DriverRouteNodeAssocitedAttributes = drouteNode;
-                let nodePointA: NodeAttributes = driverRouteNodesHavingOSRMRoute![k];
-                let nodePointB: NodeAttributes = driverRouteNodesHavingOSRMRoute![k + 1];
+                // let nodePointA: DriverRouteNodeAssocitedDto = drouteNode;
+                let nodePointA: NodeDto = driverRouteNodesHavingOSRMRoute![k];
+                let nodePointB: NodeDto = driverRouteNodesHavingOSRMRoute![k + 1];
 
                 // const parallelLinePoints: Array<Record<string, number>> = findParallelLinePoints({ longitude: nodePointA.node?.long!, latitude: nodePointA.node?.lat! }, { longitude: nodePointB.node?.long!, latitude: nodePointB.node?.lat! });
                 // let nodesInAreaOfInterest: Array<Record<string, any> | undefined> = await findNodesOfInterestInArea(Object.values(parallelLinePoints[0]), Object.values(parallelLinePoints[1]), Object.values(parallelLinePoints[2]), Object.values(parallelLinePoints[3]), [])
@@ -959,7 +959,7 @@ export class DriverRouteService {
     }
 
     async displayDriverRouteById(drouteId: number): Promise<any> {
-        const driverRoute: DriverRouteAssociatedNodeAttributes | null = await new DriverRouteRepository().findDriverRoute({
+        const driverRoute: DriverRouteAssociatedNodeDto | null = await new DriverRouteRepository().findDriverRoute({
             where: {
                 drouteId: drouteId,
             },
@@ -981,17 +981,17 @@ export class DriverRouteService {
 
         let osrmRoute: Array<any> = [];
         let tmpOsrmRouteArray: Array<any> = new Array<any>(driverRoute.drouteNodes!.length - 1);
-        let driverRouteNodesHavingOSRMRoute: Array<NodeAttributes> = [];
+        let driverRouteNodesHavingOSRMRoute: Array<NodeDto> = [];
 
-        driverRoute.drouteNodes!.forEach((drouteNode: DriverRouteNodeAssocitedAttributes) => {
+        driverRoute.drouteNodes!.forEach((drouteNode: DriverRouteNodeAssocitedDto) => {
             if (["SCHEDULED", "ORIGIN", "DESTINATION"].includes(drouteNode.status!.trim())) {
                 driverRouteNodesHavingOSRMRoute.push(drouteNode.node!);
             }
         });
 
-        await Promise.all(driverRouteNodesHavingOSRMRoute!.slice(0, -1).map(async (drouteNode: NodeAttributes, k: number) => {
-            let nodePointA: NodeAttributes = driverRouteNodesHavingOSRMRoute![k];
-            let nodePointB: NodeAttributes = driverRouteNodesHavingOSRMRoute![k + 1];
+        await Promise.all(driverRouteNodesHavingOSRMRoute!.slice(0, -1).map(async (drouteNode: NodeDto, k: number) => {
+            let nodePointA: NodeDto = driverRouteNodesHavingOSRMRoute![k];
+            let nodePointB: NodeDto = driverRouteNodesHavingOSRMRoute![k + 1];
 
             const routeInfo: Record<string, any> = await getRouteDetailsByOSRM({ longitude: nodePointA.long!, latitude: nodePointA.lat! }, { longitude: nodePointB.long!, latitude: nodePointB.lat! });
             tmpOsrmRouteArray[k] = routeInfo.routes[0].geometry.coordinates;
@@ -1004,14 +1004,74 @@ export class DriverRouteService {
         return { status: 200, data: { driverRouteData: { ...driverRoute, osrmRoute: osrmRoute, } } };
     }
 
-    async findMatchingDriverRoutes(originCoordinates: CoordinateAttribute, destinationCoordinates: CoordinateAttribute, departureDateTime: string, departureFlexibility: number, sessionToken: string | undefined): Promise<any> {
+    async findMatchingDriverRoutes(originCoordinates: CoordinateDto, destinationCoordinates: CoordinateDto, departureDateTime: string, departureFlexibility: number, sessionToken: string | undefined, requestType: string): Promise<any> {
+
+        if (requestType !== "ios" && requestType !== "web") {
+            return { status: 400, data: { message: "Unknown request" } };
+        }
+
+        const originNode: NodeDto = (await findNearestNode(originCoordinates)).smallestDistanceNode;
+        const destinationNode: NodeDto = (await findNearestNode(destinationCoordinates)).smallestDistanceNode;
 
         let routeStrategy: RiderDriverRouteMatchingStrategy = new RiderDriverRouteMatchingStrategy();
 
+        let matchingRoutesWithQosMetrics: Record<string, any> = await routeStrategy.getRiderDriverRoutes(departureDateTime, departureFlexibility, originNode, destinationNode)
 
-        const data: any = await routeStrategy.getRiderDriverRoutes(departureDateTime, departureFlexibility, originCoordinates, destinationCoordinates);
+        if (requestType === "ios") {
 
-        return { status: 200, data: { message: data } };
+            let routeOptions: Array<RouteOption> = [];
 
+            await Promise.all(matchingRoutesWithQosMetrics.filteredRoutes.map(async (primaryClassifiedRoute: ClassifiedRouteDto) => {
+
+                let routeOption: RouteOption = {};
+
+
+                let primaryFirstNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes?.slice(0, 1)[0]!;
+                let primaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes?.slice(-1)[0]!;
+                routeOption.primary = {
+                    originNode: primaryFirstNode.nodeId, destinationNode: primaryLastNode.nodeId, drouteId: primaryClassifiedRoute.driverRoute.drouteId,
+                    originDepartureTime: primaryFirstNode.departureTime as string, destinationArrivalTime: primaryLastNode.arrivalTime as string,
+                    drouteName: primaryClassifiedRoute.driverRoute.drouteName!
+                }
+
+                if (primaryClassifiedRoute.intersectingRoute) {
+
+                    let secondaryFirstNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes?.slice(0, 1)[0]!;
+                    let secondaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes?.slice(-1)[0]!;
+                    routeOption.secondary = {
+                        originNode: secondaryFirstNode.nodeId, destinationNode: secondaryLastNode.nodeId, drouteId: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId,
+                        originDepartureTime: secondaryFirstNode.departureTime as string, destinationArrivalTime: secondaryLastNode.arrivalTime as string,
+                        drouteName: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteName!
+                    }
+
+                    if (primaryClassifiedRoute.intersectingRoute.intersectingRoute) {
+
+                        let tertiaryFirstNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes?.slice(0, 1)[0]!;
+                        let tertiaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes?.slice(-1)[0]!;
+                        routeOption.tertiary = {
+                            originNode: tertiaryFirstNode.nodeId, destinationNode: tertiaryLastNode.nodeId,
+                            drouteId: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId,
+                            originDepartureTime: tertiaryFirstNode.departureTime as string,
+                            destinationArrivalTime: tertiaryLastNode.arrivalTime as string,
+                            drouteName: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteName!
+                        }
+
+                    }
+                }
+
+                routeOptions.push(routeOption);
+
+            }));
+
+            return { status: 200, data: { matchingRouteOptions: routeOptions } };
+
+        } else if (requestType === "web") {
+
+            return {
+                status: 200,
+                data: { matchingRoutes: matchingRoutesWithQosMetrics.filteredRoutes, routeQOSMetrics: matchingRoutesWithQosMetrics.routeMetrics }
+            };
+
+        }
     }
 }

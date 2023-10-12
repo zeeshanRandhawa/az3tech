@@ -1,6 +1,6 @@
 import { AnyTxtRecord } from "dns";
 import { User } from "../util/db.config"
-import { UserAttributes } from "../util/interface.utility";
+import { UserDto } from "../util/interface.utility";
 
 export class UserRepository {
 
@@ -8,22 +8,22 @@ export class UserRepository {
     constructor() {
     }
 
-    async findUsers(whereConditionPaginatedAttributed: Record<string, any>): Promise<Array<UserAttributes>> {
-        const userList: Array<User> = await User.findAll(whereConditionPaginatedAttributed);
-        const plainUserList: Array<UserAttributes> = userList.map((user: User) => user.toJSON());
+    async findUsers(whereConditionPaginatedDtod: Record<string, any>): Promise<Array<UserDto>> {
+        const userList: Array<User> = await User.findAll(whereConditionPaginatedDtod);
+        const plainUserList: Array<UserDto> = userList.map((user: User) => user.toJSON());
         return plainUserList;
     }
 
-    async findUser(whereCondition: Record<string, any>): Promise<UserAttributes | null> {
+    async findUser(whereCondition: Record<string, any>): Promise<UserDto | null> {
 
         const user: User | null = await User.findOne(whereCondition);
 
-        return user?.toJSON() as UserAttributes ?? null;
+        return user?.toJSON() as UserDto ?? null;
     }
 
-    async createUser(userToCreate: Record<string, any>, associations: Record<string, any>): Promise<UserAttributes> {
+    async createUser(userToCreate: Record<string, any>, associations: Record<string, any>): Promise<UserDto> {
         const createdUser: User | null = await User.create(userToCreate, associations);
-        return createdUser?.toJSON() as UserAttributes ?? null;
+        return createdUser?.toJSON() as UserDto ?? null;
     }
 
     async updateUser(userToUpdate: Record<string, any>, whereCondition: Record<string, any>): Promise<void> {

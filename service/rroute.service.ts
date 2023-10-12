@@ -1,6 +1,6 @@
 import { fn, col, Op } from "sequelize";
 import { RiderRouteRepository } from "../repository/rroute.repository";
-import { CustomError, FilterForm, NodeAttributes, RiderAttributes, RiderRouteAttributes, SessionAttributes } from "../util/interface.utility";
+import { CustomError, FilterForm, NodeDto, RiderDto, RiderRouteDto, SessionDto } from "../util/interface.utility";
 import { isValidFileHeader, prepareBatchBulkImportData, generateNUniformRandomDateTimeValues, findParallelLinePoints, findNodesOfInterestInArea, getRouteDetailsByOSRM, getDistances, formatNodeData, getGeographicCoordinatesByAddress, calculateDistanceBetweenPoints, normalizeTimeZone } from "../util/helper.utility";
 import { RiderRepository } from "../repository/rider.repository";
 import { NodeRepository } from "../repository/node.repository";
@@ -33,7 +33,7 @@ export class RiderRouteService {
                 })
             }
         }
-        const riderRouteList: RiderRouteAttributes[] = await this.riderRouteRepository.findRiderRoutes({
+        const riderRouteList: RiderRouteDto[] = await this.riderRouteRepository.findRiderRoutes({
             where: whereCondition,
             include: [{
                 association: "origin"
@@ -58,7 +58,7 @@ export class RiderRouteService {
     }
 
     async listRiderRoutesByRiderId(riderId: number, pageNumber: number): Promise<Record<string, any>> {
-        const riderRouteList: RiderRouteAttributes[] = await this.riderRouteRepository.findRiderRoutes({
+        const riderRouteList: RiderRouteDto[] = await this.riderRouteRepository.findRiderRoutes({
             where: {
                 riderId: riderId
             },
@@ -98,21 +98,21 @@ export class RiderRouteService {
 
         const metaRiderRouteBulkData: Array<Record<string, any>> = prepareBatchBulkImportData(fileToImport.buffer, ["rrouteDbmTag", "originCity", "destinationCity", "numberOfRoutes", "meanDepartureTime", "sigmaTime"]);
 
-        const riderIdList: RiderAttributes[] = await this.riderRepository.findRiders({
+        const riderIdList: RiderDto[] = await this.riderRepository.findRiders({
             attributes: ["riderId"]
         });
 
         let batchImportData: Array<Record<string, any>> = []
 
         await Promise.all(metaRiderRouteBulkData.map(async (routeMeta: Record<string, any>, index: number): Promise<void> => {
-            const originCityIdList: NodeAttributes[] = await this.nodeRepository.findNodes({
+            const originCityIdList: NodeDto[] = await this.nodeRepository.findNodes({
                 where: {
                     city: routeMeta.originCity
                 },
                 attributes: ["nodeId"]
             });
 
-            const destinationCityIdList: NodeAttributes[] = await this.nodeRepository.findNodes({
+            const destinationCityIdList: NodeDto[] = await this.nodeRepository.findNodes({
                 where: {
                     city: routeMeta.destinationCity
                 },
@@ -153,7 +153,7 @@ export class RiderRouteService {
             throw new CustomError("Invalid columns or column length", 422);
         }
 
-        const systemNodesList: Array<NodeAttributes> = await this.nodeRepository.findNodes({});
+        const systemNodesList: Array<NodeDto> = await this.nodeRepository.findNodes({});
         if (systemNodesList.length < 1) {
             throw new CustomError("No Node Found", 404);
         }
@@ -177,7 +177,7 @@ export class RiderRouteService {
                     distance: Infinity,
                     node: null
                 };
-                await Promise.all(systemNodesList.map(async (node: NodeAttributes) => {
+                await Promise.all(systemNodesList.map(async (node: NodeDto) => {
                     if (node.lat !== undefined || node.long !== undefined) {
                         let distance: number = calculateDistanceBetweenPoints({ latitude: node.lat!, longitude: node.long! }, { latitude: originCoordinateByAddress.latitude!, longitude: originCoordinateByAddress.longitude! })
                         if (distance <= originSmallestDistanceNode.distance) {
@@ -235,7 +235,7 @@ export class RiderRouteService {
     }
 
     async getRiderRouteDistinctTagList(): Promise<Record<string, any>> {
-        const riderRouteTagListRaw: RiderRouteAttributes[] = await this.riderRouteRepository.findRiderRoutes({
+        const riderRouteTagListRaw: RiderRouteDto[] = await this.riderRouteRepository.findRiderRoutes({
             attributes: [
                 [fn("DISTINCT", col("rroute_dbm_tag")), "rrouteDbmTag"],
             ],
@@ -343,7 +343,7 @@ export class RiderRouteService {
 
         const riderRouteDataPlainJSON: Array<Record<string, any>> = [];
 
-        const riderRoutes: RiderRouteAttributes[] = await this.riderRouteRepository.findRiderRoutes({
+        const riderRoutes: RiderRouteDto[] = await this.riderRouteRepository.findRiderRoutes({
             where: {
                 [Op.and]: [
                     {
@@ -403,7 +403,7 @@ export class RiderRouteService {
                 }
             }
 
-            const session: SessionAttributes | null = await this.sessionRepository.findSession({
+            const session: SessionDto | null = await this.sessionRepository.findSession({
                 where: {
                     sessionToken: sessionToken
                 },

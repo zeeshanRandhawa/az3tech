@@ -1,13 +1,13 @@
 import { RiderRouteNode } from "../util/db.config"
-import { RiderRouteNodeAttributes } from "../util/interface.utility";
+import { RiderRouteNodeDto } from "../util/interface.utility";
 
 export class RiderRouteNodeRepository {
     constructor() {
     }
 
-    async findRiderRouteNodes(whereConditionPaginatedAttributed: Record<string, any>): Promise<Array<RiderRouteNodeAttributes>> {
-        const riderRouteNodeList: RiderRouteNode[] = await RiderRouteNode.findAll(whereConditionPaginatedAttributed);
-        const plainRiderRouteNodeList: RiderRouteNodeAttributes[] = riderRouteNodeList.map(riderRouteNode => riderRouteNode.toJSON());
+    async findRiderRouteNodes(whereConditionPaginatedDtod: Record<string, any>): Promise<Array<RiderRouteNodeDto>> {
+        const riderRouteNodeList: RiderRouteNode[] = await RiderRouteNode.findAll(whereConditionPaginatedDtod);
+        const plainRiderRouteNodeList: RiderRouteNodeDto[] = riderRouteNodeList.map(riderRouteNode => riderRouteNode.toJSON());
         return plainRiderRouteNodeList;
     }
 

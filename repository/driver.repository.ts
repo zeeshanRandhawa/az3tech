@@ -1,25 +1,25 @@
 import { Driver } from "../util/db.config"
-import { DriverAttributes } from "../util/interface.utility";
+import { DriverDto } from "../util/interface.utility";
 
 export class DriverRepository {
     constructor() {
     }
 
-    async createDriver(driverToCreate: Record<string, any>, associations: Record<string, any>): Promise<DriverAttributes> {
+    async createDriver(driverToCreate: Record<string, any>, associations: Record<string, any>): Promise<DriverDto> {
         const createdDriver: Driver | null = await Driver.create(driverToCreate, associations);
-        return createdDriver?.toJSON() as DriverAttributes;
+        return createdDriver?.toJSON() as DriverDto;
     }
 
-    async findDrivers(whereConditionPaginatedAttributed: Record<string, any>): Promise<Array<DriverAttributes>> {
-        const driverList: Array<Driver> = await Driver.findAll(whereConditionPaginatedAttributed);
-        const plainDriverList: Array<DriverAttributes> = driverList.map((driver: Driver) => driver.toJSON());
+    async findDrivers(whereConditionPaginatedDtod: Record<string, any>): Promise<Array<DriverDto>> {
+        const driverList: Array<Driver> = await Driver.findAll(whereConditionPaginatedDtod);
+        const plainDriverList: Array<DriverDto> = driverList.map((driver: Driver) => driver.toJSON());
         return plainDriverList;
     }
 
-    async findDriverByPK(driverId: number): Promise<DriverAttributes | null> {
+    async findDriverByPK(driverId: number): Promise<DriverDto | null> {
         const driver: Driver | null = await Driver.findByPk(driverId);
 
-        return driver?.toJSON() as DriverAttributes ?? driver;
+        return driver?.toJSON() as DriverDto ?? driver;
     }
 
     async updateDriver(driverToUpdate: Record<string, any>, whereCondition: Record<string, any>): Promise<void> {

@@ -1,6 +1,6 @@
 import { SessionRepository } from "../repository/session.repository";
 import { Op, fn } from "sequelize";
-import { CustomError, SessionAttributes } from "../util/interface.utility";
+import { CustomError, SessionDto } from "../util/interface.utility";
 
 export class SessionService {
 
@@ -28,7 +28,7 @@ export class SessionService {
     }
 
     async getRoleByToken(sessionToken?: string): Promise<Record<string, any>> {
-        const session: SessionAttributes | null = await this.sessionRepository.findSession({
+        const session: SessionDto | null = await this.sessionRepository.findSession({
             where: {
                 sessionToken: sessionToken
             },
@@ -46,7 +46,7 @@ export class SessionService {
     }
 
     async isAuthenticated(sessionToken?: string): Promise<Record<string, any>> {
-        const session: SessionAttributes | null = await this.sessionRepository.findSession({
+        const session: SessionDto | null = await this.sessionRepository.findSession({
             where: {
                 sessionToken: sessionToken
             }
@@ -58,7 +58,7 @@ export class SessionService {
     }
 
     async getEmailByToken(sessionToken: string): Promise<Record<string, any>> {
-        const session: SessionAttributes | null = await this.sessionRepository.findSession({
+        const session: SessionDto | null = await this.sessionRepository.findSession({
             where: {
                 sessionToken: sessionToken
             },

@@ -84,8 +84,8 @@ export class DriverRouteRouter {
             this.driverRouteController.displayDriverRoutesAtNodeBetweenTimeFrame(parseInt(req.query.nodeId as string, 10) as number, req.query.startDateTimeWindow as string, req.query.endDateTimeWindow as string, req.headers.cookies as string).then(data => res.status(data.status).json(data.data));
         });
 
-        this.router.get("/dr/match", (req: Request, res: Response) => {
-            this.driverRouteController.findMatchingDriverRoutes(parseFloat(req.query.originLatitude as string), parseFloat(req.query.originLongitude as string), parseFloat(req.query.destinationLatitude as string), parseFloat(req.query.destinationLongitude as string), req.query.departureTime as string, parseInt(req.query.departureFlexibility as string, 10) as number, req.headers.cookies as string).then(data => res.status(data.status).json(data.data));
+        this.router.get("/rider/route/match/strategy", (req: Request, res: Response) => {
+            this.driverRouteController.findMatchingDriverRoutes(parseFloat(req.query.originLatitude as string), parseFloat(req.query.originLongitude as string), parseFloat(req.query.destinationLatitude as string), parseFloat(req.query.destinationLongitude as string), req.query.departureTime as string, parseInt(req.query.departureFlexibility as string, 10) as number, req.headers.cookies as string, req.query.requestType as string).then(data => res.status(data.status).json(data.data));
         });
     }
 }

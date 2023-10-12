@@ -1,5 +1,5 @@
 import { RiderRouteNodeRepository } from "../repository/rrouteNode.repository";
-import { CustomError, RiderRouteNodeAttributes } from "../util/interface.utility";
+import { CustomError, RiderRouteNodeDto } from "../util/interface.utility";
 
 export class RiderRouteNodeService {
     private riderRouteNodeRepository: RiderRouteNodeRepository;
@@ -9,7 +9,7 @@ export class RiderRouteNodeService {
     }
 
     async listRiderRouteNodesByRiderRouteId(riderRouteId: number, pageNumber: number): Promise<Record<string, any>> {
-        const riderRouteNodeList: RiderRouteNodeAttributes[] = await this.riderRouteNodeRepository.findRiderRouteNodes({
+        const riderRouteNodeList: RiderRouteNodeDto[] = await this.riderRouteNodeRepository.findRiderRouteNodes({
             where: {
                 rrouteId: riderRouteId
             },

@@ -5,7 +5,7 @@ import querystring from 'querystring';
 import { sequelize } from "./db.config";
 import axios, { AxiosResponse } from "axios";
 import { Op, Transaction, literal } from "sequelize";
-import { CoordinateAttribute, DriverRouteAssociatedNodeAttributes, NodeAttributes } from "./interface.utility";
+import { CoordinateDto, DriverRouteAssociatedNodeDto, NodeDto } from "./interface.utility";
 import { GeolibInputCoordinates } from "geolib/es/types";
 import { NodeRepository } from "../repository/node.repository";
 import { DriverRouteRepository } from "../repository/droute.repository";
@@ -93,8 +93,8 @@ export async function getGeographicCoordinatesByAddress(address: string): Promis
     }
 }
 
-export async function findNodesOfInterestInArea(upperLeftCorner: Array<number>, lowerLeftCorner: Array<number>, upperRightCorner: Array<number>, lowerRightCorner: Array<number>, descriptionFilterList: Array<string>): Promise<Array<NodeAttributes>> {
-    const nodesToDisplay: Array<NodeAttributes> = await new NodeRepository().findNodes({
+export async function findNodesOfInterestInArea(upperLeftCorner: Array<number>, lowerLeftCorner: Array<number>, upperRightCorner: Array<number>, lowerRightCorner: Array<number>, descriptionFilterList: Array<string>): Promise<Array<NodeDto>> {
+    const nodesToDisplay: Array<NodeDto> = await new NodeRepository().findNodes({
         where: {
             [Op.and]: [
                 literal(`((${lowerLeftCorner[0]} - ${upperLeftCorner[0]}) * (long - ${upperLeftCorner[0]})) + ((${lowerLeftCorner[1]} - ${upperLeftCorner[1]}) * (lat - ${upperLeftCorner[1]})) >= 0`),
@@ -228,8 +228,8 @@ export function calculateDistanceBetweenPoints(pointA: GeolibInputCoordinates, p
     return getDistance(pointA, pointB);
 }
 
-export async function getNodeObjectByNodeId(nodeId: number): Promise<NodeAttributes | null> {
-    const retrivedNode: NodeAttributes | null = await new NodeRepository().findNodeByPK(nodeId);
+export async function getNodeObjectByNodeId(nodeId: number): Promise<NodeDto | null> {
+    const retrivedNode: NodeDto | null = await new NodeRepository().findNodeByPK(nodeId);
     return retrivedNode;
 }
 
@@ -375,7 +375,7 @@ export function getActiveDateList(scheduledWeekdays: string, scheduledStartDate:
     return activeDates;
 }
 
-export async function getDriverRoutesBetweenTimeFrame(startDateTimeWindow: string, endDateTimeWindow: string, nodeIdList: Array<number>): Promise<Array<DriverRouteAssociatedNodeAttributes>> {
+export async function getDriverRoutesBetweenTimeFrame(startDateTimeWindow: string, endDateTimeWindow: string, nodeIdList: Array<number>): Promise<Array<DriverRouteAssociatedNodeDto>> {
     const searchQueryWithNodeIds: Array<any> = [
         {
             [Op.or]: [
@@ -456,7 +456,7 @@ export async function getDriverRoutesBetweenTimeFrame(startDateTimeWindow: strin
         return [];
     }
 
-    const driverRoutes: Array<DriverRouteAssociatedNodeAttributes> = await new DriverRouteRepository().findDriverRoutes({
+    const driverRoutes: Array<DriverRouteAssociatedNodeDto> = await new DriverRouteRepository().findDriverRoutes({
         where: {
             drouteId:
             {
@@ -480,18 +480,18 @@ export async function getDriverRoutesBetweenTimeFrame(startDateTimeWindow: strin
     return driverRoutes;
 }
 
-export async function findNearestNode(coordinateData: CoordinateAttribute): Promise<Record<string, any>> {
+export async function findNearestNode(coordinateData: CoordinateDto): Promise<Record<string, any>> {
     const smallestDistanceCoordinate: Record<string, any> = {
         distance: Infinity,
         smallestDistanceNode: undefined
     };
 
-    const nodeList: Array<NodeAttributes> = await new NodeRepository().findNodes({});
+    const nodeList: Array<NodeDto> = await new NodeRepository().findNodes({});
     if (nodeList.length < 1) {
         return smallestDistanceCoordinate;
     }
 
-    await Promise.all(nodeList.map(async (node: NodeAttributes) => {
+    await Promise.all(nodeList.map(async (node: NodeDto) => {
         if (node.lat !== undefined || node.long !== undefined) {
             let distance: number = calculateDistanceBetweenPoints({ latitude: node.lat!, longitude: node.long! }, { latitude: coordinateData.latitude!, longitude: coordinateData.longitude! })
             if (distance <= smallestDistanceCoordinate.distance) {

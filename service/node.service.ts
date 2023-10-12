@@ -7,7 +7,7 @@ import path from "path";
 import archiver, { Archiver } from "archiver";
 import ProcessSocket from "../util/socketProcess.utility";
 import { NodeRepository } from "../repository/node.repository";
-import { CustomError, NodeAttributes, NodeForm, SessionAttributes } from "../util/interface.utility";
+import { CustomError, NodeDto, NodeForm, SessionDto } from "../util/interface.utility";
 import {
     findNodesOfInterestInArea, getGeographicCoordinatesByAddress,
     isValidFileHeader, prepareBatchBulkImportData
@@ -30,7 +30,7 @@ export class NodeService {
 
     async listNodes(pageNumber: number): Promise<any> {
 
-        const nodeList: NodeAttributes[] = await this.nodeRepository.findNodes({
+        const nodeList: NodeDto[] = await this.nodeRepository.findNodes({
             where: {},
             order: [["nodeId", "ASC"]],
             limit: 10,
@@ -46,7 +46,7 @@ export class NodeService {
 
     async listNodesByAddress(addressToSearch: string, pageNumber: number): Promise<any> {
 
-        const nodeList: NodeAttributes[] = await this.nodeRepository.findNodes({
+        const nodeList: NodeDto[] = await this.nodeRepository.findNodes({
             where: {
                 address: { [Op.iLike]: `%${addressToSearch.trim()}%` }
             },
@@ -87,7 +87,7 @@ export class NodeService {
     }
 
     async updateNode(nodeId: number, nodeData: NodeForm): Promise<Record<string, any>> {
-        const node: NodeAttributes | null = await this.nodeRepository.findNodeByPK(nodeId);
+        const node: NodeDto | null = await this.nodeRepository.findNodeByPK(nodeId);
 
         if (!node) {
             throw new CustomError("Node does not exist", 404);
@@ -139,7 +139,7 @@ export class NodeService {
     }
 
     async exportNodesToCSV(): Promise<Record<string, any>> {
-        const nodeList: NodeAttributes[] = await this.nodeRepository.findNodes({
+        const nodeList: NodeDto[] = await this.nodeRepository.findNodes({
             order: [["nodeId", "ASC"]]
         });
 
@@ -210,7 +210,7 @@ export class NodeService {
     };
 
     async listDistictStates(): Promise<Record<string, any>> {
-        const distinctStates: Array<Record<string, any>> = await this.nodeRepository.findDistinctGroupByAttributed({
+        const distinctStates: Array<Record<string, any>> = await this.nodeRepository.findDistinctGroupByDtod({
             attributes: [
                 [fn("DISTINCT", col("state_province")), "stateProvince"]
             ],
@@ -234,7 +234,7 @@ export class NodeService {
     }
 
     async getNodeCountByCityForStateProvince(stateProvince: string): Promise<Record<string, any>> {
-        let cityNodeCountByState: Array<Record<string, any>> = await this.nodeRepository.findDistinctGroupByAttributed({
+        let cityNodeCountByState: Array<Record<string, any>> = await this.nodeRepository.findDistinctGroupByDtod({
             attributes: [
                 "city", [fn("COUNT", col("node_id")), "nodes"]
             ],
@@ -271,7 +271,7 @@ export class NodeService {
 
         await fsPromises.writeFile("./util/tempFiles/nodeTemp.json", JSON.stringify(nodeBatchMetaData), { encoding: "utf8" });
 
-        const session: SessionAttributes | null = await this.sessionRepository.findSession({
+        const session: SessionDto | null = await this.sessionRepository.findSession({
             where: {
                 sessionToken: sessionToken
             },

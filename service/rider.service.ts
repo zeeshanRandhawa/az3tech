@@ -1,7 +1,7 @@
 import { Op, literal } from "sequelize";
 import { RiderRepository } from "../repository/rider.repository";
 import { generatePasswordHash, isValidFileHeader, prepareBatchBulkImportData } from "../util/helper.utility";
-import { CustomError, RiderAttributes, RiderDriverForm, UserAttributes } from "../util/interface.utility";
+import { CustomError, RiderDto, RiderDriverForm, UserDto } from "../util/interface.utility";
 import { DriverRepository } from "../repository/driver.repository";
 import { UserRepository } from "../repository/user.repository";
 
@@ -17,7 +17,7 @@ export class RiderService {
     }
 
     async listRiders(pageNumber: number): Promise<Record<string, any>> {
-        const riderList: RiderAttributes[] = await this.riderRepository.findRiders({
+        const riderList: RiderDto[] = await this.riderRepository.findRiders({
             attributes: ["riderId", "firstName", "lastName", "address", "city", "stateProvince", "zipPostalCode", "profilePicture", "phoneNumber"],
             order: [["riderId", "ASC"]],
             limit: 10,
@@ -43,7 +43,7 @@ export class RiderService {
 
     async createRider(riderBio: RiderDriverForm): Promise<Record<string, any>> {
 
-        let existingUser: UserAttributes | null = await this.userRepository.findUser({
+        let existingUser: UserDto | null = await this.userRepository.findUser({
             where: {
                 email: riderBio.email,
                 roleId: 3
@@ -109,7 +109,7 @@ export class RiderService {
     }
 
     async updateRider(riderId: number, riderBio: RiderDriverForm): Promise<Record<string, any>> {
-        const rider: RiderAttributes | null = await this.riderRepository.findRiderByPK(riderId);
+        const rider: RiderDto | null = await this.riderRepository.findRiderByPK(riderId);
 
         if (!rider) {
             throw new CustomError("Rider does not exist", 404);
@@ -166,7 +166,7 @@ export class RiderService {
                         email: (await Promise.all(riderBatchData.map(async (rider: Record<string, any>) => rider.email))),
                         roleId: 3
                     }
-                })).map(async (user: UserAttributes) => {
+                })).map(async (user: UserDto) => {
                     return user.email;
                 }));
             riderBatchData = (await Promise.all(riderBatchData.map(async (riderData: Record<string, any>) => {
@@ -248,7 +248,7 @@ export class RiderService {
     }
 
     async listRidersByName(riderName: string, pageNumber: number): Promise<Record<string, any>> {
-        const riderList: RiderAttributes[] = await this.riderRepository.findRiders({
+        const riderList: RiderDto[] = await this.riderRepository.findRiders({
             attributes: ["riderId", "firstName", "lastName", "address", "city", "stateProvince", "zipPostalCode", "profilePicture", "phoneNumber"],
             where: {
                 [Op.or]: [

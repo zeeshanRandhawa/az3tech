@@ -9,7 +9,7 @@ export class CustomError extends Error {
     }
 }
 
-export interface CoordinateAttribute {
+export interface CoordinateDto {
     latitude: number | null,
     longitude: number | null
 }
@@ -74,32 +74,32 @@ export interface LoginForm {
     password: string;
 }
 
-export interface RoleAttributes {
+export interface RoleDto {
     roleId: number;
     roleType: string;
 }
 
-export interface SessionAttributes {
+export interface SessionDto {
     sessionId: number;
     sessionToken: string;
     sessionExpireTimestamp: Date;
     userId: number;
-    user?: UserAttributes;
+    user?: UserDto;
 }
 
-export interface UserAttributes {
+export interface UserDto {
     email: string;
     password: string;
     roleId: number;
     userId: number;
     waypointDistance?: number;
-    sessions?: Array<SessionAttributes>;
-    role?: RoleAttributes;
-    rider?: RiderAttributes;
-    driver?: DriverAttributes;
+    sessions?: Array<SessionDto>;
+    role?: RoleDto;
+    rider?: RiderDto;
+    driver?: DriverDto;
 }
 
-export interface NodeAttributes {
+export interface NodeDto {
     nodeId: number
     location?: string
     description?: string;
@@ -113,7 +113,7 @@ export interface NodeAttributes {
     transitTime?: number;
 }
 
-export interface DriverAttributes {
+export interface DriverDto {
     driverId: number
     firstName: string;
     lastName?: string;
@@ -126,11 +126,11 @@ export interface DriverAttributes {
     profilePicture?: string;
     userId?: number;
     phoneNumber?: string;
-    user?: UserAttributes;
-    droutes?: Array<DriverRouteAssociatedNodeAttributes>;
+    user?: UserDto;
+    droutes?: Array<DriverRouteAssociatedNodeDto>;
 }
 
-export interface DriverRouteAttributes {
+export interface DriverRouteDto {
     drouteId: number;
     originNode: number;
     destinationNode: number;
@@ -144,15 +144,15 @@ export interface DriverRouteAttributes {
     drouteName?: string;
     departureFlexibility?: number;
     intermediateNodesList?: string;
-    origin?: NodeAttributes;
-    destination?: NodeAttributes;
-    driver?: DriverAttributes;
+    origin?: NodeDto;
+    destination?: NodeDto;
+    driver?: DriverDto;
 }
-export interface DriverRouteAssociatedNodeAttributes extends DriverRouteAttributes {
-    drouteNodes?: Array<DriverRouteNodeAssocitedAttributes>;
+export interface DriverRouteAssociatedNodeDto extends DriverRouteDto {
+    drouteNodes?: Array<DriverRouteNodeAssocitedDto>;
 }
 
-export interface DriverRouteNodeAttributes {
+export interface DriverRouteNodeDto {
     drouteNodeId: number;
     drouteId: number;
     outbDriverId: number;
@@ -167,15 +167,15 @@ export interface DriverRouteNodeAttributes {
     cumDistance?: number;
     cumTime?: number;
     status?: string;
-    node?: NodeAttributes;
-    driver?: DriverAttributes;
+    node?: NodeDto;
+    driver?: DriverDto;
 }
 
-export interface DriverRouteNodeAssocitedAttributes extends DriverRouteNodeAttributes {
-    droute?: DriverRouteAssociatedNodeAttributes;
+export interface DriverRouteNodeAssocitedDto extends DriverRouteNodeDto {
+    droute?: DriverRouteAssociatedNodeDto;
 }
 
-export interface RiderAttributes {
+export interface RiderDto {
     riderId: number
     firstName: string;
     lastName?: string;
@@ -186,11 +186,11 @@ export interface RiderAttributes {
     profilePicture?: string
     phoneNumber?: string;
     userId?: number;
-    user?: UserAttributes;
-    rroutes?: Array<RiderRouteAttributes>;
+    user?: UserDto;
+    rroutes?: Array<RiderRouteDto>;
 }
 
-export interface RiderRouteAttributes {
+export interface RiderRouteDto {
     rrouteNodeId: number;
     rrouteId: number;
     riderId: number;
@@ -201,13 +201,13 @@ export interface RiderRouteAttributes {
     rrouteDbmTag?: string;
     timeFlexibility?: number;
     intermediateNodesList?: string;
-    rider?: RiderAttributes;
-    origin?: NodeAttributes;
-    destination?: NodeAttributes;
-    rrouteNodes?: Array<RiderRouteNodeAttributes>;
+    rider?: RiderDto;
+    origin?: NodeDto;
+    destination?: NodeDto;
+    rrouteNodes?: Array<RiderRouteNodeDto>;
 }
 
-export interface RiderRouteNodeAttributes {
+export interface RiderRouteNodeDto {
     rrouteId: number;
     drouteId?: number;
     riderId: number;
@@ -219,6 +219,52 @@ export interface RiderRouteNodeAttributes {
     cumDistance?: number;
     cumTime?: number;
     status?: string;
-    node?: NodeAttributes;
-    rroute?: RiderRouteAttributes;
+    node?: NodeDto;
+    rroute?: RiderRouteDto;
+}
+
+
+export enum RouteClassification {
+    Primary,
+    Secondary,
+    Tertiary
+}
+
+export interface ClassifiedRouteDto {
+    classification: RouteClassification;
+    driverRoute: DriverRouteAssociatedNodeDto;
+    intersectingRoute?: ClassifiedRouteDto;
+    cumDistance?: number;
+    cumDuration?: number;
+    originRank: number;
+    destinationRank: number;
+}
+
+
+export interface RouteOption {
+    primary?: RouteDetail,
+    secondary?: RouteDetail,
+    tertiary?: RouteDetail,
+}
+export interface RouteDetail {
+    drouteId: number
+    drouteName: string
+    originNode: number,
+    destinationNode: number,
+    originDepartureTime: string,
+    destinationArrivalTime: string,
+}
+
+
+export interface QualityMetrics {
+    directRouteDuration: number | null,
+    directRouteDistance: number | null,
+    primaryRouteDuration: number | null,
+    primaryRouteDistance: number | null,
+    secondaryRouteDuration: number | null,
+    secondaryRouteDistance: number | null,
+    tertiaryRouteDuration: number | null,
+    tertiaryRouteDistance: number | null,
+    routeQualityRatio: number | null,
+    status: string | null
 }
