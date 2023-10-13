@@ -289,16 +289,16 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
             routeQOS.routeQualityRatio = parseFloat((distanceQuality * durationQuality).toFixed(2));
 
-            // if (distanceQuality * durationQuality < 1.5) {
+            if (distanceQuality * durationQuality < 1.5) {
 
-            routeQOS.status = "Accepted";
+                routeQOS.status = "Accepted";
 
-            qualityCriteriaFilteredRoutes.push(primaryClassifiedRoute);
-            // } else {
+                qualityCriteriaFilteredRoutes.push(primaryClassifiedRoute);
+            } else {
 
-            //     routeQOS.status = "Rejected";
+                routeQOS.status = "Rejected";
 
-            // }
+            }
 
             routeQosData.push(routeQOS);
 
