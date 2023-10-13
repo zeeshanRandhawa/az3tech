@@ -93,8 +93,8 @@ export class RiderDriverRouteMatchingStrategy {
         // loop through each route to get quality metrics
         const filteredRoutesWithMetrics: Record<string, any> = await defaultStrategy.checkQOSMetrics(this.finalClassifiedRoutes, directDistanceDuration.distance, directDistanceDuration.duration);
 
-        // get filtered routes
-        this.finalClassifiedRoutes = filteredRoutesWithMetrics.filteredRoutes;
+        // clean old route data
+        this.finalClassifiedRoutes = [];
 
         return filteredRoutesWithMetrics;
     }

@@ -167,7 +167,7 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                     let secondaryNodeRank: number = Infinity;
                     await Promise.all(primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes!.map((dRouteNode: DriverRouteNodeAssocitedDto) => {
                         if (dRouteNode.nodeId === primaryClassifiedRoute.intersectingRoute!.intersectingRoute!.driverRoute.drouteNodes![0].nodeId) {
-                            primaryNodeRank = dRouteNode.rank!;
+                            secondaryNodeRank = dRouteNode.rank!;
                         }
                     }));
                     primaryClassifiedRoute.intersectingRoute!.driverRoute.drouteNodes = primaryClassifiedRoute.intersectingRoute!.driverRoute.drouteNodes?.filter(drouteNode => drouteNode.rank! <= secondaryNodeRank)
@@ -217,8 +217,10 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
                 if (primaryClassifiedRoute.intersectingRoute.intersectingRoute) {
 
+
                     let tertiaryFirstNodeDeparture: Moment = moment(primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes?.slice(0, 1)[0].departureTime as string, "YYYY-MM-DD HH:mm:ss[z]");
                     let tertiaryLastNodeArrival: Moment = moment(primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes?.slice(-1)[0].arrivalTime as string, "YYYY-MM-DD HH:mm:ss[z]");
+
                     let tertiaryFirstNodeDistance: number = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes?.slice(0, 1)[0].cumDistance!;
                     let tertiaryLastNodeDistance: number = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes?.slice(-1)[0].cumDistance!;
 
@@ -262,6 +264,7 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                     routeQOS.tertiaryRouteDistance = primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDistance!;
                     routeQOS.tertiaryRouteDuration = primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDuration!;
 
+
                 } else {
 
                     //secondary
@@ -286,16 +289,16 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
             routeQOS.routeQualityRatio = parseFloat((distanceQuality * durationQuality).toFixed(2));
 
-            if (distanceQuality * durationQuality < 1.5) {
+            // if (distanceQuality * durationQuality < 1.5) {
 
-                routeQOS.status = "Accepted";
+            routeQOS.status = "Accepted";
 
-                qualityCriteriaFilteredRoutes.push(primaryClassifiedRoute);
-            } else {
+            qualityCriteriaFilteredRoutes.push(primaryClassifiedRoute);
+            // } else {
 
-                routeQOS.status = "Rejected";
+            //     routeQOS.status = "Rejected";
 
-            }
+            // }
 
             routeQosData.push(routeQOS);
 
