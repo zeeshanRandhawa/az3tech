@@ -148,6 +148,7 @@ export interface DriverRouteDto {
     destination?: NodeDto;
     driver?: DriverDto;
 }
+
 export interface DriverRouteAssociatedNodeDto extends DriverRouteDto {
     drouteNodes?: Array<DriverRouteNodeAssocitedDto>;
 }
@@ -238,8 +239,9 @@ export interface ClassifiedRouteDto {
     cumDuration?: number;
     originRank: number;
     destinationRank: number;
+    routeOriginDepartureTime?: string,
+    routeDestinationArrivalTime?: string,
 }
-
 
 export interface RouteOption {
     primary?: RouteDetail,
@@ -253,8 +255,8 @@ export interface RouteDetail {
     destinationNode: number,
     originDepartureTime: string,
     destinationArrivalTime: string,
+    distanceRatio: number
 }
-
 
 export interface QualityMetrics {
     directRouteDuration: number | null,

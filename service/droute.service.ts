@@ -1025,13 +1025,15 @@ export class DriverRouteService {
 
                 let routeOption: RouteOption = {};
 
+                let totalDistance: number = (primaryClassifiedRoute.cumDistance ?? 0) + (primaryClassifiedRoute.intersectingRoute?.cumDistance ?? 0) + (primaryClassifiedRoute.intersectingRoute?.intersectingRoute?.cumDistance ?? 0);
+
 
                 let primaryFirstNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes?.slice(0, 1)[0]!;
                 let primaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes?.slice(-1)[0]!;
                 routeOption.primary = {
                     originNode: primaryFirstNode.nodeId, destinationNode: primaryLastNode.nodeId, drouteId: primaryClassifiedRoute.driverRoute.drouteId,
                     originDepartureTime: primaryFirstNode.departureTime as string, destinationArrivalTime: primaryLastNode.arrivalTime as string,
-                    drouteName: primaryClassifiedRoute.driverRoute.drouteName!
+                    drouteName: primaryClassifiedRoute.driverRoute.drouteName!, distanceRatio: primaryClassifiedRoute.cumDistance! / totalDistance
                 }
 
                 if (primaryClassifiedRoute.intersectingRoute) {
@@ -1041,7 +1043,7 @@ export class DriverRouteService {
                     routeOption.secondary = {
                         originNode: secondaryFirstNode.nodeId, destinationNode: secondaryLastNode.nodeId, drouteId: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId,
                         originDepartureTime: secondaryFirstNode.departureTime as string, destinationArrivalTime: secondaryLastNode.arrivalTime as string,
-                        drouteName: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteName!
+                        drouteName: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteName!, distanceRatio: primaryClassifiedRoute.intersectingRoute.cumDistance! / totalDistance
                     }
 
                     if (primaryClassifiedRoute.intersectingRoute.intersectingRoute) {
@@ -1053,10 +1055,24 @@ export class DriverRouteService {
                             drouteId: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId,
                             originDepartureTime: tertiaryFirstNode.departureTime as string,
                             destinationArrivalTime: tertiaryLastNode.arrivalTime as string,
-                            drouteName: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteName!
+                            drouteName: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteName!,
+                            distanceRatio: primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDistance! / totalDistance
                         }
-
                     }
+                }
+
+
+                let ratioSum: number = (routeOption.primary?.distanceRatio ?? 0) + (routeOption.secondary?.distanceRatio ?? 0) + (routeOption.tertiary?.distanceRatio ?? 0)
+
+                let scaleFactor: number = 10 / ratioSum;
+
+                routeOption.primary.distanceRatio = parseFloat((routeOption.primary.distanceRatio * scaleFactor).toFixed(2));
+
+                if (routeOption.secondary) {
+                    routeOption.secondary.distanceRatio = parseFloat((routeOption.secondary.distanceRatio * scaleFactor).toFixed(2));
+                }
+                if (routeOption.tertiary) {
+                    routeOption.tertiary.distanceRatio = parseFloat((routeOption.tertiary.distanceRatio * scaleFactor).toFixed(2));
                 }
 
                 routeOptions.push(routeOption);

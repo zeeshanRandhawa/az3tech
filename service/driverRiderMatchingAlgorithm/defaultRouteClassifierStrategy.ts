@@ -52,6 +52,31 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    filterRoutesWithDestination(classifiedRoutes: Array<ClassifiedRoute>): Array<ClassifiedRoute> {
+        const filteredRoutesWithDestination: Array<ClassifiedRoute> = this.filterRoutes(classifiedRoutes);
+        return filteredRoutesWithDestination;
+    }
+    private filterRoutes(primaryClassifiedRoutes: Array<ClassifiedRoute>) {
+        return primaryClassifiedRoutes.filter(primaryClassifiedRoute => {
+
+            primaryClassifiedRoute.intersectigRoutes = this.filterSecondaryRoutes(primaryClassifiedRoute.intersectigRoutes);
+            return primaryClassifiedRoute.destinationRank !== Infinity || primaryClassifiedRoute.intersectigRoutes.length > 0;
+        });
+    }
+    private filterSecondaryRoutes(secondaryClassifiedRoutes: Array<ClassifiedRoute>) {
+        return secondaryClassifiedRoutes.filter(secondaryClassifiedRoute => {
+            secondaryClassifiedRoute.intersectigRoutes = this.filterTertiaryRoutes(secondaryClassifiedRoute.intersectigRoutes);
+            return secondaryClassifiedRoute.destinationRank !== Infinity || secondaryClassifiedRoute.intersectigRoutes.length > 0;
+        });
+    }
+    private filterTertiaryRoutes(tertiaryClassifiedRoutes: Array<ClassifiedRoute>) {
+        return tertiaryClassifiedRoutes.filter(tertiaryClassifiedRoute => {
+            return tertiaryClassifiedRoute.destinationRank !== Infinity
+        });
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     async seperateClassifiedRoutes(classifiedRoutes: Array<ClassifiedRoute>): Promise<Array<ClassifiedRouteDto>> {
         const finalClassifiedRoutes: Array<ClassifiedRouteDto> = [];
 
@@ -100,31 +125,6 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
         }));
 
         return finalClassifiedRoutes
-    }
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    filterRoutesWithDestination(classifiedRoutes: Array<ClassifiedRoute>): Array<ClassifiedRoute> {
-        const filteredRoutesWithDestination: Array<ClassifiedRoute> = this.filterRoutes(classifiedRoutes);
-        return filteredRoutesWithDestination;
-    }
-    private filterRoutes(primaryClassifiedRoutes: Array<ClassifiedRoute>) {
-        return primaryClassifiedRoutes.filter(primaryClassifiedRoute => {
-
-            primaryClassifiedRoute.intersectigRoutes = this.filterSecondaryRoutes(primaryClassifiedRoute.intersectigRoutes);
-            return primaryClassifiedRoute.destinationRank !== Infinity || primaryClassifiedRoute.intersectigRoutes.length > 0;
-        });
-    }
-    private filterSecondaryRoutes(secondaryClassifiedRoutes: Array<ClassifiedRoute>) {
-        return secondaryClassifiedRoutes.filter(secondaryClassifiedRoute => {
-            secondaryClassifiedRoute.intersectigRoutes = this.filterTertiaryRoutes(secondaryClassifiedRoute.intersectigRoutes);
-            return secondaryClassifiedRoute.destinationRank !== Infinity || secondaryClassifiedRoute.intersectigRoutes.length > 0;
-        });
-    }
-    private filterTertiaryRoutes(tertiaryClassifiedRoutes: Array<ClassifiedRoute>) {
-        return tertiaryClassifiedRoutes.filter(tertiaryClassifiedRoute => {
-            return tertiaryClassifiedRoute.destinationRank !== Infinity
-        });
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -211,8 +211,10 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                 let secondaryFirstNodeDistance: number = primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes?.slice(0, 1)[0].cumDistance!;
                 let secondaryLastNodeDistance: number = primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes?.slice(-1)[0].cumDistance!;
 
-                primaryClassifiedRoute.intersectingRoute.cumDuration = secondaryLastNodeArrival.diff(secondaryFirstNodeDeparture, "minutes") + primaryClassifiedRoute.cumDuration;
-                primaryClassifiedRoute.intersectingRoute.cumDistance = parseFloat(((secondaryLastNodeDistance - secondaryFirstNodeDistance) + primaryClassifiedRoute.cumDistance).toFixed(2));
+                primaryClassifiedRoute.intersectingRoute.cumDuration = secondaryLastNodeArrival.diff(secondaryFirstNodeDeparture, "minutes")
+                //  + primaryClassifiedRoute.cumDuration;
+                primaryClassifiedRoute.intersectingRoute.cumDistance = parseFloat((secondaryLastNodeDistance - secondaryFirstNodeDistance).toFixed(2))
+                //  + primaryClassifiedRoute.cumDistance).toFixed(2));
 
 
                 if (primaryClassifiedRoute.intersectingRoute.intersectingRoute) {
@@ -224,8 +226,10 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                     let tertiaryFirstNodeDistance: number = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes?.slice(0, 1)[0].cumDistance!;
                     let tertiaryLastNodeDistance: number = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes?.slice(-1)[0].cumDistance!;
 
-                    primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDuration = tertiaryLastNodeArrival.diff(tertiaryFirstNodeDeparture, "minutes") + primaryClassifiedRoute.intersectingRoute.cumDuration;
-                    primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDistance = parseFloat(((tertiaryLastNodeDistance - tertiaryFirstNodeDistance) + primaryClassifiedRoute.intersectingRoute.cumDistance).toFixed(2));
+                    primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDuration = tertiaryLastNodeArrival.diff(tertiaryFirstNodeDeparture, "minutes")
+                    //  + primaryClassifiedRoute.intersectingRoute.cumDuration;
+                    primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDistance = parseFloat((tertiaryLastNodeDistance - tertiaryFirstNodeDistance).toFixed(2))
+                    //  + primaryClassifiedRoute.intersectingRoute.cumDistance).toFixed(2));
 
                 }
             }
@@ -253,12 +257,18 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
             let distanceQuality: number;
             let durationQuality: number;
 
+            let routeCummulativeDistance: number | null;
+            let routeCummulativeDuration: number | null;
+
             if (primaryClassifiedRoute.intersectingRoute) {
                 if (primaryClassifiedRoute.intersectingRoute.intersectingRoute) {
                     //tertiary
 
-                    distanceQuality = parseFloat((primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDistance! / directPathDistance).toFixed(2));
-                    durationQuality = parseFloat((primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDuration! / directPathDuration).toFixed(2));
+                    routeCummulativeDistance = primaryClassifiedRoute.cumDistance! + primaryClassifiedRoute.intersectingRoute.cumDistance! + primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDistance!
+                    routeCummulativeDuration = primaryClassifiedRoute.cumDuration! + primaryClassifiedRoute.intersectingRoute.cumDuration! + primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDuration!
+
+                    distanceQuality = parseFloat((routeCummulativeDistance / directPathDistance).toFixed(2));
+                    durationQuality = parseFloat((routeCummulativeDuration / directPathDuration).toFixed(2));
 
 
                     routeQOS.tertiaryRouteDistance = primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDistance!;
@@ -268,6 +278,10 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                 } else {
 
                     //secondary
+
+                    routeCummulativeDistance = primaryClassifiedRoute.cumDistance! + primaryClassifiedRoute.intersectingRoute.cumDistance!
+                    routeCummulativeDuration = primaryClassifiedRoute.cumDuration! + primaryClassifiedRoute.intersectingRoute.cumDuration!
+
                     distanceQuality = parseFloat((primaryClassifiedRoute.intersectingRoute.cumDistance! / directPathDistance).toFixed(2));
                     durationQuality = parseFloat((primaryClassifiedRoute.intersectingRoute.cumDuration! / directPathDuration).toFixed(2));
 
