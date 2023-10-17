@@ -3,7 +3,7 @@ import { createReadStream, promises as fsPromises } from "fs";
 import { DriverRouteRepository } from "../repository/droute.repository";
 import {
     ClassifiedRouteDto,
-    CoordinateDto, CustomError, DriverRouteAssociatedNodeDto, DriverRouteNodeAssocitedDto, FilterForm, NodeDto, RouteOption, SessionDto,
+    CoordinateDto, CustomError, DriverRouteAssociatedNodeDto, DriverRouteNodeAssocitedDto, FilterForm, NodeDto, RouteOption, SessionDto, calculatedRoute,
 } from "../util/interface.utility";
 import { NodeRepository } from "../repository/node.repository";
 import {
@@ -1015,18 +1015,17 @@ export class DriverRouteService {
 
         let routeStrategy: RiderDriverRouteMatchingStrategy = new RiderDriverRouteMatchingStrategy();
 
-        let matchingRoutesWithQosMetrics: Record<string, any> = await routeStrategy.getRiderDriverRoutes(departureDateTime, departureFlexibility, originNode, destinationNode)
+        let matchingRoutesWithQosMetrics: Array<ClassifiedRouteDto> = await routeStrategy.getRiderDriverRoutes(departureDateTime, departureFlexibility, originNode, destinationNode)
 
         if (requestType === "ios") {
 
             let routeOptions: Array<RouteOption> = [];
 
-            await Promise.all(matchingRoutesWithQosMetrics.filteredRoutes.map(async (primaryClassifiedRoute: ClassifiedRouteDto) => {
+            await Promise.all(matchingRoutesWithQosMetrics.map(async (primaryClassifiedRoute: ClassifiedRouteDto) => {
 
                 let routeOption: RouteOption = {};
 
                 let totalDistance: number = (primaryClassifiedRoute.cumDistance ?? 0) + (primaryClassifiedRoute.intersectingRoute?.cumDistance ?? 0) + (primaryClassifiedRoute.intersectingRoute?.intersectingRoute?.cumDistance ?? 0);
-
 
                 let primaryFirstNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes?.slice(0, 1)[0]!;
                 let primaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes?.slice(-1)[0]!;
@@ -1061,13 +1060,10 @@ export class DriverRouteService {
                     }
                 }
 
-
                 let ratioSum: number = (routeOption.primary?.distanceRatio ?? 0) + (routeOption.secondary?.distanceRatio ?? 0) + (routeOption.tertiary?.distanceRatio ?? 0)
-
                 let scaleFactor: number = 10 / ratioSum;
 
                 routeOption.primary.distanceRatio = parseFloat((routeOption.primary.distanceRatio * scaleFactor).toFixed(2));
-
                 if (routeOption.secondary) {
                     routeOption.secondary.distanceRatio = parseFloat((routeOption.secondary.distanceRatio * scaleFactor).toFixed(2));
                 }
@@ -1083,9 +1079,84 @@ export class DriverRouteService {
 
         } else if (requestType === "web") {
 
+            let routeOptions: Array<calculatedRoute> = [];
+
+            await Promise.all(matchingRoutesWithQosMetrics.map(async (primaryClassifiedRoute: ClassifiedRouteDto) => {
+
+                let routeOption: calculatedRoute = {
+                    routeEfficiency: 0,
+                    routeCumulativeDuration: 0
+                };
+
+                let primaryFirstNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes?.slice(0, 1)[0]!;
+                let primaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes?.slice(-1)[0]!;
+                routeOption.primary = {
+                    drouteId: primaryClassifiedRoute.driverRoute.drouteId, originNode: primaryFirstNode.nodeId, destinationNode: primaryLastNode.nodeId,
+                    originDepartureTime: primaryFirstNode.departureTime as string, destinationArrivalTime: primaryLastNode.arrivalTime as string,
+                    routeDuration: primaryClassifiedRoute.cumDuration ?? 0, routeDistance: primaryClassifiedRoute.cumDistance ?? 0,
+                }
+                routeOption.routeCumulativeDuration += primaryClassifiedRoute.cumDuration ?? 0;
+                routeOption.routeEfficiency += primaryClassifiedRoute.routeEfficiency ?? 0;
+
+                if (primaryClassifiedRoute.intersectingRoute) {
+
+                    let secondaryFirstNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes?.slice(0, 1)[0]!;
+                    let secondaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes?.slice(-1)[0]!;
+                    routeOption.secondary = {
+                        originNode: secondaryFirstNode.nodeId, destinationNode: secondaryLastNode.nodeId, drouteId: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId,
+                        originDepartureTime: secondaryFirstNode.departureTime as string, destinationArrivalTime: secondaryLastNode.arrivalTime as string,
+                        routeDuration: primaryClassifiedRoute.intersectingRoute.cumDuration ?? 0, routeDistance: primaryClassifiedRoute.intersectingRoute.cumDistance ?? 0
+                    }
+                    routeOption.routeCumulativeDuration += primaryClassifiedRoute.intersectingRoute.cumDuration ?? 0;
+                    routeOption.routeEfficiency += primaryClassifiedRoute.intersectingRoute.routeEfficiency ?? 0;
+
+                    if (primaryClassifiedRoute.intersectingRoute.intersectingRoute) {
+
+                        let tertiaryFirstNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes?.slice(0, 1)[0]!;
+                        let tertiaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes?.slice(-1)[0]!;
+                        routeOption.tertiary = {
+                            originNode: tertiaryFirstNode.nodeId, destinationNode: tertiaryLastNode.nodeId,
+                            drouteId: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId,
+                            originDepartureTime: tertiaryFirstNode.departureTime as string,
+                            destinationArrivalTime: tertiaryLastNode.arrivalTime as string,
+                            routeDuration: primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDuration ?? 0,
+                            routeDistance: primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDistance ?? 0
+                        }
+
+                        routeOption.routeCumulativeDuration += primaryClassifiedRoute.intersectingRoute.intersectingRoute.cumDuration ?? 0;
+                        routeOption.routeEfficiency += primaryClassifiedRoute.intersectingRoute.intersectingRoute.routeEfficiency ?? 0;
+                    }
+                }
+
+                // routeOption.routeEfficiency = primaryClassifiedRoute.routeEfficiency ?? 0;
+                // routeOption.routeCumulativeDuration = (routeOption.primary.routeDuration ?? 0) + (routeOption.secondary?.routeDuration ?? 0) + (routeOption.tertiary?.routeDuration ?? 0);
+
+                if (primaryClassifiedRoute.intersectingRoute) {
+                    if (primaryClassifiedRoute.intersectingRoute.intersectingRoute) {
+                        //tertiary
+                        routeOption.routeEfficiency = parseFloat((routeOption.routeEfficiency / 3).toFixed(2));
+
+                    } else {
+                        //secondary
+                        routeOption.routeEfficiency = parseFloat((routeOption.routeEfficiency / 2).toFixed(2));
+                    }
+                }
+
+                routeOptions.push(routeOption);
+
+            }));
+
             return {
                 status: 200,
-                data: { matchingRoutes: matchingRoutesWithQosMetrics.filteredRoutes, routeQOSMetrics: matchingRoutesWithQosMetrics.routeMetrics }
+                data: {
+                    matchingRoutes: routeOptions,
+                    originNode: originNode.nodeId,
+                    originNodeAddress: "".concat(originNode.description ?? "").concat(" ").concat(originNode.address ?? "")
+                        .concat(" ").concat(originNode.city ?? "").concat(" ").concat(originNode.stateProvince ?? ""),
+                    destinationNode: destinationNode.nodeId,
+                    destinationNodeAddress: "".concat(destinationNode.description ?? "").concat(" ").concat(destinationNode.address ?? "")
+                        .concat(" ").concat(destinationNode.city ?? "").concat(" ").concat(destinationNode.stateProvince ?? "")
+                }
             };
 
         }

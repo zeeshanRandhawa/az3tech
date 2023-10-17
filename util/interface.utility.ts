@@ -232,6 +232,7 @@ export enum RouteClassification {
 }
 
 export interface ClassifiedRouteDto {
+    routeEfficiency?: number;
     classification: RouteClassification;
     driverRoute: DriverRouteAssociatedNodeDto;
     intersectingRoute?: ClassifiedRouteDto;
@@ -256,6 +257,24 @@ export interface RouteDetail {
     originDepartureTime: string,
     destinationArrivalTime: string,
     distanceRatio: number
+}
+
+export interface calculatedRoute {
+    routeEfficiency: number;
+    routeCumulativeDuration: number;
+
+    primary?: caculatedRouteDetail,
+    secondary?: caculatedRouteDetail,
+    tertiary?: caculatedRouteDetail,
+}
+export interface caculatedRouteDetail {
+    drouteId: number
+    originNode: number,
+    destinationNode: number,
+    originDepartureTime: string,
+    destinationArrivalTime: string,
+    routeDuration: number;
+    routeDistance: number;
 }
 
 export interface QualityMetrics {

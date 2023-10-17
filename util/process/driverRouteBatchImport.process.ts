@@ -112,6 +112,7 @@ async function importGeneratedRouteNodes(): Promise<void> {
 
 async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRouteBatchGroups: Array<Record<string, any>>, waypointDistance: number): Promise<Array<Record<string, any>>> {
 
+    // fixed route
     driverRouteBatchGroups = (await Promise.all(driverRouteBatchGroups.map(async (driverRouteMeta) => {
 
         if (driverRouteMeta!.fixedRoute) {
@@ -190,6 +191,7 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
         return driverRouteMeta;
     }))).filter(Boolean);
 
+    // non fixed route
     driverRouteBatchGroups = (await Promise.all(driverRouteBatchGroups.map(async (driverRouteMeta) => {
 
         if (!driverRouteMeta!.fixedRoute) {
