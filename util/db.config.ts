@@ -9,9 +9,9 @@ export const sequelize: any = new Sequelize(
     port: process.env.IS_PROD === "true" ? parseInt(process.env.PG_PORT_PROD!) : parseInt(process.env.PG_PORT_DEV!),
     dialect: "postgres",
     pool: {
-        max: 20,
+        max: 25,
         min: 0,
-        acquire: 240000,
+        acquire: 90000,
         idle: 5000
     }
     , dialectOptions: process.env.IS_PROD === "true" ? {
