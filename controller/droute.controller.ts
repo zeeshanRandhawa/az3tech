@@ -214,6 +214,7 @@ export class DriverRouteController {
         try {
             return await this.driverRouteService.findMatchingDriverRoutes({ latitude: originLatitude, longitude: originLongitude }, { latitude: destinationLatitude, longitude: destinationLongitude }, departureTime, departureFlexibility, sessionToken, requestType);
         } catch (error: any) {
+            console.log(error)
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
