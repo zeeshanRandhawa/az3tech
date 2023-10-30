@@ -224,7 +224,6 @@ export interface RiderRouteNodeDto {
     rroute?: RiderRouteDto;
 }
 
-
 export enum RouteClassification {
     Primary,
     Secondary,
@@ -233,15 +232,25 @@ export enum RouteClassification {
 
 export interface ClassifiedRouteDto {
     routeEfficiency?: number;
+
     classification: RouteClassification;
     driverRoute: DriverRouteAssociatedNodeDto;
     intersectingRoute?: ClassifiedRouteDto;
-    cumDistance?: number;
-    cumDuration?: number;
-    originRank: number;
-    destinationRank: number;
+
+    riderCumulativeDistance?: number;
+    riderCumulativeDuration?: number;
+
+    riderOriginRank: number;
+    riderDestinationRank: number;
+
     routeOriginDepartureTime?: string,
     routeDestinationArrivalTime?: string,
+
+    driverRouteDirectDistance?: number;
+    driverRouteDirectDuration?: number;
+
+    driverRouteDistance?: number;
+    driverRouteDuration?: number;
 }
 
 export interface RouteOption {
@@ -249,6 +258,7 @@ export interface RouteOption {
     secondary?: RouteDetail,
     tertiary?: RouteDetail,
 }
+
 export interface RouteDetail {
     drouteId: number
     drouteName: string
@@ -267,6 +277,7 @@ export interface calculatedRoute {
     secondary?: caculatedRouteDetail,
     tertiary?: caculatedRouteDetail,
 }
+
 export interface caculatedRouteDetail {
     drouteId: number
     originNode: number,

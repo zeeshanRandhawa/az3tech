@@ -1,5 +1,6 @@
+import { Console } from "console";
 import { getDistanceDurationBetweenNodes } from "../../util/helper.utility";
-import { ClassifiedRouteDto, DriverRouteNodeAssocitedDto, NodeDto, QualityMetrics, RouteClassification } from "../../util/interface.utility"
+import { ClassifiedRouteDto, DriverRouteNodeAssocitedDto, NodeDto, RouteClassification } from "../../util/interface.utility"
 import { DefaultRouteClassifierStrategy } from "./defaultRouteClassifierStrategy";
 import { ClassifiedRoute, } from "./util.class";
 
@@ -22,54 +23,67 @@ export class RiderDriverRouteMatchingStrategy {
         const defaultStrategy: DefaultRouteClassifierStrategy = new DefaultRouteClassifierStrategy();
 
         // Find primary routes first
-        this.classifiedRoutes = await defaultStrategy.findRoutesPassingAtNode(departureDateTime, riderTimeFlexibility, originNode.nodeId, originNode.transitTime ?? 1, destinationNode.nodeId, RouteClassification.Primary, []);
+        this.classifiedRoutes = await defaultStrategy.findRoutesPassingAtNode(departureDateTime, riderTimeFlexibility, originNode.nodeId, originNode.transitTime ?? 0, destinationNode.nodeId, RouteClassification.Primary, []);
 
         // Get list of primary route Ids. Willl need to exclude those secondary routes that are in primary list already. Ssame for tertiary
         let routeIdList: Array<number> = Array.from(new Set<number>(await defaultStrategy.getPrimaryRouteIdList(this.classifiedRoutes)));
 
+
         // Find secondary routes exclude first node as it was point of entry
         await Promise.all(this.classifiedRoutes.map(async (primaryClassifiedRoute: ClassifiedRoute) => {
             await Promise.all(primaryClassifiedRoute.driverRoute.drouteNodes!.slice(1).map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
-                primaryClassifiedRoute.intersectigRoutes.push(...await defaultStrategy.findRoutesPassingAtNode(drouteNode.arrivalTime! as string, riderTimeFlexibility, drouteNode.nodeId, drouteNode.node?.transitTime ?? 1, destinationNode.nodeId, RouteClassification.Secondary, routeIdList));
+
+                if (drouteNode.rank! > primaryClassifiedRoute.riderOriginRank) {
+                    primaryClassifiedRoute.intersectigRoutes.push(...await defaultStrategy.findRoutesPassingAtNode(drouteNode.arrivalTime! as string, riderTimeFlexibility, drouteNode.nodeId, drouteNode.node?.transitTime ?? 0, destinationNode.nodeId, RouteClassification.Secondary, routeIdList));
+                }
+
             }));
         }));
-
-        // Now filtering is done straight in nodes finding algo
-        // Exluding all routes that are secondary but already in primary.
-        // await Promise.all(this.classifiedRoutes.map(async (primaryClassifiedRoute: ClassifiedRoute) => {
-        //     primaryClassifiedRoute.intersectigRoutes = primaryClassifiedRoute.intersectigRoutes.filter((secondaryClassifiedRoute: ClassifiedRoute) => {
-        //         return !routeIdList.includes(secondaryClassifiedRoute.driverRoute.drouteId);
-        //     });
-        // }));
 
         // Now get Id list of secondary routes which are unique
         routeIdList.push(...await defaultStrategy.getSecondaryRouteIdList(this.classifiedRoutes));
         routeIdList = Array.from(new Set<number>(routeIdList));
+
 
         // Now iterate through primary and its associted secondary routes to get tertiary route list
         await Promise.all(this.classifiedRoutes.map(async (primaryClassifiedRoute: ClassifiedRoute) => {
             await Promise.all(primaryClassifiedRoute.intersectigRoutes.map(async (secondaryClassifiedRoute: ClassifiedRoute) => {
                 await Promise.all(secondaryClassifiedRoute.driverRoute.drouteNodes!.slice(1).map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
 
-                    secondaryClassifiedRoute.intersectigRoutes.push(...await defaultStrategy.findRoutesPassingAtNode(
-                        drouteNode.arrivalTime! as string, riderTimeFlexibility, drouteNode.nodeId, drouteNode.node?.transitTime ?? 1,
-                        destinationNode.nodeId, RouteClassification.Tertiary, routeIdList
-                    ));
+                    if (drouteNode.rank! > secondaryClassifiedRoute.riderOriginRank) {
+                        secondaryClassifiedRoute.intersectigRoutes.push(...await defaultStrategy.findRoutesPassingAtNode(
+                            drouteNode.arrivalTime! as string, riderTimeFlexibility, drouteNode.nodeId, drouteNode.node?.transitTime ?? 0,
+                            destinationNode.nodeId, RouteClassification.Tertiary, routeIdList
+                        ));
+                    }
 
                 }));
             }));
         }));
 
+        // Now get Id list of tertiary routes which are unique
+        // routeIdList.push(...await defaultStrategy.getTertiaryRouteIdList(this.classifiedRoutes));
+        // routeIdList = Array.from(new Set<number>(routeIdList));
 
-        // Now filtering is done straight in nodes finding algo
-        // filter those tertiary routes that are either in secondary or primary already
+        // let classifiedRoute: any;
+
         // await Promise.all(this.classifiedRoutes.map(async (primaryClassifiedRoute: ClassifiedRoute) => {
-        //     await Promise.all(primaryClassifiedRoute.intersectigRoutes.map(async (secondaryClassifiedRoute: ClassifiedRoute) => {
-        //         secondaryClassifiedRoute.intersectigRoutes = secondaryClassifiedRoute.intersectigRoutes.filter((tertiaryClassifiedRoute: ClassifiedRoute) => {
-        //             return !routeIdList.includes(tertiaryClassifiedRoute.driverRoute.drouteId);
-        //         });
-        //     }));
+        //     if (primaryClassifiedRoute.driverRoute.drouteId === 83) {
+        //         await Promise.all(primaryClassifiedRoute.intersectigRoutes.map(async (secondaryClassifiedRoute: ClassifiedRoute) => {
+        //             if (secondaryClassifiedRoute.driverRoute.drouteId === 106) {
+        //                 classifiedRoute = primaryClassifiedRoute
+
+        //                 await Promise.all(secondaryClassifiedRoute.intersectigRoutes.map(async (tertiaryClassifiedRoute: ClassifiedRoute) => {
+        //                     if (primaryClassifiedRoute.driverRoute.drouteId === 39) {
+        //                     }
+        //                 }));
+        //             }
+        //         }));
+        //     }
         // }));
+
+        // return classifiedRoute;
+
 
         // filter those routes that do not hav any destination at all. It is recursive
         this.classifiedRoutes = defaultStrategy.filterRoutesWithDestination(this.classifiedRoutes);
@@ -77,11 +91,15 @@ export class RiderDriverRouteMatchingStrategy {
         // Now make sepertae group of each route. As earlier routes were nested
         this.finalClassifiedRoutes = await defaultStrategy.seperateClassifiedRoutes(this.classifiedRoutes);
 
+
         // clean memory.
         this.classifiedRoutes = [];
 
-        // Once classified routes are seperated now remove unnecessary nodes from parent routes to match last node wih child route first node
-        this.finalClassifiedRoutes = await defaultStrategy.removeUnnecessaryNodes(this.finalClassifiedRoutes);
+        // Once classified routes are seperated now get rank of last node of route that connects first node of connecting route
+        this.finalClassifiedRoutes = await defaultStrategy.calculateConnectingRouteNodesRank(this.finalClassifiedRoutes);
+
+        // Retime route based on destination node rank it was not done earlier as we had to traverse all subsequent nodes to rider origin node 
+        this.finalClassifiedRoutes = await defaultStrategy.retimeDriverRouteByDestinationRank(this.finalClassifiedRoutes);
 
         // now calculate individual cumulative time and distance
         this.finalClassifiedRoutes = await defaultStrategy.calculateCumulativeDistanceDuration(this.finalClassifiedRoutes);
@@ -94,11 +112,8 @@ export class RiderDriverRouteMatchingStrategy {
         directDistanceDuration.duration = parseFloat((directDistanceDuration.duration / 60).toFixed(2));
 
         // loop through each route to get quality metrics
-        const filteredRoutesWithMetrics: Array<ClassifiedRouteDto> = await defaultStrategy.checkQOSMetrics(this.finalClassifiedRoutes, directDistanceDuration.distance, directDistanceDuration.duration);
+        this.finalClassifiedRoutes = await defaultStrategy.checkQOSMetrics(this.finalClassifiedRoutes, directDistanceDuration.distance, directDistanceDuration.duration);
 
-        // clean old route data
-        this.finalClassifiedRoutes = [];
-
-        return filteredRoutesWithMetrics;
+        return this.finalClassifiedRoutes;
     }
 }

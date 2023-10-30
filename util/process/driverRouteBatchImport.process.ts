@@ -264,7 +264,16 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
                                 driverRouteMeta!.routeNodes.final.push(temprouteNode);
                             }
                         }
-                        await driverRouteMeta.routeNodes.final.sort((a: Record<string, any>, b: Record<string, any>) => a.cumDistance - b.cumDistance);
+                        await driverRouteMeta.routeNodes.final.sort((a: Record<string, any>, b: Record<string, any>) => {
+                            // Compare based on cumDistance
+                            const distanceComparison: number = a.cumDistance - b.cumDistance;
+
+                            // If there's a tie in distance, compare based on duration
+                            if (distanceComparison === 0) {
+                                return a.cumTime - b.cumTime;
+                            }
+                            return distanceComparison; // Return the result of the primary comparison
+                        });
 
                         await Promise.all(driverRouteMeta.routeNodes.final.map(async (tmpRNode: Record<string, any>) => {
                             if (tmpRNode.status === "POTENTIAL") {

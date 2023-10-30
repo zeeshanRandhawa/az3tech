@@ -4,17 +4,21 @@ export class ClassifiedRoute {
     public classification: RouteClassification;
     public driverRoute: DriverRouteAssociatedNodeDto;
     public intersectigRoutes: Array<ClassifiedRoute>;
-    public cumDistance: number;
-    public cumDuration: number;
-    public originRank: number;
-    public destinationRank: number;
+    public riderOriginRank: number;
+    public riedrDestinationRank: number;
+    // public riderCumulativeDistance: number;
+    // public riderCumulativeDuration: number;
+    // public driverRouteDirectDistance: number;
+    // public driverRouteDirectDuration: number;
 
     constructor(driverRoute: DriverRouteAssociatedNodeDto, classification: RouteClassification,
-        originRank: number = Infinity, destinationRank: number = Infinity) {
-        this.cumDuration = Infinity;
-        this.cumDistance = Infinity;
-        this.originRank = originRank;
-        this.destinationRank = destinationRank;
+        riderOriginRank: number = Infinity, riedrDestinationRank: number = Infinity) {
+        // this.riderCumulativeDistance = Infinity;
+        // this.riderCumulativeDuration = Infinity;
+        // this.driverRouteDirectDistance = Infinity;
+        // this.driverRouteDirectDuration = Infinity;
+        this.riderOriginRank = riderOriginRank;
+        this.riedrDestinationRank = riedrDestinationRank;
         this.classification = classification;
         this.driverRoute = driverRoute;
         this.intersectigRoutes = [];
