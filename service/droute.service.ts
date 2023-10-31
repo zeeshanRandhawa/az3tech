@@ -735,7 +735,7 @@ export class DriverRouteService {
     // }
 
     //old
-    async displayDriverRoutesAtNodeBetweenTimeFrame(nodeId: number, startDateTimeWindow: string, endDateTimeWindow: string, sessionToken: string): Promise<Record<string, any>> {
+    async displayDriverRoutesAtNodeBetweenTimeFrame(nodeId: number, departureDateTimeWindow: string, departureFlexibility: number, sessionToken: string): Promise<Record<string, any>> {
         // const driverRouteNodeIds: Array<Record<string, any>> = await this.driverRouteNodeRepository.findDriverRouteNodes({
         //     attributes: [["droute_id", "drouteNodeId"]],
         //     where: {
@@ -832,37 +832,42 @@ export class DriverRouteService {
         //     order: [["drouteNodes", "rank", "ASC"]]
         // });
 
-        const driverRoutes: Array<DriverRouteAssociatedNodeDto> = await getDriverRoutesBetweenTimeFrame(startDateTimeWindow, endDateTimeWindow, [nodeId]);
+
+        let dateTimeStartWindow: string = moment(departureDateTimeWindow, "YYYY-MM-DD HH:mm").clone().utcOffset(0, true).format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
+        let dateTimeEndWindow: string = moment(departureDateTimeWindow, "YYYY-MM-DD HH:mm").clone().add(departureFlexibility, "minutes").utcOffset(0, true).format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
+
+
+        const driverRoutes: Array<DriverRouteAssociatedNodeDto> = await getDriverRoutesBetweenTimeFrame(dateTimeStartWindow, dateTimeEndWindow, [nodeId]);
+
 
         if (!driverRoutes.length) {
             throw new CustomError("No Driver Route found in on this node in given time window", 404);
         }
 
-        // const session: SessionDto | null = await this.sessionRepository.findSession({
-        //     where: {
-        //         sessionToken: !sessionToken ? "" : sessionToken
-        //     },
-        //     include: [{
-        //         association: "user"
-        //     }]
-        // });
-        // let waypointDistance: number = session?.user?.waypointDistance ?? 1609.34;
-
-        const driverRouteDataPlainJSON: Array<Record<string, any>> = await Promise.all(driverRoutes.map(async (driverRoute: DriverRouteAssociatedNodeDto) => {
+        let driverRouteDataPlainJSON: Array<Record<string, any>> = await Promise.all(driverRoutes.map(async (driverRoute: DriverRouteAssociatedNodeDto) => {
             // let GISWaypoints: Array<Record<string, any>> = [];
             let osrmRoute: Array<any> = [];
             // let intermediateNodes: Array<Record<string, any>> = [];
 
-            let tmpOsrmRouteArray: Array<any> = new Array<any>(driverRoute.drouteNodes!.length - 1);
             // let tmpIntermediateNodesArray: Array<Record<string, any>> = new Array<Record<string, any>>(driverRoute.drouteNodes!.length - 1);
 
             let driverRouteNodesHavingOSRMRoute: Array<NodeDto> = [];
 
+            let searchNodeRank: number = Infinity;
+            await Promise.all(driverRoute.drouteNodes!.map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
+                if (drouteNode.nodeId === nodeId) {
+                    searchNodeRank = drouteNode.rank!
+                }
+            }));
+
             driverRoute.drouteNodes!.forEach((drouteNode: DriverRouteNodeAssocitedDto) => {
-                if (["SCHEDULED", "ORIGIN", "DESTINATION"].includes(drouteNode.status!.trim())) {
+                if (["SCHEDULED", "ORIGIN", "DESTINATION"].includes(drouteNode.status!.trim()) && drouteNode.rank! >= searchNodeRank) {
                     driverRouteNodesHavingOSRMRoute.push(drouteNode.node!);
                 }
             });
+
+            let tmpOsrmRouteArray: Array<any> = new Array<any>(driverRouteNodesHavingOSRMRoute.length - 1);
+
 
             //  = driverRoute.drouteNodes![1];
 
@@ -876,9 +881,10 @@ export class DriverRouteService {
                 // let nodesInAreaOfInterest: Array<Record<string, any> | undefined> = await findNodesOfInterestInArea(Object.values(parallelLinePoints[0]), Object.values(parallelLinePoints[1]), Object.values(parallelLinePoints[2]), Object.values(parallelLinePoints[3]), [])
 
                 // if ((nodePointA.status?.trim() === "ORIGIN" || nodePointA.status?.trim() === "SCHEDULED") && (nodePointB.status?.trim() === "DESTINATION" || nodePointB.status?.trim() === "SCHEDULED")) {
-                const routeInfo: Record<string, any> = await getRouteDetailsByOSRM({ longitude: nodePointA.long!, latitude: nodePointA.lat! }, { longitude: nodePointB.long!, latitude: nodePointB.lat! });
-                // let waypointNodes: Array<Record<string, any>> = [];
 
+                const routeInfo: Record<string, any> = await getRouteDetailsByOSRM({ longitude: nodePointA.long!, latitude: nodePointA.lat! }, { longitude: nodePointB.long!, latitude: nodePointB.lat! });
+
+                // let waypointNodes: Array<Record<string, any>> = [];
                 // if (!driverRoute.fixedRoute) {
                 //     for (let i: number = 0; i < nodesInAreaOfInterest.length; ++i) {
                 //         for (let j: number = 0; j < routeInfo.routes[0].legs[0].steps.length - 1; ++j) {
@@ -914,7 +920,9 @@ export class DriverRouteService {
                 //     // intermediateNodes = intermediateNodes.concat(nodesInAreaOfInterest);
 
                 // }
+
                 tmpOsrmRouteArray[k] = routeInfo.routes[0].geometry.coordinates;
+
                 // }
 
                 // if (nodePointB.status?.trim() === "SCHEDULED") {
@@ -957,7 +965,36 @@ export class DriverRouteService {
             };
         }));
 
-        return { status: 200, data: { driverRouteData: driverRouteDataPlainJSON } };
+        driverRouteDataPlainJSON = await Promise.all(driverRouteDataPlainJSON.map(async (driverRouteOsrm: Record<string, any>) => {
+
+            let searchNodeRank: number = Infinity;
+            await Promise.all(driverRouteOsrm.drouteNodes!.map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
+                if (drouteNode.nodeId === nodeId) {
+                    searchNodeRank = drouteNode.rank!
+                }
+            }));
+
+
+            let arrivalTimeAtNode: string = '';
+            driverRouteOsrm.drouteNodes = driverRouteOsrm.drouteNodes!.filter((drouteNode: DriverRouteNodeAssocitedDto) => {
+                if (drouteNode.nodeId === nodeId) {
+                    arrivalTimeAtNode = moment(drouteNode.arrivalTime, "YYYY-MM-DD HH:mm").utcOffset(0, true).format("YYYY-MM-DD HH:mm")
+                }
+                return drouteNode.rank! > searchNodeRank
+            });
+            driverRouteOsrm.arrivalTimeAtNode = arrivalTimeAtNode
+            return driverRouteOsrm;
+        }));
+
+        const nodeToSearch: NodeDto | null = await this.nodeRepository.findNodeByPK(nodeId)
+
+        return {
+            status: 200, data: {
+                driverRouteData: driverRouteDataPlainJSON, searchedNode: nodeToSearch,
+                nodeDepartureDateTimeWindow: departureDateTimeWindow,
+                nodeDepartureFlexibility: departureFlexibility
+            }
+        };
     }
 
     async displayDriverRouteById(drouteId: number): Promise<any> {
@@ -1007,6 +1044,10 @@ export class DriverRouteService {
     }
 
     async findMatchingDriverRoutes(originCoordinates: CoordinateDto, destinationCoordinates: CoordinateDto, departureDateTime: string, departureFlexibility: number, sessionToken: string | undefined, requestType: string): Promise<any> {
+
+
+        console.log(departureDateTime, departureFlexibility, originCoordinates, destinationCoordinates)
+
 
         if (requestType !== "ios" && requestType !== "web") {
             return { status: 400, data: { message: "Unknown request" } };

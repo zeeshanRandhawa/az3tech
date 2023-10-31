@@ -180,14 +180,14 @@ export class DriverRouteController {
         }
     }
 
-    async displayDriverRoutesAtNodeBetweenTimeFrame(nodeId: number, startDateTimeWindow: string | undefined, endDateTimeWindow: string | undefined, sessionToken: string | undefined): Promise<any> {
+    async displayDriverRoutesAtNodeBetweenTimeFrame(nodeId: number, departureDateTimeWindow: string | undefined, departureFlexibility: number, sessionToken: string | undefined): Promise<any> {
 
-        if (!nodeId || !startDateTimeWindow || !endDateTimeWindow || (new Date(startDateTimeWindow)) > (new Date(endDateTimeWindow)) || !sessionToken
+        if (!nodeId || !departureDateTimeWindow || !departureFlexibility
         ) {
             return { status: 422, data: { message: "Invalid data" } };
         }
         try {
-            return await this.driverRouteService.displayDriverRoutesAtNodeBetweenTimeFrame(nodeId, moment(startDateTimeWindow, "YYYY-MM-DD HH:mm").clone().utcOffset(0, true).format("YYYY-MM-DD HH:mm:ss[Z]"), moment(endDateTimeWindow, "YYYY-MM-DD HH:mm").clone().utcOffset(0, true).format("YYYY-MM-DD HH:mm:ss[Z]"), sessionToken!);
+            return await this.driverRouteService.displayDriverRoutesAtNodeBetweenTimeFrame(nodeId, departureDateTimeWindow, departureFlexibility, sessionToken!);
         } catch (error: any) {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
@@ -212,9 +212,12 @@ export class DriverRouteController {
 
     async findMatchingDriverRoutes(originLatitude: number, originLongitude: number, destinationLatitude: number, destinationLongitude: number, departureTime: string, departureFlexibility: number, sessionToken: string | undefined, requestType: string): Promise<any> {
         try {
-            return await this.driverRouteService.findMatchingDriverRoutes({ latitude: originLatitude, longitude: originLongitude }, { latitude: destinationLatitude, longitude: destinationLongitude }, departureTime, departureFlexibility, sessionToken, requestType);
+            return await this.driverRouteService.findMatchingDriverRoutes(
+                { latitude: originLatitude, longitude: originLongitude },
+                { latitude: destinationLatitude, longitude: destinationLongitude },
+                departureTime, departureFlexibility, sessionToken, requestType
+            );
         } catch (error: any) {
-            console.log(error)
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
