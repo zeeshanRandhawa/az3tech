@@ -1045,10 +1045,6 @@ export class DriverRouteService {
 
     async findMatchingDriverRoutes(originCoordinates: CoordinateDto, destinationCoordinates: CoordinateDto, departureDateTime: string, departureFlexibility: number, sessionToken: string | undefined, requestType: string): Promise<any> {
 
-
-        console.log(departureDateTime, departureFlexibility, originCoordinates, destinationCoordinates)
-
-
         if (requestType !== "ios" && requestType !== "web") {
             return { status: 400, data: { message: "Unknown request" } };
         }
