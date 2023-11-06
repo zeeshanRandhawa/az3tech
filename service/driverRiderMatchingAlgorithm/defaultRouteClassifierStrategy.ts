@@ -15,94 +15,99 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
     // Take time at point, flexibility in minutes, node oint id , node transit time and destination node id to get all route passing at node in mention time
     async findRoutesPassingAtNode(arrivalDepartureDateTime: string, riderTimeFlexibility: number, nodeId: number, transitTime: number, destnationNodeId: number, routeClassification: RouteClassification, routesToExclude: Array<number>): Promise<Array<ClassifiedRoute>> {
 
+
         // node start and end time to search
         let dateTimeStartWindow: string = moment(arrivalDepartureDateTime, "YYYY-MM-DD HH:mm").clone().add(transitTime, "minutes").utcOffset(0, true).format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
         let dateTimeEndWindow: string = moment(arrivalDepartureDateTime, "YYYY-MM-DD HH:mm").clone().add(riderTimeFlexibility + transitTime, "minutes").utcOffset(0, true).format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
+
+        // console.log(`Searching node ${nodeId} for ${routeClassification.toString()} route(s) in start window: ${dateTimeStartWindow} end window: ${dateTimeEndWindow}`);
+
 
         // query database layer to get routes from db
         // takes dateStart, dateEnd, nodeId, 
         const passingRoutesAtNode: Array<DriverRouteAssociatedNodeDto> = await getDriverRoutesBetweenTimeFrame(dateTimeStartWindow, dateTimeEndWindow, [nodeId]);
 
+        // console.log(`${passingRoutesAtNode.length} routes found at node ${nodeId}`);
+
         // iterate through all found routes and convert it into data structure
-        const passingRoutesAtNodeClassified: Array<ClassifiedRoute> = (await Promise.all(passingRoutesAtNode.map(
-            async (passingRoute: DriverRouteAssociatedNodeDto) => {
+        const passingRoutesAtNodeClassified: Array<ClassifiedRoute> = [];
+        await Promise.all(passingRoutesAtNode.map(async (passingRoute: DriverRouteAssociatedNodeDto) => {
 
-                // check if we have to exclude that route. We will not use it later as it create a bug in search algo
-                if (!routesToExclude.includes(passingRoute.drouteId)) {
+            // check if we have to exclude that route. We will not use it later as it create a bug in search algo
+            if (!routesToExclude.includes(passingRoute.drouteId)) {
 
-                    let riderOriginRank: number = Infinity;
-                    let riderDestinationRank: number = Infinity;
+                let riderOriginRank: number = Infinity;
+                let riderDestinationRank: number = Infinity;
 
-                    // find rider origin rank
-                    await Promise.all(passingRoute.drouteNodes!.map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
-                        if (drouteNode.nodeId === nodeId) {
-                            riderOriginRank = drouteNode.rank ?? Infinity;
-                        }
-                    }));
-
-                    // find rider destination rank
-                    await Promise.all(passingRoute.drouteNodes!.map(async (dRouteNode: DriverRouteNodeAssocitedDto) => {
-                        if (destnationNodeId === dRouteNode.nodeId && dRouteNode.rank! > riderOriginRank) {
-                            riderDestinationRank = dRouteNode.rank ?? Infinity;
-                        }
-                    }));
-
-                    // retime if it is 
-                    if (!passingRoute.fixedRoute) {
-                        if (passingRoute.drouteNodes![riderOriginRank].status === "POTENTIAL") {
-
-                            // initial rank of scheduled node
-                            let initialScheduledNodeRank: number = riderOriginRank;
-
-                            // change node status
-                            passingRoute.drouteNodes![initialScheduledNodeRank].status = "SCHEDULED";
-
-                            // get node departuretime chenage it
-                            let passingRouteOriginNodeDepartureTime: Moment = moment.utc(passingRoute.drouteNodes![initialScheduledNodeRank].arrivalTime).clone().add(passingRoute.drouteNodes![initialScheduledNodeRank].node?.transitTime ?? 0, "minutes");
-
-                            let passingRouteOriginNodeCumulativeDistance: number = passingRoute.drouteNodes![initialScheduledNodeRank].cumDistance ?? 0;
-
-                            passingRoute.drouteNodes![initialScheduledNodeRank].departureTime = passingRouteOriginNodeDepartureTime.clone().format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
-                            passingRoute.drouteNodes![initialScheduledNodeRank].cumTime! = passingRoute.drouteNodes![initialScheduledNodeRank].cumTime! + passingRoute.drouteNodes![initialScheduledNodeRank].node?.transitTime!
-
-                            let passingRouteOriginNodeCumulativeDuration: number = passingRoute.drouteNodes![initialScheduledNodeRank].cumTime ?? 0;
-
-                            passingRoute.drouteNodes!.slice(riderOriginRank + 1).forEach(async (drouteNode: DriverRouteNodeAssocitedDto, index: number) => {
-
-                                let calculatedDisDurBetweenNodes: Record<string, any> = await getDistanceDurationBetweenNodes(
-                                    { longitude: passingRoute.drouteNodes![initialScheduledNodeRank].node!.long, latitude: passingRoute.drouteNodes![initialScheduledNodeRank].node!.lat },
-                                    { longitude: drouteNode.node!.long, latitude: drouteNode.node!.lat }
-                                );
-
-                                drouteNode.arrivalTime = passingRouteOriginNodeDepartureTime.clone().add(calculatedDisDurBetweenNodes.duration, "seconds").format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
-                                drouteNode.cumDistance = parseFloat((passingRouteOriginNodeCumulativeDistance + (calculatedDisDurBetweenNodes.distance / 1609.34)).toFixed(2));
-                                drouteNode.cumTime = parseFloat((passingRouteOriginNodeCumulativeDuration + (calculatedDisDurBetweenNodes.duration / 60)).toFixed(2));
-
-                                if (drouteNode.status === "SCHEDULED") {
-
-                                    passingRouteOriginNodeDepartureTime = moment.utc(drouteNode.arrivalTime).clone().add(drouteNode.node?.transitTime ?? 0, "minutes");
-
-                                    passingRouteOriginNodeCumulativeDistance = drouteNode.cumTime + (drouteNode.node?.transitTime ?? 0);
-
-                                    drouteNode.departureTime = passingRouteOriginNodeDepartureTime.clone().format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
-                                    drouteNode.cumTime = drouteNode.cumTime = passingRouteOriginNodeCumulativeDistance;
-
-                                    passingRouteOriginNodeCumulativeDuration = drouteNode.cumTime;
-                                    initialScheduledNodeRank = initialScheduledNodeRank + index + 1;
-                                }
-
-                            });
-
-                        } else if (passingRoute.drouteNodes![riderOriginRank].status === "ORIGIN" || passingRoute.drouteNodes![riderOriginRank].status === "DESTINATION") {
-                            passingRoute.drouteNodes![riderOriginRank].status = "SCHEDULED";
-                        }
+                // find rider origin rank
+                await Promise.all(passingRoute.drouteNodes!.map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
+                    if (drouteNode.nodeId === nodeId) {
+                        riderOriginRank = drouteNode.rank ?? Infinity;
                     }
+                }));
 
-                    return new ClassifiedRoute(passingRoute, routeClassification, riderOriginRank, riderDestinationRank);
+                // find rider destination rank
+                await Promise.all(passingRoute.drouteNodes!.map(async (dRouteNode: DriverRouteNodeAssocitedDto) => {
+                    if (destnationNodeId === dRouteNode.nodeId && dRouteNode.rank! > riderOriginRank) {
+                        riderDestinationRank = dRouteNode.rank ?? Infinity;
+                    }
+                }));
 
+                // retime if it is flex route after inserting rider origin
+                if (!passingRoute.fixedRoute) {
+                    if (passingRoute.drouteNodes![riderOriginRank].status === "POTENTIAL") {
+
+                        // initial rank of scheduled node
+                        let initialScheduledNodeRank: number = riderOriginRank;
+
+                        // change node status
+                        passingRoute.drouteNodes![initialScheduledNodeRank].status = "SCHEDULED";
+
+                        // get node departuretime chenage it
+                        let passingRouteOriginNodeDepartureTime: Moment = moment.utc(passingRoute.drouteNodes![initialScheduledNodeRank].arrivalTime).clone().add(passingRoute.drouteNodes![initialScheduledNodeRank].node?.transitTime ?? 0, "minutes");
+
+                        let passingRouteOriginNodeCumulativeDistance: number = passingRoute.drouteNodes![initialScheduledNodeRank].cumDistance ?? 0;
+
+                        passingRoute.drouteNodes![initialScheduledNodeRank].departureTime = passingRouteOriginNodeDepartureTime.clone().format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
+                        passingRoute.drouteNodes![initialScheduledNodeRank].cumTime! = passingRoute.drouteNodes![initialScheduledNodeRank].cumTime! + passingRoute.drouteNodes![initialScheduledNodeRank].node?.transitTime!
+
+                        let passingRouteOriginNodeCumulativeDuration: number = passingRoute.drouteNodes![initialScheduledNodeRank].cumTime ?? 0;
+
+                        passingRoute.drouteNodes!.slice(riderOriginRank + 1).forEach(async (drouteNode: DriverRouteNodeAssocitedDto, index: number) => {
+
+                            let calculatedDisDurBetweenNodes: Record<string, any> = await getDistanceDurationBetweenNodes(
+                                { longitude: passingRoute.drouteNodes![initialScheduledNodeRank].node!.long, latitude: passingRoute.drouteNodes![initialScheduledNodeRank].node!.lat },
+                                { longitude: drouteNode.node!.long, latitude: drouteNode.node!.lat }
+                            );
+
+                            drouteNode.arrivalTime = passingRouteOriginNodeDepartureTime.clone().add(calculatedDisDurBetweenNodes.duration, "seconds").format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
+                            drouteNode.cumDistance = parseFloat((passingRouteOriginNodeCumulativeDistance + (calculatedDisDurBetweenNodes.distance / 1609.34)).toFixed(2));
+                            drouteNode.cumTime = parseFloat((passingRouteOriginNodeCumulativeDuration + (calculatedDisDurBetweenNodes.duration / 60)).toFixed(2));
+
+                            if (drouteNode.status === "SCHEDULED") {
+
+                                passingRouteOriginNodeDepartureTime = moment.utc(drouteNode.arrivalTime).clone().add(drouteNode.node?.transitTime ?? 0, "minutes");
+
+                                passingRouteOriginNodeCumulativeDistance = drouteNode.cumTime + (drouteNode.node?.transitTime ?? 0);
+
+                                drouteNode.departureTime = passingRouteOriginNodeDepartureTime.clone().format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
+                                drouteNode.cumTime = drouteNode.cumTime = passingRouteOriginNodeCumulativeDistance;
+
+                                passingRouteOriginNodeCumulativeDuration = drouteNode.cumTime;
+                                initialScheduledNodeRank = initialScheduledNodeRank + index + 1;
+                            }
+
+                        });
+
+                    } else if (passingRoute.drouteNodes![riderOriginRank].status === "ORIGIN" || passingRoute.drouteNodes![riderOriginRank].status === "DESTINATION") {
+                        passingRoute.drouteNodes![riderOriginRank].status = "SCHEDULED";
+                    }
                 }
-                return;
-            }))).filter(Boolean) as Array<ClassifiedRoute>;
+
+                passingRoutesAtNodeClassified.push(new ClassifiedRoute(passingRoute, routeClassification, riderOriginRank, riderDestinationRank));
+
+            }
+        }));
 
         return passingRoutesAtNodeClassified;
     }
@@ -142,6 +147,8 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                 let primaryRouteDto: ClassifiedRouteDto = {
                     classification: primaryClassifiedRoute.classification, riderOriginRank: primaryClassifiedRoute.riderOriginRank,
                     riderDestinationRank: primaryClassifiedRoute.riedrDestinationRank, driverRoute: JSON.parse(JSON.stringify(primaryClassifiedRoute.driverRoute)),
+                    driverRouteDirectDistance: primaryClassifiedRoute.driverRouteDirectDistance,
+                    driverRouteDirectDuration: primaryClassifiedRoute.driverRouteDirectDuration
                 }
                 finalClassifiedRoutes.push(primaryRouteDto);
             }
@@ -150,12 +157,15 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                     let secondaryRouteDto: ClassifiedRouteDto = {
                         classification: secondaryClassifiedRoute.classification, riderOriginRank: secondaryClassifiedRoute.riderOriginRank,
                         riderDestinationRank: secondaryClassifiedRoute.riedrDestinationRank, driverRoute: JSON.parse(JSON.stringify(secondaryClassifiedRoute.driverRoute)),
-
+                        driverRouteDirectDistance: secondaryClassifiedRoute.driverRouteDirectDistance,
+                        driverRouteDirectDuration: secondaryClassifiedRoute.driverRouteDirectDuration
                     }
                     let primaryRouteDto: ClassifiedRouteDto = {
                         classification: primaryClassifiedRoute.classification, riderOriginRank: primaryClassifiedRoute.riderOriginRank,
                         riderDestinationRank: primaryClassifiedRoute.riedrDestinationRank, intersectingRoute: JSON.parse(JSON.stringify(secondaryRouteDto)),
                         driverRoute: JSON.parse(JSON.stringify(primaryClassifiedRoute.driverRoute)),
+                        driverRouteDirectDistance: primaryClassifiedRoute.driverRouteDirectDistance,
+                        driverRouteDirectDuration: primaryClassifiedRoute.driverRouteDirectDuration
                     }
                     finalClassifiedRoutes.push(primaryRouteDto);
                 }
@@ -164,16 +174,22 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                         let tertiaryRouteDto: ClassifiedRouteDto = {
                             classification: tertiaryClassifiedRoute.classification, riderOriginRank: tertiaryClassifiedRoute.riderOriginRank,
                             riderDestinationRank: tertiaryClassifiedRoute.riedrDestinationRank, driverRoute: JSON.parse(JSON.stringify(tertiaryClassifiedRoute.driverRoute)),
+                            driverRouteDirectDistance: tertiaryClassifiedRoute.driverRouteDirectDistance,
+                            driverRouteDirectDuration: tertiaryClassifiedRoute.driverRouteDirectDuration
                         }
                         let secondaryRouteDto: ClassifiedRouteDto = {
                             classification: secondaryClassifiedRoute.classification, riderOriginRank: secondaryClassifiedRoute.riderOriginRank,
                             riderDestinationRank: secondaryClassifiedRoute.riedrDestinationRank, intersectingRoute: JSON.parse(JSON.stringify(tertiaryRouteDto)),
                             driverRoute: JSON.parse(JSON.stringify(secondaryClassifiedRoute.driverRoute)),
+                            driverRouteDirectDistance: secondaryClassifiedRoute.driverRouteDirectDistance,
+                            driverRouteDirectDuration: secondaryClassifiedRoute.driverRouteDirectDuration
                         }
                         let primaryRouteDto: ClassifiedRouteDto = {
                             classification: primaryClassifiedRoute.classification, riderOriginRank: primaryClassifiedRoute.riderOriginRank,
                             riderDestinationRank: primaryClassifiedRoute.riedrDestinationRank, intersectingRoute: JSON.parse(JSON.stringify(secondaryRouteDto)),
                             driverRoute: JSON.parse(JSON.stringify(primaryClassifiedRoute.driverRoute)),
+                            driverRouteDirectDistance: primaryClassifiedRoute.driverRouteDirectDistance,
+                            driverRouteDirectDuration: primaryClassifiedRoute.driverRouteDirectDuration
                         }
                         finalClassifiedRoutes.push(primaryRouteDto);
                     }
@@ -202,18 +218,7 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
         }));
         return secondaryRouteIdList;
     }
-    // async getTertiaryRouteIdList(classifiedRoutes: Array<ClassifiedRoute>): Promise<Array<number>> {
-    //     let tertiaryRouteIdList: Array<number> = [];
-    //     await Promise.all(classifiedRoutes.map(async (primaryClassifiedRoute: ClassifiedRoute) => {
-    //         await Promise.all(primaryClassifiedRoute.intersectigRoutes.map(async (secondaryClassifiedRoute: ClassifiedRoute) => {
-    //             await Promise.all(secondaryClassifiedRoute.intersectigRoutes.map(async (tertiaryClassifiedRoute: ClassifiedRoute) => {
 
-    //                 tertiaryRouteIdList.push(tertiaryClassifiedRoute.driverRoute.drouteId);
-    //             }));
-    //         }));
-    //     }));
-    //     return tertiaryRouteIdList;
-    // }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -243,18 +248,9 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                         }
                     }));
                     primaryClassifiedRoute.intersectingRoute!.riderDestinationRank = secondaryNodeRank;
-                    // primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes![primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderDestinationRank].status = "SCHEDULED";
-
                 }
-                //Secondary do not have tertiary (2nd stop)
-                // else {
-                //     primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes![primaryClassifiedRoute.intersectingRoute.riderDestinationRank].status = "SCHEDULED";
-                // }
+
             }
-            // else {
-            //     //primary do not has secondary (1st stop)
-            //     primaryClassifiedRoute.driverRoute.drouteNodes![primaryClassifiedRoute.riderDestinationRank].status = "SCHEDULED";
-            // }
 
         }));
 
@@ -467,20 +463,6 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                 primaryClassifiedRoute.driverRouteDistance = driverCumDistance;
                 primaryClassifiedRoute.driverRouteDuration = driverCumDuration;
 
-                let primaryDriverOriginNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes!.slice(0, 1)[0];
-                let primaryDriverDestinationNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes!.slice(-1)[0];
-
-                let directDistanceDuration: Record<string, any> = await getDistanceDurationBetweenNodes(
-                    { longitude: primaryDriverOriginNode.node?.long, latitude: primaryDriverOriginNode.node?.lat },
-                    { longitude: primaryDriverDestinationNode.node?.long, latitude: primaryDriverDestinationNode.node?.lat }
-                );
-
-                // Direct route distance from 
-                primaryClassifiedRoute.driverRouteDirectDistance = parseFloat((directDistanceDuration.distance / 1609.34).toFixed(2));
-                primaryClassifiedRoute.driverRouteDirectDuration = parseFloat((directDistanceDuration.duration / 60).toFixed(2));
-
-
-
             } else {
                 let primaryFirstNodeDeparture: Moment = moment.utc(primaryClassifiedRoute.routeOriginDepartureTime, "YYYY-MM-DD HH:mm:ss[z]");
                 let primaryLastNodeArrival: Moment = moment.utc(primaryClassifiedRoute.routeDestinationArrivalTime, "YYYY-MM-DD HH:mm:ss[z]");
@@ -527,20 +509,6 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
                     primaryClassifiedRoute.intersectingRoute.driverRouteDistance = driverCumDistance;
                     primaryClassifiedRoute.intersectingRoute.driverRouteDuration = driverCumDuration;
-
-
-                    let primaryDriverOriginNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes!.slice(0, 1)[0];
-                    let primaryDriverDestinationNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes!.slice(-1)[0];
-
-                    let directDistanceDuration: Record<string, any> = await getDistanceDurationBetweenNodes(
-                        { longitude: primaryDriverOriginNode.node?.long, latitude: primaryDriverOriginNode.node?.lat },
-                        { longitude: primaryDriverDestinationNode.node?.long, latitude: primaryDriverDestinationNode.node?.lat }
-                    );
-
-                    // Direct route distance from 
-                    primaryClassifiedRoute.intersectingRoute.driverRouteDirectDistance = parseFloat((directDistanceDuration.distance / 1609.34).toFixed(2));
-                    primaryClassifiedRoute.intersectingRoute.driverRouteDirectDuration = parseFloat((directDistanceDuration.duration / 60).toFixed(2));
-
 
                 } else {
 
@@ -590,19 +558,6 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
                         primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDistance = driverCumDistance;
                         primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDuration = driverCumDuration;
-
-
-                        let primaryDriverOriginNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes!.slice(0, 1)[0];
-                        let primaryDriverDestinationNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes!.slice(-1)[0];
-
-                        let directDistanceDuration: Record<string, any> = await getDistanceDurationBetweenNodes(
-                            { longitude: primaryDriverOriginNode.node?.long, latitude: primaryDriverOriginNode.node?.lat },
-                            { longitude: primaryDriverDestinationNode.node?.long, latitude: primaryDriverDestinationNode.node?.lat }
-                        );
-
-                        // Direct route distance from 
-                        primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDistance = parseFloat((directDistanceDuration.distance / 1609.34).toFixed(2));
-                        primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDuration = parseFloat((directDistanceDuration.duration / 60).toFixed(2));
 
                     } else {
 
@@ -692,9 +647,9 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
             primaryClassifiedRoute.routeEfficiency = parseFloat((distanceQuality * durationQuality).toFixed(2));
 
-            if (hasGoodQuality) {
-                qualityCriteriaFilteredRoutes.push(primaryClassifiedRoute);
-            }
+            // if (hasGoodQuality) {
+            qualityCriteriaFilteredRoutes.push(primaryClassifiedRoute);
+            // }
 
         }));
 

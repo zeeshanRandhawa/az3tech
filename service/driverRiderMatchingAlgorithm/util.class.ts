@@ -8,15 +8,17 @@ export class ClassifiedRoute {
     public riedrDestinationRank: number;
     // public riderCumulativeDistance: number;
     // public riderCumulativeDuration: number;
-    // public driverRouteDirectDistance: number;
-    // public driverRouteDirectDuration: number;
+    public driverRouteDirectDistance: number;
+    public driverRouteDirectDuration: number;
 
     constructor(driverRoute: DriverRouteAssociatedNodeDto, classification: RouteClassification,
-        riderOriginRank: number = Infinity, riedrDestinationRank: number = Infinity) {
+        riderOriginRank: number = Infinity, riedrDestinationRank: number = Infinity, driverRouteDirectDistance: number = Infinity,
+         driverRouteDirectDuration: number = Infinity) {
         // this.riderCumulativeDistance = Infinity;
         // this.riderCumulativeDuration = Infinity;
-        // this.driverRouteDirectDistance = Infinity;
-        // this.driverRouteDirectDuration = Infinity;
+        this.driverRouteDirectDistance = driverRouteDirectDistance;
+        this.driverRouteDirectDuration = driverRouteDirectDuration;
+        
         this.riderOriginRank = riderOriginRank;
         this.riedrDestinationRank = riedrDestinationRank;
         this.classification = classification;

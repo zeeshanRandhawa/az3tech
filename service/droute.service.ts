@@ -861,7 +861,10 @@ export class DriverRouteService {
             }));
 
             driverRoute.drouteNodes!.forEach((drouteNode: DriverRouteNodeAssocitedDto) => {
-                if (["SCHEDULED", "ORIGIN", "DESTINATION"].includes(drouteNode.status!.trim()) && drouteNode.rank! >= searchNodeRank) {
+                if (drouteNode.rank! === searchNodeRank) {
+                    driverRouteNodesHavingOSRMRoute.push(drouteNode.node!);
+                }
+                if (["SCHEDULED", "ORIGIN", "DESTINATION"].includes(drouteNode.status!.trim()) && drouteNode.rank! > searchNodeRank) {
                     driverRouteNodesHavingOSRMRoute.push(drouteNode.node!);
                 }
             });

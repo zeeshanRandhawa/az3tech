@@ -12,7 +12,7 @@ export const sequelize: any = new Sequelize(
         max: 15,
         min: 0,
         acquire: 60000,
-        idle: 3000
+        idle: 2000
     }
     , dialectOptions: process.env.IS_PROD === "true" ? {
         ssl: {
