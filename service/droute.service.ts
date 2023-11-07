@@ -1136,7 +1136,7 @@ export class DriverRouteService {
                 let primaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes![primaryClassifiedRoute.riderDestinationRank];
                 routeOption.primary = {
                     drouteId: primaryClassifiedRoute.driverRoute.drouteId, originNode: primaryFirstNode.nodeId, destinationNode: primaryLastNode.nodeId,
-                    originDepartureTime: primaryFirstNode.departureTime as string, destinationArrivalTime: primaryLastNode.arrivalTime as string,
+                    originDepartureTime: await normalizeTimeZone(primaryFirstNode.departureTime as string), destinationArrivalTime: await normalizeTimeZone(primaryLastNode.arrivalTime as string),
                     routeDuration: primaryClassifiedRoute.riderCumulativeDuration ?? 0, routeDistance: primaryClassifiedRoute.riderCumulativeDistance ?? 0,
                 }
                 routeOption.routeCumulativeDuration += primaryClassifiedRoute.riderCumulativeDuration ?? 0;
@@ -1148,7 +1148,7 @@ export class DriverRouteService {
                     let secondaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes![primaryClassifiedRoute.intersectingRoute.riderDestinationRank];
                     routeOption.secondary = {
                         originNode: secondaryFirstNode.nodeId, destinationNode: secondaryLastNode.nodeId, drouteId: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId,
-                        originDepartureTime: secondaryFirstNode.departureTime as string, destinationArrivalTime: secondaryLastNode.arrivalTime as string,
+                        originDepartureTime: await normalizeTimeZone(secondaryFirstNode.departureTime as string), destinationArrivalTime: await normalizeTimeZone(secondaryLastNode.arrivalTime as string),
                         routeDuration: primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration ?? 0, routeDistance: primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance ?? 0
                     }
                     routeOption.routeCumulativeDuration += primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration ?? 0;
@@ -1161,8 +1161,8 @@ export class DriverRouteService {
                         routeOption.tertiary = {
                             originNode: tertiaryFirstNode.nodeId, destinationNode: tertiaryLastNode.nodeId,
                             drouteId: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId,
-                            originDepartureTime: tertiaryFirstNode.departureTime as string,
-                            destinationArrivalTime: tertiaryLastNode.arrivalTime as string,
+                            originDepartureTime: await normalizeTimeZone(tertiaryFirstNode.departureTime as string),
+                            destinationArrivalTime: await normalizeTimeZone(tertiaryLastNode.arrivalTime as string),
                             routeDuration: primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDuration ?? 0,
                             routeDistance: primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance ?? 0
                         }
