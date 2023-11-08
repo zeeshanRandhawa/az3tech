@@ -243,8 +243,8 @@ export interface ClassifiedRouteDto {
     riderOriginRank: number;
     riderDestinationRank: number;
 
-    routeOriginDepartureTime?: string,
-    routeDestinationArrivalTime?: string,
+    routeOriginDepartureTime?: string;
+    routeDestinationArrivalTime?: string;
 
     driverRouteDirectDistance?: number;
     driverRouteDirectDuration?: number;

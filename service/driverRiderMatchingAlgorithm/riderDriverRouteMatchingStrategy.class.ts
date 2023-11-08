@@ -52,7 +52,7 @@ export class RiderDriverRouteMatchingStrategy {
                 // primaryClassifiedRoute.driverRoute.drouteNodes!.slice(1).forEach(async (drouteNode: DriverRouteNodeAssocitedDto) => {
 
                 if (drouteNode.rank! > primaryClassifiedRoute.riderOriginRank) {
-                    console.log(`  **${RouteClassification[1]} search through Norig=${drouteNode.nodeId}, AT ${drouteNode.arrivalTime! as string}`);
+                    // console.log(`  **${RouteClassification[1]} search through Norig=${drouteNode.nodeId}, AT ${drouteNode.arrivalTime! as string}`);
                     let classifiedRouteList: Array<ClassifiedRoute> = await defaultStrategy.findRoutesPassingAtNode(drouteNode.arrivalTime! as string, riderTimeFlexibility, drouteNode.nodeId, drouteNode.node?.transitTime ?? 0, destinationNode.nodeId, RouteClassification.Secondary, routeIdList)
 
                     primaryClassifiedRoute.intersectigRoutes.push(...classifiedRouteList);
@@ -77,14 +77,14 @@ export class RiderDriverRouteMatchingStrategy {
         for (let primaryClassifiedRoute of this.classifiedRoutes) {
             // await Promise.all(primaryClassifiedRoute.intersectigRoutes.map(async (secondaryClassifiedRoute: ClassifiedRoute) => {
             for (let secondaryClassifiedRoute of primaryClassifiedRoute.intersectigRoutes) {
-                console.log(`Seraching route ${secondaryClassifiedRoute.driverRoute.drouteId} for ${RouteClassification[2]}`);
+                // console.log(`Seraching route ${secondaryClassifiedRoute.driverRoute.drouteId} for ${RouteClassification[2]}`);
 
                 // await Promise.all(secondaryClassifiedRoute.driverRoute.drouteNodes!.slice(1).map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
                 for (let drouteNode of secondaryClassifiedRoute.driverRoute.drouteNodes!.slice(1)) {
 
 
                     if (drouteNode.rank! > secondaryClassifiedRoute.riderOriginRank) {
-                        console.log(`  ***${RouteClassification[2]} search through Norig=${drouteNode.nodeId}, AT ${drouteNode.arrivalTime! as string}`);
+                        // console.log(`  ***${RouteClassification[2]} search through Norig=${drouteNode.nodeId}, AT ${drouteNode.arrivalTime! as string}`);
 
                         let classifiedRouteList: Array<ClassifiedRoute> = await defaultStrategy.findRoutesPassingAtNode(
                             drouteNode.arrivalTime! as string, riderTimeFlexibility, drouteNode.nodeId, drouteNode.node?.transitTime ?? 0,
@@ -97,7 +97,7 @@ export class RiderDriverRouteMatchingStrategy {
                 }
                 // }));
                 // }));
-                console.log("\n");
+                // console.log("\n");
 
             }
 
