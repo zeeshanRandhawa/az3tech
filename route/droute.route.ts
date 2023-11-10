@@ -2,6 +2,7 @@ import multer, { Multer } from "multer";
 import { Router, Request, Response } from "express";
 import { DriverRouteController } from "../controller/droute.controller";
 import { FilterForm } from "../util/interface.utility";
+import { argThresholdOpts } from "moment-timezone";
 
 export class DriverRouteRouter {
 
@@ -59,16 +60,16 @@ export class DriverRouteRouter {
             this.driverRouteController.transitImportDriverRoutes(req.file as Express.Multer.File, req.body.scheduledWeekdays as string | undefined, req.body.scheduledStartDate as string | undefined, req.body.scheduledEndDate as string | undefined, req.headers.cookies as string).then(data => res.status(data.status).json(data.data));
         });
 
-        this.router.get("/import/batch/log/name/list", (req: Request, res: Response) => {
-            this.driverRouteController.listLogFileNames().then(data => res.status(data.status).json(data.data));
+        this.router.get("/log", (req: Request, res: Response) => {
+            this.driverRouteController.listLogFileNames(req.query.fileGroupName as string, req.query.fileMimeType as string).then(data => res.status(data.status).json(data.data));
         });
 
-        this.router.delete("/import/batch/log", (req: Request, res: Response) => {
+        this.router.delete("/log/delete", (req: Request, res: Response) => {
             this.driverRouteController.deleteLogByName(req.query.fileName as string | undefined).then(data => res.status(data.status).json(data.data));
         });
 
-        this.router.get("/import/batch/log/download", (req: Request, res: Response) => {
-            this.driverRouteController.downloadLogFiles(req.query.fileName as string | undefined).then((data) => {
+        this.router.get("/log/download", (req: Request, res: Response) => {
+            this.driverRouteController.downloadLogFiles(req.query.fileName as string | undefined, req.query.fileGroupName as string, req.query.fileMimeType as string).then((data) => {
                 if (data.status === 200) {
                     res.setHeader("Content-Type", "application/zip");
                     res.setHeader("Content-Disposition", "attachment; filename='logfiles.zip'");
@@ -85,6 +86,7 @@ export class DriverRouteRouter {
                 parseInt(req.query.nodeId as string, 10) as number,
                 req.query.departureDateTimeWindow as string,
                 parseInt(req.query.departureFlexibility as string, 10),
+                req.query.isPartial as string,
                 req.headers.cookies as string
             ).then(data => res.status(data.status).json(data.data));
         });

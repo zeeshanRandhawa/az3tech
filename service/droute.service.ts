@@ -265,11 +265,11 @@ export class DriverRouteService {
         }
     }
 
-    async listLogFileNames(): Promise<Record<string, any>> {
+    async listLogFileNames(fileGroupName: string, fileMimeType: string): Promise<Record<string, any>> {
         return fsPromises.readdir("./util/logs/").then((files) => {
-            const csvFiles = files.filter((file) => path.extname(file) === ".csv" && path.basename(file).includes("driver_routes"));
-            if (csvFiles.length) {
-                return { status: 200, data: { fileNameList: csvFiles } };
+            const filesList = files.filter((file) => path.extname(file) === fileMimeType && path.basename(file).includes(fileGroupName));
+            if (filesList.length) {
+                return { status: 200, data: { fileNameList: filesList } };
             } else {
                 return { status: 404, data: { message: "No logs available" } };
             }
@@ -286,21 +286,21 @@ export class DriverRouteService {
         });
     }
 
-    async downloadLogFiles(fileName: string): Promise<Record<string, any>> {
+    async downloadLogFiles(fileName: string, fileGroupName: string, fileMimeType: string): Promise<Record<string, any>> {
         return fsPromises.readdir("./util/logs/").then((files: string[]) => {
-            let csvFiles: string[];
+            let filesList: string[];
 
             if (fileName === "allFiles") {
-                csvFiles = files.filter((file) => path.extname(file) === ".csv" && path.basename(file).includes("driver_routes"));
+                filesList = files.filter((file) => path.extname(file) === fileMimeType && path.basename(file).includes(fileGroupName));
             } else {
-                csvFiles = files.filter((file) => path.extname(file) === ".csv" && path.basename(file) === fileName);
+                filesList = files.filter((file) => path.extname(file) === fileMimeType && path.basename(file) === fileName);
             }
-            if (csvFiles.length === 0) {
+            if (filesList.length === 0) {
                 return { status: 404, data: { message: "No file Found" } };
             }
 
             const zip: Archiver = archiver("zip");
-            csvFiles.forEach(async (file: string) => {
+            filesList.forEach(async (file: string) => {
                 const filePath: string = path.join("./util/logs/", file);
                 zip.append(createReadStream(filePath), { name: file });
             });
@@ -735,7 +735,7 @@ export class DriverRouteService {
     // }
 
     //old
-    async displayDriverRoutesAtNodeBetweenTimeFrame(nodeId: number, departureDateTimeWindow: string, departureFlexibility: number, sessionToken: string): Promise<Record<string, any>> {
+    async displayDriverRoutesAtNodeBetweenTimeFrame(nodeId: number, departureDateTimeWindow: string, departureFlexibility: number, isPartial: boolean, sessionToken: string): Promise<Record<string, any>> {
         // const driverRouteNodeIds: Array<Record<string, any>> = await this.driverRouteNodeRepository.findDriverRouteNodes({
         //     attributes: [["droute_id", "drouteNodeId"]],
         //     where: {
@@ -832,13 +832,10 @@ export class DriverRouteService {
         //     order: [["drouteNodes", "rank", "ASC"]]
         // });
 
-
         let dateTimeStartWindow: string = moment(departureDateTimeWindow, "YYYY-MM-DD HH:mm").clone().utcOffset(0, true).format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
         let dateTimeEndWindow: string = moment(departureDateTimeWindow, "YYYY-MM-DD HH:mm").clone().add(departureFlexibility, "minutes").utcOffset(0, true).format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
 
-
         const driverRoutes: Array<DriverRouteAssociatedNodeDto> = await getDriverRoutesBetweenTimeFrame(dateTimeStartWindow, dateTimeEndWindow, [nodeId]);
-
 
         if (!driverRoutes.length) {
             throw new CustomError("No Driver Route found in on this node in given time window", 404);
@@ -863,9 +860,12 @@ export class DriverRouteService {
             driverRoute.drouteNodes!.forEach((drouteNode: DriverRouteNodeAssocitedDto) => {
                 if (drouteNode.rank! === searchNodeRank) {
                     driverRouteNodesHavingOSRMRoute.push(drouteNode.node!);
-                }
-                if (["SCHEDULED", "ORIGIN", "DESTINATION"].includes(drouteNode.status!.trim()) && drouteNode.rank! > searchNodeRank) {
-                    driverRouteNodesHavingOSRMRoute.push(drouteNode.node!);
+                } else if (["SCHEDULED", "ORIGIN", "DESTINATION"].includes(drouteNode.status!.trim())) {
+                    if (isPartial && drouteNode.rank! > searchNodeRank) {
+                        driverRouteNodesHavingOSRMRoute.push(drouteNode.node!);
+                    } else if (!isPartial) {
+                        driverRouteNodesHavingOSRMRoute.push(drouteNode.node!);
+                    }
                 }
             });
 
@@ -978,7 +978,7 @@ export class DriverRouteService {
             }));
 
 
-            let arrivalTimeAtNode: string = '';
+            let arrivalTimeAtNode: string = "";
             driverRouteOsrm.drouteNodes = driverRouteOsrm.drouteNodes!.filter((drouteNode: DriverRouteNodeAssocitedDto) => {
                 if (drouteNode.nodeId === nodeId) {
                     arrivalTimeAtNode = moment(drouteNode.arrivalTime, "YYYY-MM-DD HH:mm").utcOffset(0, true).format("YYYY-MM-DD HH:mm")
@@ -1055,9 +1055,15 @@ export class DriverRouteService {
         const originNode: NodeDto = (await findNearestNode(originCoordinates)).smallestDistanceNode;
         const destinationNode: NodeDto = (await findNearestNode(destinationCoordinates)).smallestDistanceNode;
 
+        let directDistanceDuration: Record<string, any> = await getDistanceDurationBetweenNodes({ longitude: originNode.long, latitude: originNode.lat }, { longitude: destinationNode.long, latitude: destinationNode.lat })
+
+        // get direct osrm distance duration to get qulaity metrics
+        let riderRouteDirectDistance: number = parseFloat((directDistanceDuration.distance / 1609.34).toFixed(2));
+        let riderRouteDirectDuration: number = parseFloat((directDistanceDuration.duration / 60).toFixed(2));
+
         let routeStrategy: RiderDriverRouteMatchingStrategy = new RiderDriverRouteMatchingStrategy();
 
-        let matchingRoutesWithQosMetrics: Array<ClassifiedRouteDto> = await routeStrategy.getRiderDriverRoutes(departureDateTime, departureFlexibility, originNode, destinationNode)
+        let matchingRoutesWithQosMetrics: Array<ClassifiedRouteDto> = await routeStrategy.getRiderDriverRoutes(departureDateTime, departureFlexibility, originNode, destinationNode, riderRouteDirectDistance, riderRouteDirectDuration)
 
         // return { status: 200, data: { matchingRouteOptions: matchingRoutesWithQosMetrics } };
 
@@ -1076,7 +1082,8 @@ export class DriverRouteService {
                 routeOption.primary = {
                     originNode: primaryFirstNode.nodeId, destinationNode: primaryLastNode.nodeId, drouteId: primaryClassifiedRoute.driverRoute.drouteId,
                     originDepartureTime: primaryFirstNode.departureTime as string, destinationArrivalTime: primaryLastNode.arrivalTime as string,
-                    drouteName: primaryClassifiedRoute.driverRoute.drouteName!, distanceRatio: primaryClassifiedRoute.riderCumulativeDistance! / totalDistance
+                    drouteName: primaryClassifiedRoute.driverRoute.drouteName!, distanceRatio: primaryClassifiedRoute.riderCumulativeDistance! / totalDistance,
+                    duration: primaryClassifiedRoute.riderCumulativeDistance!
                 }
 
                 if (primaryClassifiedRoute.intersectingRoute) {
@@ -1086,7 +1093,8 @@ export class DriverRouteService {
                     routeOption.secondary = {
                         originNode: secondaryFirstNode.nodeId, destinationNode: secondaryLastNode.nodeId, drouteId: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId,
                         originDepartureTime: secondaryFirstNode.departureTime as string, destinationArrivalTime: secondaryLastNode.arrivalTime as string,
-                        drouteName: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteName!, distanceRatio: primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance! / totalDistance
+                        drouteName: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteName!, distanceRatio: primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance! / totalDistance,
+                        duration: primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance!
                     }
 
                     if (primaryClassifiedRoute.intersectingRoute.intersectingRoute) {
@@ -1099,7 +1107,9 @@ export class DriverRouteService {
                             originDepartureTime: tertiaryFirstNode.departureTime as string,
                             destinationArrivalTime: tertiaryLastNode.arrivalTime as string,
                             drouteName: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteName!,
-                            distanceRatio: primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance! / totalDistance
+                            distanceRatio: primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance! / totalDistance,
+                            duration: primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance!
+
                         }
                     }
                 }
@@ -1129,19 +1139,35 @@ export class DriverRouteService {
 
                 let routeOption: calculatedRoute = {
                     routeEfficiency: 0,
-                    routeCumulativeDuration: 0
+                    routeCumulativeDuration: 0,
+                    routeCummulativeDistance: 0,
+                    riderRouteDirectDistance: riderRouteDirectDistance,
+                    riderRouteDirectDuration: riderRouteDirectDuration
                 };
 
+                // Primary
                 let primaryFirstNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes![primaryClassifiedRoute.riderOriginRank];
                 let primaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes![primaryClassifiedRoute.riderDestinationRank];
                 routeOption.primary = {
                     drouteId: primaryClassifiedRoute.driverRoute.drouteId, originNode: primaryFirstNode.nodeId, destinationNode: primaryLastNode.nodeId,
                     originDepartureTime: await normalizeTimeZone(primaryFirstNode.departureTime as string), destinationArrivalTime: await normalizeTimeZone(primaryLastNode.arrivalTime as string),
-                    routeDuration: primaryClassifiedRoute.riderCumulativeDuration ?? 0, routeDistance: primaryClassifiedRoute.riderCumulativeDistance ?? 0,
+                    routeDuration: primaryClassifiedRoute.riderCumulativeDuration ?? 0, routeDistance: parseFloat(primaryClassifiedRoute.riderCumulativeDistance?.toFixed(2) ?? '0'),
+                    drouteNodes: primaryClassifiedRoute.driverRoute.drouteNodes!, drouteName: primaryClassifiedRoute.driverRoute.drouteName!,
+                    originNodeDescription: primaryFirstNode.node?.description!, originNodeLocation: primaryFirstNode.node?.location!,
+                    destinationNodeDescription: primaryLastNode.node?.description!, destinationNodeLocation: primaryLastNode.node?.location!
+                }
+                if (!primaryClassifiedRoute.driverRoute.fixedRoute) {
+                    routeOption.primary!.driverRouteDistance = primaryClassifiedRoute.driverRouteDirectDistance;
+                    routeOption.primary!.driverRouteDuration = primaryClassifiedRoute.driverRouteDirectDuration;
+                    routeOption.primary!.driverRouteDirectDistance = primaryClassifiedRoute.driverRouteDistance;
+                    routeOption.primary!.driverRouteDirectDuration = primaryClassifiedRoute.driverRouteDirectDuration;
                 }
                 routeOption.routeCumulativeDuration += primaryClassifiedRoute.riderCumulativeDuration ?? 0;
+                routeOption.routeCummulativeDistance += primaryClassifiedRoute.riderCumulativeDistance ?? 0;
+
                 routeOption.routeEfficiency += primaryClassifiedRoute.routeEfficiency ?? 0;
 
+                // Secondary 1-Stop
                 if (primaryClassifiedRoute.intersectingRoute) {
 
                     let secondaryFirstNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes![primaryClassifiedRoute.intersectingRoute.riderOriginRank];
@@ -1149,11 +1175,23 @@ export class DriverRouteService {
                     routeOption.secondary = {
                         originNode: secondaryFirstNode.nodeId, destinationNode: secondaryLastNode.nodeId, drouteId: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId,
                         originDepartureTime: await normalizeTimeZone(secondaryFirstNode.departureTime as string), destinationArrivalTime: await normalizeTimeZone(secondaryLastNode.arrivalTime as string),
-                        routeDuration: primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration ?? 0, routeDistance: primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance ?? 0
+                        routeDuration: primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration ?? 0, routeDistance: parseFloat(primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance?.toFixed(2) ?? '0'),
+                        drouteNodes: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes!, drouteName: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteName!,
+                        originNodeDescription: secondaryFirstNode.node?.description!, originNodeLocation: secondaryFirstNode.node?.location!,
+                        destinationNodeDescription: secondaryLastNode.node?.description!, destinationNodeLocation: secondaryLastNode.node?.location!
+                    }
+                    if (!primaryClassifiedRoute.intersectingRoute.driverRoute.fixedRoute) {
+                        routeOption.secondary!.driverRouteDistance = primaryClassifiedRoute.intersectingRoute.driverRouteDirectDistance;
+                        routeOption.secondary!.driverRouteDuration = primaryClassifiedRoute.intersectingRoute.driverRouteDirectDuration;
+                        routeOption.secondary!.driverRouteDirectDistance = primaryClassifiedRoute.intersectingRoute.driverRouteDistance;
+                        routeOption.secondary!.driverRouteDirectDuration = primaryClassifiedRoute.intersectingRoute.driverRouteDirectDuration;
                     }
                     routeOption.routeCumulativeDuration += primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration ?? 0;
+                    routeOption.routeCummulativeDistance += primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance ?? 0;
+
                     routeOption.routeEfficiency += primaryClassifiedRoute.intersectingRoute.routeEfficiency ?? 0;
 
+                    // Tertiary 2-Stop
                     if (primaryClassifiedRoute.intersectingRoute.intersectingRoute) {
 
                         let tertiaryFirstNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes![primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderOriginRank];
@@ -1164,10 +1202,20 @@ export class DriverRouteService {
                             originDepartureTime: await normalizeTimeZone(tertiaryFirstNode.departureTime as string),
                             destinationArrivalTime: await normalizeTimeZone(tertiaryLastNode.arrivalTime as string),
                             routeDuration: primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDuration ?? 0,
-                            routeDistance: primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance ?? 0
+                            routeDistance: parseFloat(primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance?.toFixed(2) ?? '0'),
+                            drouteNodes: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes!, drouteName: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteName!,
+                            originNodeDescription: tertiaryFirstNode.node?.description!, originNodeLocation: tertiaryFirstNode.node?.location!,
+                            destinationNodeDescription: tertiaryLastNode.node?.description!, destinationNodeLocation: tertiaryLastNode.node?.location!
                         }
-
+                        if (!primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.fixedRoute) {
+                            routeOption.tertiary!.driverRouteDistance = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDistance;
+                            routeOption.tertiary!.driverRouteDuration = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDuration;
+                            routeOption.tertiary!.driverRouteDirectDistance = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDistance;
+                            routeOption.tertiary!.driverRouteDirectDuration = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDuration;
+                        }
                         routeOption.routeCumulativeDuration += primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDuration ?? 0;
+                        routeOption.routeCummulativeDistance += primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance ?? 0;
+
                         routeOption.routeEfficiency += primaryClassifiedRoute.intersectingRoute.intersectingRoute.routeEfficiency ?? 0;
                     }
                 }

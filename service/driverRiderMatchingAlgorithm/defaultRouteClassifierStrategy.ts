@@ -13,8 +13,10 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // Take time at point, flexibility in minutes, node oint id , node transit time and destination node id to get all route passing at node in mention time
-    async findRoutesPassingAtNode(arrivalDepartureDateTime: string, riderTimeFlexibility: number, nodeId: number, transitTime: number, destnationNodeId: number, routeClassification: RouteClassification, routesToExclude: Array<number>): Promise<Array<ClassifiedRoute>> {
+    async findRoutesPassingAtNode(arrivalDepartureDateTime: string, riderTimeFlexibility: number, nodeId: number, transitTime: number, destnationNodeId: number, routeClassification: RouteClassification, routesToExclude: Array<number>): Promise<Record<string, any>> {
+        // Promise<Array<ClassifiedRoute>> {
 
+        let outputLog: string = "";
         // node start and end time to search
         let dateTimeStartWindow: Moment = moment(arrivalDepartureDateTime, "YYYY-MM-DD HH:mm").clone().add(transitTime, "minutes");
         let dateTimeEndWindow: Moment = moment(arrivalDepartureDateTime, "YYYY-MM-DD HH:mm").clone().add(riderTimeFlexibility + transitTime, "minutes");
@@ -25,6 +27,7 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
         const passingRoutesAtNode: Array<DriverRouteAssociatedNodeDto> = await getDriverRoutesBetweenTimeFrame(dateTimeStartWindow.utcOffset(0, true).format("YYYY-MM-DD[T]HH:mm:ss.000[Z]"), dateTimeEndWindow.utcOffset(0, true).format("YYYY-MM-DD[T]HH:mm:ss.000[Z]"), [nodeId]);
 
         // console.log(`    ${passingRoutesAtNode.length} routes available`);
+        outputLog = outputLog.concat(`    ${passingRoutesAtNode.length} routes available\n`);
 
         // iterate through all found routes and convert it into data structure
         const passingRoutesAtNodeClassified: Array<ClassifiedRoute> = [];
@@ -53,6 +56,9 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                 if (riderDestinationRank !== Infinity) {
 
                     // console.log(`     ${' '.repeat(routeClassification)}Node ${passingRoute.drouteNodes![riderDestinationRank].nodeId} (Destination) found *****************${routeClassification === 0 ? 'Direct' : routeClassification === 1 ? '1-stop' : '2-stop'} route found`);
+                    outputLog = outputLog.concat(`     ${' '.repeat(routeClassification)}Node ${passingRoute.drouteNodes![riderDestinationRank].nodeId} (Destination) found *****************${routeClassification === 0 ? 'Direct' : routeClassification === 1 ? '1-stop' : '2-stop'} route found\n`);
+
+
                     // console.log(`   ${' '.repeat(routeClassification)}Destination found at node ${passingRoute.drouteNodes![riderDestinationRank].nodeId} for route ${passingRoute.drouteId}`)
                 }
 
@@ -61,6 +67,7 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                     if (passingRoute.drouteNodes![riderOriginRank].status === "POTENTIAL") {
 
                         // console.log(`     ${' '.repeat(routeClassification)}Retime flex route ${passingRoute.drouteId} at node ${passingRoute.drouteNodes![riderOriginRank].nodeId} arriving at ${passingRoute.drouteNodes![riderOriginRank].arrivalTime}`)
+                        outputLog = outputLog.concat(`     ${' '.repeat(routeClassification)}Retime flex route ${passingRoute.drouteId} at node ${passingRoute.drouteNodes![riderOriginRank].nodeId} arriving at ${passingRoute.drouteNodes![riderOriginRank].arrivalTime}\n`);
 
                         // initial rank of scheduled node
                         let initialScheduledNodeRank: number = riderOriginRank;
@@ -113,10 +120,12 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
             } else {
                 // console.log(`     ${' '.repeat(routeClassification)}${passingRoute.drouteId} already found in ${RouteClassification[routeClassification - 1]} route(s) rejecting...`)
+                outputLog = outputLog.concat(`     ${' '.repeat(routeClassification)}${passingRoute.drouteId} already found in ${RouteClassification[routeClassification - 1]} route(s) rejecting...\n`);
+
             }
         }));
 
-        return passingRoutesAtNodeClassified;
+        return { output: outputLog, data: passingRoutesAtNodeClassified };
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -283,12 +292,13 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    async retimeDriverRouteByDestinationRank(classifiedRoutes: Array<ClassifiedRouteDto>): Promise<Array<ClassifiedRouteDto>> {
+    async retimeDriverRouteByDestinationRank(classifiedRoutes: Array<ClassifiedRouteDto>): Promise<Record<string, any>> {
+        //  Promise<Array<ClassifiedRouteDto>> {
         // await Promise.all(classifiedRoutes.map(async (primaryClassifiedRoute: ClassifiedRouteDto) => {
 
+        let outputLog: string = "";
+
         for (let classifiedRoute of classifiedRoutes) {
-
-
 
             // if (!primaryClassifiedRoute.driverRoute.fixedRoute) {
             //     if (primaryClassifiedRoute.driverRoute.drouteNodes![primaryClassifiedRoute.riderDestinationRank].status === "POTENTIAL") {
@@ -446,31 +456,53 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
             // }
 
             // let routeChain: string = `Route ${classifiedRoute.driverRoute.drouteId}${classifiedRoute.intersectingRoute ? `->${classifiedRoute.intersectingRoute.driverRoute.drouteId}` : ""}`;
+            outputLog = outputLog.concat(`Route ${classifiedRoute.driverRoute.drouteId}${classifiedRoute.intersectingRoute ? `->${classifiedRoute.intersectingRoute.driverRoute.drouteId}` : ""}\n`)
             // routeChain = routeChain.concat(`${classifiedRoute.intersectingRoute?.intersectingRoute ? `->${classifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId}` : ""}`)
+            outputLog = outputLog.concat(`${classifiedRoute.intersectingRoute?.intersectingRoute ? `->${classifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId}` : ""}\n`)
+
+
             // console.log((routeChain));
 
-            classifiedRoute = await this.retimeRouteSection(classifiedRoute);
+            // classifiedRoute
+            let data: any = await this.retimeRouteSection(classifiedRoute);
+
+            classifiedRoute = data.data;
+            outputLog = outputLog.concat(`${data.output}`)
 
             if (classifiedRoute.intersectingRoute) {
-                classifiedRoute.intersectingRoute = await this.retimeRouteSection(classifiedRoute.intersectingRoute);
+                // classifiedRoute.intersectingRoute = await this.retimeRouteSection(classifiedRoute.intersectingRoute);
+                let data: any = await this.retimeRouteSection(classifiedRoute.intersectingRoute);
+
+                classifiedRoute.intersectingRoute = data.data;
+                outputLog = outputLog.concat(`${data.output}`)
             }
             if (classifiedRoute.intersectingRoute?.intersectingRoute) {
 
-                classifiedRoute.intersectingRoute.intersectingRoute = await this.retimeRouteSection(classifiedRoute.intersectingRoute.intersectingRoute);
+                // classifiedRoute.intersectingRoute.intersectingRoute = await this.retimeRouteSection(classifiedRoute.intersectingRoute.intersectingRoute);
+
+                let data: any = await this.retimeRouteSection(classifiedRoute.intersectingRoute.intersectingRoute);
+
+                classifiedRoute.intersectingRoute.intersectingRoute = data.data;
+                outputLog = outputLog.concat(`${data.output}`)
+
             }
 
         }
         // }));
 
-        return classifiedRoutes;
+        return { output: outputLog, data: classifiedRoutes };
     }
 
-    async retimeRouteSection(partialClassifiedRoute: ClassifiedRouteDto): Promise<ClassifiedRouteDto> {
+    async retimeRouteSection(partialClassifiedRoute: ClassifiedRouteDto): Promise<Record<string, any>> {
+        //  Promise<ClassifiedRouteDto> {
+
+        let outputLog: string = "";
+
         if (!partialClassifiedRoute.driverRoute.fixedRoute) {
             if (partialClassifiedRoute.driverRoute.drouteNodes![partialClassifiedRoute.riderDestinationRank].status === "POTENTIAL") {
 
-                // console.log(`Retime flex route ${partialClassifiedRoute.driverRoute.drouteId} at node ${partialClassifiedRoute.driverRoute.drouteNodes![partialClassifiedRoute.riderDestinationRank].nodeId} arriving at ${partialClassifiedRoute.driverRoute.drouteNodes![partialClassifiedRoute.riderDestinationRank].arrivalTime}`)
-
+                // console.log(`Retime flex route ${partialClassifiedRoute.driverRoute.drouteId} at node ${partialClassifiedRoute.driverRoute.drouteNodes![partialClassifiedRoute.riderDestinationRank].nodeId} arriving at ${partialClassifiedRoute.driverRoute.drouteNodes![partialClassifiedRoute.riderDestinationRank].arrivalTime}`);
+                outputLog = outputLog.concat(`Retime flex route ${partialClassifiedRoute.driverRoute.drouteId} at node ${partialClassifiedRoute.driverRoute.drouteNodes![partialClassifiedRoute.riderDestinationRank].nodeId} arriving at ${partialClassifiedRoute.driverRoute.drouteNodes![partialClassifiedRoute.riderDestinationRank].arrivalTime}\n`)
 
                 // initial rank of scheduled node
                 let initialScheduledNodeRank: number = partialClassifiedRoute.riderDestinationRank;
@@ -518,7 +550,7 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                 partialClassifiedRoute.driverRoute.drouteNodes![partialClassifiedRoute.riderDestinationRank].status = "SCHEDULED";
             }
         }
-        return partialClassifiedRoute;
+        return { output: outputLog, data: partialClassifiedRoute };
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -756,15 +788,20 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    async checkQOSMetrics(classifiedRoutes: Array<ClassifiedRouteDto>, riderDirectRouteDistance: number, riderDrirectRouteDuration: number): Promise<Array<ClassifiedRouteDto>> {
+    async checkQOSMetrics(classifiedRoutes: Array<ClassifiedRouteDto>, riderDirectRouteDistance: number, riderDrirectRouteDuration: number, riderTransitFlexibility: number): Promise<Record<string, any>> {
+        //  Promise<Array<ClassifiedRouteDto>> {
+
+        let outputLog: string = "";
 
         const qualityCriteriaFilteredRoutes: Array<ClassifiedRouteDto> = [];
 
         await Promise.all(classifiedRoutes.map(async (primaryClassifiedRoute: ClassifiedRouteDto) => {
 
-            // let routeChain: string = `Route ${primaryClassifiedRoute.driverRoute.drouteId}${primaryClassifiedRoute.intersectingRoute ? `->${primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId}` : ""}`;
-            // routeChain = routeChain.concat(`${primaryClassifiedRoute.intersectingRoute?.intersectingRoute ? `->${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId}` : ""}`)
+            let routeChain: string = `Route ${primaryClassifiedRoute.driverRoute.drouteId}${primaryClassifiedRoute.intersectingRoute ? `->${primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId}` : ""}`;
+            routeChain = routeChain.concat(`${primaryClassifiedRoute.intersectingRoute?.intersectingRoute ? `->${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId}` : ""}`)
             // console.log((routeChain));
+            outputLog = outputLog.concat(`${routeChain}\n`);
+
 
             let riderRouteDistance: number = 0;
             let riderRouteDuration: number = 0;
@@ -778,15 +815,23 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
             riderRouteDuration += primaryClassifiedRoute.riderCumulativeDuration!;
 
             // console.log(`->${primaryClassifiedRoute.driverRoute.drouteId}`)
+            outputLog = outputLog.concat(`->${primaryClassifiedRoute.driverRoute.drouteId}\n`);
             // console.log(`    riderDistance=${primaryClassifiedRoute.riderCumulativeDistance!}, riderDuration=${primaryClassifiedRoute.riderCumulativeDuration!}`)
+            outputLog = outputLog.concat(`    riderDistance=${primaryClassifiedRoute.riderCumulativeDistance!}, riderDuration=${primaryClassifiedRoute.riderCumulativeDuration!}\n`)
+
 
             if (!primaryClassifiedRoute.driverRoute.fixedRoute) {
                 // console.log(`    Flex Route variables , directDriverRouteDistance=${primaryClassifiedRoute.driverRouteDirectDistance}, directDriverRouteDuration=${primaryClassifiedRoute.driverRouteDirectDuration}, driverRouteDistance=${primaryClassifiedRoute.driverRouteDistance}, driverRouteDuration=${primaryClassifiedRoute.driverRouteDuration}`)
+                outputLog = outputLog.concat(`    Flex Route variables , directDriverRouteDistance=${primaryClassifiedRoute.driverRouteDirectDistance}, directDriverRouteDuration=${primaryClassifiedRoute.driverRouteDirectDuration}, driverRouteDistance=${primaryClassifiedRoute.driverRouteDistance}, driverRouteDuration=${primaryClassifiedRoute.driverRouteDuration}\n`);
+
 
                 distanceQuality = parseFloat((primaryClassifiedRoute.driverRouteDistance! / primaryClassifiedRoute.driverRouteDirectDistance!).toFixed(2));
                 durationQuality = parseFloat((primaryClassifiedRoute.driverRouteDuration! / primaryClassifiedRoute.driverRouteDirectDuration!).toFixed(2));
 
                 // console.log(`    Flex route metrics distanceQuality=${distanceQuality}, durationQuality=${durationQuality}, overallQuality=${distanceQuality * durationQuality}`);
+                outputLog = outputLog.concat(`    Flex route metrics distanceQuality=${distanceQuality}, durationQuality=${durationQuality}, overallQuality=${distanceQuality * durationQuality}\n`);
+
+
                 if (distanceQuality > 1.50 || durationQuality > 1.50 || (distanceQuality * durationQuality) > 1.70) {
                     hasGoodQuality = false
                 }
@@ -799,16 +844,21 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                 riderRouteDuration += primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration!;
 
                 // console.log(`->${primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId}`)
-                // console.log(`    riderDistance=${primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance!}, riderDuration=${primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration!}`)
+                outputLog = outputLog.concat(`->${primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId}\n`);
 
+                // console.log(`    riderDistance=${primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance!}, riderDuration=${primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration!}`)
+                outputLog = outputLog.concat(`    riderDistance=${primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance!}, riderDuration=${primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration!}\n`);
 
                 if (!primaryClassifiedRoute.intersectingRoute.driverRoute.fixedRoute) {
                     // console.log(`    Flex Route variables , directDriverRouteDistance=${primaryClassifiedRoute.intersectingRoute.driverRouteDirectDistance}, directDriverRouteDuration=${primaryClassifiedRoute.intersectingRoute.driverRouteDirectDuration}, driverRouteDistance=${primaryClassifiedRoute.intersectingRoute.driverRouteDistance}, driverRouteDuration=${primaryClassifiedRoute.intersectingRoute.driverRouteDuration}`)
+                    outputLog = outputLog.concat(`    Flex Route variables , directDriverRouteDistance=${primaryClassifiedRoute.intersectingRoute.driverRouteDirectDistance}, directDriverRouteDuration=${primaryClassifiedRoute.intersectingRoute.driverRouteDirectDuration}, driverRouteDistance=${primaryClassifiedRoute.intersectingRoute.driverRouteDistance}, driverRouteDuration=${primaryClassifiedRoute.intersectingRoute.driverRouteDuration}\n`);
 
                     distanceQuality = parseFloat((primaryClassifiedRoute.intersectingRoute.driverRouteDistance! / primaryClassifiedRoute.intersectingRoute.driverRouteDirectDistance!).toFixed(2));
                     durationQuality = parseFloat((primaryClassifiedRoute.intersectingRoute.driverRouteDuration! / primaryClassifiedRoute.intersectingRoute.driverRouteDirectDuration!).toFixed(2));
 
                     // console.log(`    Flex route metrics distanceQuality=${distanceQuality}, durationQuality=${durationQuality}, overallQuality=${distanceQuality * durationQuality}`);
+                    outputLog = outputLog.concat(`    Flex route metrics distanceQuality=${distanceQuality}, durationQuality=${durationQuality}, overallQuality=${distanceQuality * durationQuality}\n`);
+
                     if (distanceQuality > 1.50 || durationQuality > 1.50 || (distanceQuality * durationQuality) > 1.70) {
                         hasGoodQuality = false
                     }
@@ -821,16 +871,21 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                     riderRouteDuration += primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDuration!;
 
                     // console.log(`->${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId}`)
-                    // console.log(`    riderDistance=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance!}, riderDuration=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDuration!}`)
+                    outputLog = outputLog.concat(`->${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId}\n`);
 
+                    // console.log(`    riderDistance=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance!}, riderDuration=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDuration!}`)
+                    outputLog = outputLog.concat(`    riderDistance=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance!}, riderDuration=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDuration!}\n`);
 
                     if (!primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.fixedRoute) {
                         // console.log(`    Flex Route variables , directDriverRouteDistance=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDistance}, directDriverRouteDuration=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDuration}, driverRouteDistance=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDistance}, driverRouteDuration=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDuration}`)
+                        outputLog = outputLog.concat(`    Flex Route variables , directDriverRouteDistance=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDistance}, directDriverRouteDuration=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDuration}, driverRouteDistance=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDistance}, driverRouteDuration=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDuration}\n`);
 
                         distanceQuality = parseFloat((primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDistance! / primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDistance!).toFixed(2));
                         durationQuality = parseFloat((primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDuration! / primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDuration!).toFixed(2));
 
                         // console.log(`    Flex route metrics distanceQuality=${distanceQuality}, durationQuality=${durationQuality}, overallQuality=${distanceQuality * durationQuality}`);
+                        outputLog = outputLog.concat(`    Flex route metrics distanceQuality=${distanceQuality}, durationQuality=${durationQuality}, overallQuality=${distanceQuality * durationQuality}\n`);
+
                         if (distanceQuality > 1.50 || durationQuality > 1.50 || (distanceQuality * durationQuality) > 1.70) {
                             hasGoodQuality = false
                         }
@@ -839,17 +894,23 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
             }
 
             distanceQuality = parseFloat((riderRouteDistance / riderDirectRouteDistance).toFixed(2));
-            durationQuality = parseFloat((riderRouteDuration / riderDrirectRouteDuration).toFixed(2));
+            durationQuality = parseFloat((riderRouteDuration / (riderDrirectRouteDuration + riderTransitFlexibility)).toFixed(2));
 
             // console.log("Rider Total Distance Metrics")
+            outputLog = outputLog.concat(`Rider Total Distance Metrics\n`);
+
             // console.log(`    totalRiderDistance=${riderRouteDistance}, totalRiderDuration=${riderRouteDuration}`)
+            outputLog = outputLog.concat(`    totalRiderDistance=${riderRouteDistance}, totalRiderDuration=${riderRouteDuration}\n`);
+
             // console.log(`    riderDistanceQuality=${distanceQuality}, riderDurationQuality=${durationQuality}, riderOverallQuality=${distanceQuality * durationQuality}`);
+            outputLog = outputLog.concat(`    riderDistanceQuality=${distanceQuality}, riderDurationQuality=${durationQuality}, riderOverallQuality=${distanceQuality * durationQuality}\n`);
 
             if (distanceQuality > 1.25 || durationQuality > 1.50 || (distanceQuality * durationQuality) > 1.50) {
                 hasGoodQuality = false;
             }
 
             // console.log(`Route is ${hasGoodQuality ? `Accepted` : `Rejected`}`)
+            outputLog = outputLog.concat(`Route is ${hasGoodQuality ? `Accepted` : `Rejected`}\n`);
 
             primaryClassifiedRoute.routeEfficiency = parseFloat((distanceQuality * durationQuality).toFixed(2));
 
@@ -857,8 +918,12 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
             qualityCriteriaFilteredRoutes.push(primaryClassifiedRoute);
             // }
 
+            // console.log("******************************************************************************************************************************************************************************************************\n")
+            outputLog = outputLog.concat(`******************************************************************************************************************************************************************************************************\n\n`)
+
+
         }));
 
-        return qualityCriteriaFilteredRoutes;
+        return { output: outputLog, data: qualityCriteriaFilteredRoutes };
     }
 }

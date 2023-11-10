@@ -140,9 +140,12 @@ export class DriverRouteController {
         }
     }
 
-    async listLogFileNames(): Promise<any> {
+    async listLogFileNames(fileGroupName: string, fileMimeType: string): Promise<any> {
+        if (!fileGroupName || !fileMimeType) {
+            return { status: 422, data: { message: "Invalid file group name or mime type" } };
+        }
         try {
-            return await this.driverRouteService.listLogFileNames();
+            return await this.driverRouteService.listLogFileNames(fileGroupName, fileMimeType);
         } catch (error: any) {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
@@ -159,6 +162,7 @@ export class DriverRouteController {
             return await this.driverRouteService.deleteLogByName(fileName);
 
         } catch (error: any) {
+            console.log(error)
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
@@ -166,12 +170,12 @@ export class DriverRouteController {
         }
     }
 
-    async downloadLogFiles(fileName: string | undefined): Promise<any> {
-        if (!fileName) {
-            return { status: 422, data: { message: "Invalid file name" } };
+    async downloadLogFiles(fileName: string | undefined, fileGroupName: string, fileMimeType: string): Promise<any> {
+        if (!fileName || !fileGroupName || !fileMimeType) {
+            return { status: 422, data: { message: "Invalid file name or file group name" } };
         }
         try {
-            return await this.driverRouteService.downloadLogFiles(fileName);
+            return await this.driverRouteService.downloadLogFiles(fileName!, fileGroupName, fileMimeType);
         } catch (error: any) {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
@@ -180,14 +184,14 @@ export class DriverRouteController {
         }
     }
 
-    async displayDriverRoutesAtNodeBetweenTimeFrame(nodeId: number, departureDateTimeWindow: string | undefined, departureFlexibility: number, sessionToken: string | undefined): Promise<any> {
+    async displayDriverRoutesAtNodeBetweenTimeFrame(nodeId: number, departureDateTimeWindow: string | undefined, departureFlexibility: number, isPartial: string = "false", sessionToken: string | undefined): Promise<any> {
 
         if (!nodeId || !departureDateTimeWindow || !departureFlexibility
         ) {
             return { status: 422, data: { message: "Invalid data" } };
         }
         try {
-            return await this.driverRouteService.displayDriverRoutesAtNodeBetweenTimeFrame(nodeId, departureDateTimeWindow, departureFlexibility, sessionToken!);
+            return await this.driverRouteService.displayDriverRoutesAtNodeBetweenTimeFrame(nodeId, departureDateTimeWindow, departureFlexibility, isPartial === "true", sessionToken!);
         } catch (error: any) {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };

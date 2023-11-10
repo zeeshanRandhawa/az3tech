@@ -10,7 +10,7 @@ export class CustomError extends Error {
 }
 
 export interface CoordinateDto {
-    latitude: number | null,
+    latitude: number | null;
     longitude: number | null
 }
 
@@ -26,12 +26,12 @@ export interface FilterForm {
 }
 
 export interface NodeForm {
-    location?: string,
-    description?: string,
-    address: string,
-    city: string,
-    stateProvince: string,
-    zipPostalCode?: string,
+    location?: string;
+    description?: string;
+    address: string;
+    city: string;
+    stateProvince: string;
+    zipPostalCode?: string;
     transitTime?: string
 }
 
@@ -227,7 +227,7 @@ export interface RiderRouteNodeDto {
 export enum RouteClassification {
     Primary,
     Secondary,
-    Tertiary
+    Tertiary,
 }
 
 export interface ClassifiedRouteDto {
@@ -254,49 +254,76 @@ export interface ClassifiedRouteDto {
 }
 
 export interface RouteOption {
-    primary?: RouteDetail,
-    secondary?: RouteDetail,
-    tertiary?: RouteDetail,
+    primary?: RouteDetail;
+    secondary?: RouteDetail;
+    tertiary?: RouteDetail;
 }
 
 export interface RouteDetail {
     drouteId: number
     drouteName: string
-    originNode: number,
-    destinationNode: number,
-    originDepartureTime: string,
-    destinationArrivalTime: string,
-    distanceRatio: number
+    originNode: number;
+    destinationNode: number;
+    originDepartureTime: string;
+    destinationArrivalTime: string;
+    distanceRatio: number;
+
+    duration: number;
+
 }
 
 export interface calculatedRoute {
     routeEfficiency: number;
-    routeCumulativeDuration: number;
 
-    primary?: caculatedRouteDetail,
-    secondary?: caculatedRouteDetail,
-    tertiary?: caculatedRouteDetail,
+    routeCumulativeDuration: number;
+    routeCummulativeDistance: number;
+
+    riderRouteDirectDistance: number;
+    riderRouteDirectDuration: number;
+
+    primary?: caculatedRouteDetail;
+    secondary?: caculatedRouteDetail;
+    tertiary?: caculatedRouteDetail;
 }
 
 export interface caculatedRouteDetail {
-    drouteId: number
-    originNode: number,
-    destinationNode: number,
-    originDepartureTime: string,
-    destinationArrivalTime: string,
+    drouteId: number;
+
+    drouteName: string;
+
+    originNode: number;
+    originNodeDescription: string;
+    originNodeLocation: string;
+
+    destinationNode: number;
+    destinationNodeDescription: string;
+    destinationNodeLocation: string;
+
+    originDepartureTime: string;
+    destinationArrivalTime: string;
+
     routeDuration: number;
     routeDistance: number;
+
+    driverRouteDirectDistance?: number;
+    driverRouteDirectDuration?: number;
+
+    driverRouteDistance?: number;
+    driverRouteDuration?: number;
+
+    drouteNodes: Array<DriverRouteNodeAssocitedDto>;
+
 }
 
 export interface QualityMetrics {
-    directRouteDuration: number | null,
-    directRouteDistance: number | null,
-    primaryRouteDuration: number | null,
-    primaryRouteDistance: number | null,
-    secondaryRouteDuration: number | null,
-    secondaryRouteDistance: number | null,
-    tertiaryRouteDuration: number | null,
-    tertiaryRouteDistance: number | null,
-    routeQualityRatio: number | null,
+    directRouteDuration: number | null;
+    directRouteDistance: number | null;
+    primaryRouteDuration: number | null;
+    primaryRouteDistance: number | null;
+    secondaryRouteDuration: number | null;
+    secondaryRouteDistance: number | null;
+    tertiaryRouteDuration: number | null;
+    tertiaryRouteDistance: number | null;
+    routeQualityRatio: number | null;
     status: string | null
 }
