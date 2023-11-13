@@ -415,40 +415,40 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
             //             // get node departuretime chenage it
             //             let passingRouteOriginNodeDepartureTime: Moment = moment.utc(primaryClassifiedRoute.intersectingRoute!.intersectingRoute.driverRoute.drouteNodes![initialScheduledNodeRank].arrivalTime).clone().add(primaryClassifiedRoute.intersectingRoute!.intersectingRoute.driverRoute.drouteNodes![initialScheduledNodeRank].node?.transitTime ?? 0, "minutes");
-
+            //
             //             let passingRouteOriginNodeCumulativeDistance: number = primaryClassifiedRoute.intersectingRoute!.intersectingRoute.driverRoute.drouteNodes![initialScheduledNodeRank].cumDistance ?? 0;
-
+            //
             //             primaryClassifiedRoute.intersectingRoute!.intersectingRoute.driverRoute.drouteNodes![initialScheduledNodeRank].departureTime = passingRouteOriginNodeDepartureTime.clone().format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
             //             primaryClassifiedRoute.intersectingRoute!.intersectingRoute.driverRoute.drouteNodes![initialScheduledNodeRank].cumTime! = primaryClassifiedRoute.intersectingRoute!.intersectingRoute.driverRoute.drouteNodes![initialScheduledNodeRank].cumTime! + primaryClassifiedRoute.intersectingRoute!.intersectingRoute.driverRoute.drouteNodes![initialScheduledNodeRank].node?.transitTime!
-
+            //
             //             let passingRouteOriginNodeCumulativeDuration: number = primaryClassifiedRoute.intersectingRoute!.intersectingRoute.driverRoute.drouteNodes![initialScheduledNodeRank].cumTime ?? 0;
-
+            //
             //             primaryClassifiedRoute.intersectingRoute!.intersectingRoute.driverRoute.drouteNodes!.slice(primaryClassifiedRoute.intersectingRoute!.intersectingRoute.riderDestinationRank + 1).forEach(async (drouteNode: DriverRouteNodeAssocitedDto, index: number) => {
-
+            //
             //                 let calculatedDisDurBetweenNodes: Record<string, any> = await getDistanceDurationBetweenNodes(
             //                     { longitude: primaryClassifiedRoute.intersectingRoute!.intersectingRoute!.driverRoute.drouteNodes![initialScheduledNodeRank].node!.long, latitude: primaryClassifiedRoute.intersectingRoute!.intersectingRoute!.driverRoute.drouteNodes![initialScheduledNodeRank].node!.lat },
             //                     { longitude: drouteNode.node!.long, latitude: drouteNode.node!.lat }
             //                 );
-
+            //
             //                 drouteNode.arrivalTime = passingRouteOriginNodeDepartureTime.clone().add(calculatedDisDurBetweenNodes.duration, "seconds").format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
             //                 drouteNode.cumDistance = parseFloat((passingRouteOriginNodeCumulativeDistance + (calculatedDisDurBetweenNodes.distance / 1609.34)).toFixed(2));
             //                 drouteNode.cumTime = parseFloat((passingRouteOriginNodeCumulativeDuration + (calculatedDisDurBetweenNodes.duration / 60)).toFixed(2));
-
+            //
             //                 if (drouteNode.status === "SCHEDULED") {
-
+            //
             //                     passingRouteOriginNodeDepartureTime = moment.utc(drouteNode.arrivalTime).clone().add(drouteNode.node?.transitTime ?? 0, "minutes");
-
+            //
             //                     passingRouteOriginNodeCumulativeDistance = drouteNode.cumTime + (drouteNode.node?.transitTime ?? 0);
-
+            //
             //                     drouteNode.departureTime = passingRouteOriginNodeDepartureTime.clone().format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
             //                     drouteNode.cumTime = drouteNode.cumTime = passingRouteOriginNodeCumulativeDistance;
-
+            //
             //                     passingRouteOriginNodeCumulativeDuration = drouteNode.cumTime;
             //                     initialScheduledNodeRank = initialScheduledNodeRank + index + 1;
             //                 }
-
+            //
             //             });
-
+            //
             //         } else if (primaryClassifiedRoute.intersectingRoute!.intersectingRoute.driverRoute.drouteNodes![primaryClassifiedRoute.intersectingRoute!.intersectingRoute.riderDestinationRank].status === "ORIGIN" || primaryClassifiedRoute.intersectingRoute!.intersectingRoute.driverRoute.drouteNodes![primaryClassifiedRoute.intersectingRoute!.intersectingRoute.riderDestinationRank].status === "DESTINATION") {
             //             primaryClassifiedRoute.intersectingRoute!.intersectingRoute.driverRoute.drouteNodes![primaryClassifiedRoute.intersectingRoute!.intersectingRoute.riderDestinationRank].status = "SCHEDULED";
             //         }
@@ -797,8 +797,8 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
         await Promise.all(classifiedRoutes.map(async (primaryClassifiedRoute: ClassifiedRouteDto) => {
 
-            let routeChain: string = `Route ${primaryClassifiedRoute.driverRoute.drouteId}${primaryClassifiedRoute.intersectingRoute ? `->${primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId}` : ""}`;
-            routeChain = routeChain.concat(`${primaryClassifiedRoute.intersectingRoute?.intersectingRoute ? `->${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId}` : ""}`)
+            let routeChain: string = `Route ${primaryClassifiedRoute.driverRoute.drouteId}(${primaryClassifiedRoute.riderOriginRank}-${primaryClassifiedRoute.riderDestinationRank})${primaryClassifiedRoute.intersectingRoute ? `->${primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId}(${primaryClassifiedRoute.intersectingRoute.riderOriginRank}-${primaryClassifiedRoute.intersectingRoute.riderDestinationRank})` : ""}`;
+            routeChain = routeChain.concat(`${primaryClassifiedRoute.intersectingRoute?.intersectingRoute ? `->${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId}(${primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderOriginRank}-${primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderDestinationRank})` : ""}`)
             // console.log((routeChain));
             outputLog = outputLog.concat(`${routeChain}\n`);
 
