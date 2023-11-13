@@ -138,6 +138,7 @@ export class RiderDriverRouteMatchingStrategy {
 
         }
 
+        // calculate direct driver route distance duration
         await Promise.all(this.classifiedRoutes.map(async (primaryClassifiedRoute: ClassifiedRoute) => {
 
             let driverOriginNode: DriverRouteNodeAssocitedDto;

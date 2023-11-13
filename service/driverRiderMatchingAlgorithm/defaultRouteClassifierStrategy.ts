@@ -27,7 +27,7 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
         const passingRoutesAtNode: Array<DriverRouteAssociatedNodeDto> = await getDriverRoutesBetweenTimeFrame(dateTimeStartWindow.utcOffset(0, true).format("YYYY-MM-DD[T]HH:mm:ss.000[Z]"), dateTimeEndWindow.utcOffset(0, true).format("YYYY-MM-DD[T]HH:mm:ss.000[Z]"), [nodeId]);
 
         // console.log(`    ${passingRoutesAtNode.length} routes available`);
-        outputLog = outputLog.concat(`    ${passingRoutesAtNode.length} routes available\n`);
+        outputLog = outputLog.concat(`    ${passingRoutesAtNode.length} routes available ${passingRoutesAtNode.map(passingRoute => passingRoute.drouteId).join(', ')}\n`);
 
         // iterate through all found routes and convert it into data structure
         const passingRoutesAtNodeClassified: Array<ClassifiedRoute> = [];
