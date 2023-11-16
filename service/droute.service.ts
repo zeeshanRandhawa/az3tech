@@ -1234,6 +1234,8 @@ export class DriverRouteService {
                     }
                 }
 
+                routeOption.routeCummulativeDistance = parseFloat(routeOption.routeCummulativeDistance.toFixed(2))
+
                 routeOptions.push(routeOption);
 
             }));

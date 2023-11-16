@@ -327,3 +327,9 @@ export interface QualityMetrics {
     routeQualityRatio: number | null;
     status: string | null
 }
+export interface NodeToNodeDto {
+    origNodeId: number;
+    destNodeId: number;
+    duration: number;
+    distance: number;
+}

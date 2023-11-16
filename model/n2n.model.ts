@@ -6,7 +6,8 @@ class NodeToNode extends Model {
         NodeToNode.belongsTo(Node, {
             foreignKey: "origNodeId",
             targetKey: "nodeId",
-            as: "origin",        });
+            as: "origin",
+        });
         NodeToNode.belongsTo(Node, {
             foreignKey: "destNodeId",
             targetKey: "nodeId",
@@ -19,19 +20,21 @@ NodeToNode.init(
     {
         origNodeId: {
             type: DataTypes.INTEGER,
-            allowNull: false
+            allowNull: false,
+            primaryKey: true
         },
         destNodeId: {
             type: DataTypes.INTEGER,
-            allowNull: false
+            allowNull: false,
+            primaryKey: true
         },
         distance: {
-            type: DataTypes.INTEGER,
-            allowNull: true
+            type: DataTypes.REAL,
+            allowNull: false
         },
         duration: {
-            type: DataTypes.INTEGER,
-            allowNull: true
+            type: DataTypes.REAL,
+            allowNull: false
         }
     },
     {

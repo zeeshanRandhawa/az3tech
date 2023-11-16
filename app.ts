@@ -22,6 +22,7 @@ import DriverRouteNodeRouter from "./route/drouteNode.route";
 import MapRouter from "./route/map.route";
 import { AuthMiddleware } from "./middleware/auth.middleware";
 import { existsSync, mkdirSync } from "fs";
+import { fork } from "child_process";
 
 class App {
     private express: Application;
@@ -67,6 +68,9 @@ class App {
         setupSwagger(this.express);
         this.setupRoutes();
         this.createDirectoryIfNotExists();
+
+        fork("./util/process/n2nAllCalculation.process.ts");
+
     }
 
     private setupMiddleWare(): void {

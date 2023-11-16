@@ -5,12 +5,13 @@ import querystring from 'querystring';
 import { sequelize } from "./db.config";
 import axios, { AxiosResponse } from "axios";
 import { Op, Transaction, literal } from "sequelize";
-import { CoordinateDto, DriverRouteAssociatedNodeDto, NodeDto } from "./interface.utility";
+import { CoordinateDto, DriverRouteAssociatedNodeDto, NodeDto, NodeToNodeDto } from "./interface.utility";
 import { GeolibInputCoordinates } from "geolib/es/types";
 import { NodeRepository } from "../repository/node.repository";
 import { DriverRouteRepository } from "../repository/droute.repository";
 import { DriverRouteNodeRepository } from "../repository/drouteNode.repository";
 import { getDistance, getRhumbLineBearing, computeDestinationPoint, getDistanceFromLine } from "geolib"
+import { NodeToNodeRepository } from "../repository/n2n.repository";
 
 export async function generatePasswordHash(password: string): Promise<string> {
     try {
@@ -502,4 +503,34 @@ export async function findNearestNode(coordinateData: CoordinateDto): Promise<Re
     }));
 
     return smallestDistanceCoordinate;
+}
+
+export async function getNodeToNodeDistances(nodeToNodeIdList: Array<number>): Promise<Record<string, any>> {
+
+    let distDurN2N: Record<string, any> = {};
+    let n2nRepository: NodeToNodeRepository = new NodeToNodeRepository();
+
+    let n2nList: NodeToNodeDto[] = await n2nRepository.findNodes({
+        where: {
+            [Op.and]: [
+                {
+                    origNodeId: {
+                        [Op.in]: nodeToNodeIdList
+                    }
+                },
+                {
+                    destNodeId: {
+                        [Op.in]: nodeToNodeIdList
+                    }
+                }
+            ]
+
+        }
+    })
+
+    await Promise.all(n2nList.map(async (n2n: NodeToNodeDto) => {
+        distDurN2N[`${n2n.origNodeId}-${n2n.destNodeId}`] = { distance: n2n.distance, duration: n2n.duration }
+    }));
+
+    return distDurN2N;
 }

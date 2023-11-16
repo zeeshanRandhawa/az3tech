@@ -1,3 +1,4 @@
+import { where } from "sequelize";
 import { Node, sequelize } from "../util/db.config"
 import { NodeDto } from "../util/interface.utility";
 
@@ -10,13 +11,17 @@ export class NodeRepository {
         return createdNode as unknown as NodeDto;
     }
 
-    async findNodes(whereConditionPaginatedDtod: Record<string, any>): Promise<NodeDto[]> {
-        const nodeList: Node[] = await Node.findAll(whereConditionPaginatedDtod);
+    async findNodes(whereConditionPaginated: Record<string, any>): Promise<NodeDto[]> {
+        const nodeList: Node[] = await Node.findAll(whereConditionPaginated);   
         const plainNodeList: NodeDto[] = nodeList.map(node => node.toJSON());
         return plainNodeList;
     }
 
-    async findNodeByPK(nodeId: number): Promise<NodeDto | null> {
+    async findNodeByPK(nodeId: number, attributes: Array<string> = []): Promise<NodeDto | null> {
+        if (attributes.length > 0) {
+            const node: Node | null = await Node.findByPk(nodeId, { attributes: attributes });
+            return node?.toJSON() as NodeDto ?? null;
+        }
         const node: Node | null = await Node.findByPk(nodeId);
         return node?.toJSON() as NodeDto ?? null;
     }

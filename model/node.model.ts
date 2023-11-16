@@ -54,6 +54,11 @@ Node.init(
             type: DataTypes.INTEGER,
             allowNull: true,
         },
+        n2nCalculated: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false
+        },
     },
     {
         sequelize,
