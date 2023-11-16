@@ -162,7 +162,6 @@ export class DriverRouteController {
             return await this.driverRouteService.deleteLogByName(fileName);
 
         } catch (error: any) {
-            console.log(error)
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };
             }
