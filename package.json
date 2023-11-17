@@ -5,7 +5,7 @@
   "main": "index.ts",
   "scripts": {
     "start": "ts-node index.ts",
-    "dev": "nodemon --exec \"node --max-old-space-size=6144\" -r ts-node/register index.ts",
+    "dev": "nodemon --exec ts-node index.ts",
     "build": "tsc",
     "build:app:local": "rmdir /s /q public && mkdir public && cd ../React-Dashboard-TS && npm i -f && npm run build:local && cd ../AZ3-TS",
     "build:app:production": "rmdir /s /q public && mkdir public && cd ../React-Dashboard-TS && npm i -f && npm run build:production && cd ../AZ3-TS",

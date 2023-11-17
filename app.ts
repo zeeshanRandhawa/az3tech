@@ -69,7 +69,7 @@ class App {
         this.setupRoutes();
         this.createDirectoryIfNotExists();
 
-        fork("./util/process/n2nAllCalculation.process.ts");
+        // fork("./util/process/n2nAllCalculation.process.ts");
 
     }
 
