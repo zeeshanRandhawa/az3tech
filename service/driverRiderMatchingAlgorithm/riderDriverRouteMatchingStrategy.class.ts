@@ -22,13 +22,13 @@ export class RiderDriverRouteMatchingStrategy {
     async getRiderDriverRoutes(departureDateTime: string, riderTimeFlexibility: number, originNode: NodeDto, destinationNode: NodeDto, riderRouteDirectDistance: number, riderRouteDirectDuration: number): Promise<Array<ClassifiedRouteDto>> {
         let outputLog: string = "";
 
-        outputLog = outputLog.concat(`Origin:          ${originNode.address}\n`);
-        outputLog = outputLog.concat(`Destination:     ${destinationNode.address}\n`);
-        outputLog = outputLog.concat(`Departure Time    ${departureDateTime}\n`);
-        outputLog = outputLog.concat(`Flexibility:      ${riderTimeFlexibility}\n\n`);
+        // outputLog = outputLog.concat(`Origin:          ${originNode.address}\n`);
+        // outputLog = outputLog.concat(`Destination:     ${destinationNode.address}\n`);
+        outputLog = outputLog.concat(`Departure Time:           ${departureDateTime}\n`);
+        outputLog = outputLog.concat(`Flexibility:             ${riderTimeFlexibility} minute(s)\n\n`);
 
-        outputLog = outputLog.concat(`Origin Node:      ${originNode.nodeId}\n`);
-        outputLog = outputLog.concat(`Destination Node: ${destinationNode.nodeId}\n\n\n`)
+        outputLog = outputLog.concat(`Journey Start Node:      ${originNode.description} (${originNode.nodeId}) ${originNode.location}\n`);
+        outputLog = outputLog.concat(`Journey End Node:        ${destinationNode.description} (${destinationNode.nodeId}) ${destinationNode.location}\n\n\n`)
 
         const defaultStrategy: DefaultRouteClassifierStrategy = new DefaultRouteClassifierStrategy();
 
@@ -56,7 +56,7 @@ export class RiderDriverRouteMatchingStrategy {
                 // primaryClassifiedRoute.driverRoute.drouteNodes!.slice(1).forEach(async (drouteNode: DriverRouteNodeAssocitedDto) => {
 
                 if (drouteNode.rank! > primaryClassifiedRoute.riderOriginRank) {
-                    outputLog = outputLog.concat(`  **${RouteClassification[1]} search through Norig=${drouteNode.nodeId}, AT ${drouteNode.arrivalTime! as string}\n`);
+                    outputLog = outputLog.concat(`  **${RouteClassification[1]} search through Np=${drouteNode.nodeId}, AT ${drouteNode.arrivalTime! as string}\n`);
 
                     // let classifiedRouteList: Array<ClassifiedRoute>
                     let data: any = await defaultStrategy.findRoutesPassingAtNode(drouteNode.arrivalTime! as string, riderTimeFlexibility, drouteNode.nodeId, drouteNode.node?.transitTime ?? 0, destinationNode.nodeId, RouteClassification.Secondary, routeIdList)
@@ -89,7 +89,7 @@ export class RiderDriverRouteMatchingStrategy {
                 for (let [idx, drouteNode] of secondaryClassifiedRoute.driverRoute.drouteNodes!.slice(1).entries()) {
 
                     if (drouteNode.rank! > secondaryClassifiedRoute.riderOriginRank) {
-                        outputLog = outputLog.concat(`  ***${RouteClassification[2]} search through Norig=${drouteNode.nodeId}, AT ${drouteNode.arrivalTime! as string}\n`);
+                        outputLog = outputLog.concat(`  ***${RouteClassification[2]} search through Ns=${drouteNode.nodeId}, AT ${drouteNode.arrivalTime! as string}\n`);
 
                         // let classifiedRouteList: Array<ClassifiedRoute> =
                         let data: any = await defaultStrategy.findRoutesPassingAtNode(

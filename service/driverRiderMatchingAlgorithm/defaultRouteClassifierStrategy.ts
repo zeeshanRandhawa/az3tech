@@ -1,5 +1,5 @@
 import moment from "moment";
-import { getDistanceDurationBetweenNodes, getDriverRoutesBetweenTimeFrame, getNodeToNodeDistances, normalizeTimeZone } from "../../util/helper.utility";
+import { getDriverRoutesBetweenTimeFrame, getNodeToNodeDistances } from "../../util/helper.utility";
 import { ClassifiedRouteDto, DriverRouteAssociatedNodeDto, DriverRouteNodeAssocitedDto, RouteClassification } from "../../util/interface.utility";
 import { RouteClassifierStrategy } from "./routeClassifierStarategy.class";
 import { ClassifiedRoute } from "./util.class";
@@ -18,8 +18,8 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
         let outputLog: string = "";
         // node start and end time to search
-        let dateTimeStartWindow: Moment = moment(arrivalDepartureDateTime).clone().add(transitTime, "minutes");
-        let dateTimeEndWindow: Moment = moment(arrivalDepartureDateTime).clone().add(riderTimeFlexibility + transitTime, "minutes");
+        let dateTimeStartWindow: Moment = moment(arrivalDepartureDateTime).clone().add((routeClassification === RouteClassification.Primary ? 0 : transitTime), "minutes");
+        let dateTimeEndWindow: Moment = moment(arrivalDepartureDateTime).clone().add(riderTimeFlexibility + (routeClassification === RouteClassification.Primary ? 0 : transitTime), "minutes");
 
 
         // query database layer to get routes from db
