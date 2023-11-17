@@ -60,9 +60,16 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                 if (!passingRoute.fixedRoute) {
                     if (passingRoute.drouteNodes![riderOriginRank].status === "POTENTIAL") {
 
-                        let nodeToNodeDistDurList: Record<string, any> = await getNodeToNodeDistances(await Promise.all(passingRoute.drouteNodes!.map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
-                            return drouteNode.nodeId;
-                        })));
+                        // let nodeToNodeDistDurList: Record<string, any> = await getNodeToNodeDistances(await Promise.all(passingRoute.drouteNodes!.map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
+                        //     return drouteNode.nodeId;
+                        // })));
+
+                        let nodeToNodeDistDurList: Record<string, any> = await getNodeToNodeDistances(passingRoute.drouteNodes!.map((drouteNode: DriverRouteNodeAssocitedDto) => {
+                            if (drouteNode.rank! >= riderOriginRank) {
+                                return drouteNode.nodeId;
+                            }
+                            return undefined;
+                        }).filter((nodeId: number | undefined) => nodeId !== undefined) as Array<number>);
 
                         outputLog = outputLog.concat(`     ${' '.repeat(routeClassification)}Retime flex route ${passingRoute.drouteId} at node ${passingRoute.drouteNodes![riderOriginRank].nodeId} arriving at ${passingRoute.drouteNodes![riderOriginRank].arrivalTime}\n`);
 
@@ -285,27 +292,27 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
         for (let [index, classifiedRoute] of classifiedRoutes.entries()) {
 
-               outputLog = outputLog.concat(`Route ${classifiedRoute.driverRoute.drouteId}${classifiedRoute.intersectingRoute ? `->${classifiedRoute.intersectingRoute.driverRoute.drouteId}` : ""}\n`)
+            outputLog = outputLog.concat(`Route ${classifiedRoute.driverRoute.drouteId}${classifiedRoute.intersectingRoute ? `->${classifiedRoute.intersectingRoute.driverRoute.drouteId}` : ""}\n`)
             outputLog = outputLog.concat(`${classifiedRoute.intersectingRoute?.intersectingRoute ? `->${classifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId}` : ""}\n`)
 
             // classifiedRoute
-            let data: any = await this.retimeRouteSection(classifiedRoute);
+            let dataNp: any = await this.retimeRouteSection(classifiedRoute);
 
-            classifiedRoute = data.data;
-            outputLog = outputLog.concat(`${data.output}`)
+            classifiedRoute = dataNp.data;
+            outputLog = outputLog.concat(`${dataNp.output}`)
 
             if (classifiedRoute.intersectingRoute) {
-                let data: any = await this.retimeRouteSection(classifiedRoute.intersectingRoute);
+                let dataNs: any = await this.retimeRouteSection(classifiedRoute.intersectingRoute);
 
-                classifiedRoute.intersectingRoute = data.data;
-                outputLog = outputLog.concat(`${data.output}`)
+                classifiedRoute.intersectingRoute = dataNs.data;
+                outputLog = outputLog.concat(`${dataNs.output}`)
             }
             if (classifiedRoute.intersectingRoute?.intersectingRoute) {
 
-                let data: any = await this.retimeRouteSection(classifiedRoute.intersectingRoute.intersectingRoute);
+                let dataNt: any = await this.retimeRouteSection(classifiedRoute.intersectingRoute.intersectingRoute);
 
-                classifiedRoute.intersectingRoute.intersectingRoute = data.data;
-                outputLog = outputLog.concat(`${data.output}`)
+                classifiedRoute.intersectingRoute.intersectingRoute = dataNt.data;
+                outputLog = outputLog.concat(`${dataNt.output}`)
 
             }
 
@@ -322,9 +329,16 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
         if (!partialClassifiedRoute.driverRoute.fixedRoute) {
             if (partialClassifiedRoute.driverRoute.drouteNodes![partialClassifiedRoute.riderDestinationRank].status === "POTENTIAL") {
 
-                let nodeToNodeDistDurList: Record<string, any> = await getNodeToNodeDistances(await Promise.all(partialClassifiedRoute.driverRoute.drouteNodes!.map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
-                    return drouteNode.nodeId;
-                })));
+                // let nodeToNodeDistDurList: Record<string, any> = await getNodeToNodeDistances(await Promise.all(partialClassifiedRoute.driverRoute.drouteNodes!.map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
+                //     return drouteNode.nodeId;
+                // })));
+
+                let nodeToNodeDistDurList: Record<string, any> = await getNodeToNodeDistances(partialClassifiedRoute.driverRoute.drouteNodes!.map((drouteNode: DriverRouteNodeAssocitedDto) => {
+                    if (drouteNode.rank! >= partialClassifiedRoute.riderDestinationRank) {
+                        return drouteNode.nodeId;
+                    }
+                    return undefined;
+                }).filter((nodeId: number | undefined) => nodeId !== undefined) as Array<number>);
 
                 outputLog = outputLog.concat(`Retime flex route ${partialClassifiedRoute.driverRoute.drouteId} at node ${partialClassifiedRoute.driverRoute.drouteNodes![partialClassifiedRoute.riderDestinationRank].nodeId} arriving at ${partialClassifiedRoute.driverRoute.drouteNodes![partialClassifiedRoute.riderDestinationRank].arrivalTime}\n`)
 
@@ -354,7 +368,6 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                     // );
 
                     let distdur: Record<string, any> = nodeToNodeDistDurList[`${partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].nodeId}-${drouteNode.nodeId}`];
-
 
 
                     drouteNode.arrivalTime = passingRouteOriginNodeDepartureTime.clone().add(distdur.duration, "minutes").format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
@@ -427,7 +440,9 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
             let currentScheduledNode: DriverRouteNodeAssocitedDto = classifiedRouteSection.driverRoute.drouteNodes![0];
 
-            await Promise.all(classifiedRouteSection.driverRoute.drouteNodes!.slice(1).map((drouteNode: DriverRouteNodeAssocitedDto) => {
+            // await Promise.all(
+            // classifiedRouteSection.driverRoute.drouteNodes!.slice(1).map((drouteNode: DriverRouteNodeAssocitedDto) => {
+            for (let [idx, drouteNode] of classifiedRouteSection.driverRoute.drouteNodes!.slice(1).entries()) {
                 if (drouteNode.status !== "POTENTIAL") {
 
                     let firstNodeDeparture: Moment = moment.utc(currentScheduledNode.departureTime, "YYYY-MM-DD HH:mm:ss[z]");
@@ -447,7 +462,9 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                     currentScheduledNode = drouteNode;
                 }
 
-            }));
+            }
+            // );
+            // );
 
             classifiedRouteSection.riderCumulativeDuration = parseFloat((riderCumDuration).toFixed(2));
             classifiedRouteSection.riderCumulativeDistance = riderCumDistance;
@@ -519,10 +536,10 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
                 outputLog = outputLog.concat(`->${primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId}\n`);
 
-               outputLog = outputLog.concat(`    riderDistance=${primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance!}, riderDuration=${primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration!}\n`);
+                outputLog = outputLog.concat(`    riderDistance=${primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance!}, riderDuration=${primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration!}\n`);
 
                 if (!primaryClassifiedRoute.intersectingRoute.driverRoute.fixedRoute) {
-                    
+
                     outputLog = outputLog.concat(`    Flex Route variables , directDriverRouteDistance=${primaryClassifiedRoute.intersectingRoute.driverRouteDirectDistance}, directDriverRouteDuration=${primaryClassifiedRoute.intersectingRoute.driverRouteDirectDuration}, driverRouteDistance=${primaryClassifiedRoute.intersectingRoute.driverRouteDistance}, driverRouteDuration=${primaryClassifiedRoute.intersectingRoute.driverRouteDuration}\n`);
 
                     distanceQuality = parseFloat((primaryClassifiedRoute.intersectingRoute.driverRouteDistance! / primaryClassifiedRoute.intersectingRoute.driverRouteDirectDistance!).toFixed(2));
@@ -546,7 +563,7 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                     outputLog = outputLog.concat(`    riderDistance=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance!}, riderDuration=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDuration!}\n`);
 
                     if (!primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.fixedRoute) {
-                        
+
                         outputLog = outputLog.concat(`    Flex Route variables , directDriverRouteDistance=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDistance}, directDriverRouteDuration=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDuration}, driverRouteDistance=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDistance}, driverRouteDuration=${primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDuration}\n`);
 
                         distanceQuality = parseFloat((primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDistance! / primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDistance!).toFixed(2));

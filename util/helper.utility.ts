@@ -534,37 +534,3 @@ export async function getNodeToNodeDistances(nodeToNodeIdList: Array<number>): P
 
     return distDurN2N;
 }
-
-
-// export async function getNodeToNodeDistances(nodeToNodeIdList: Array<Record<string, any>>): Promise<Record<string, any>> {
-
-//     let distDurN2N: Record<string, any> = {};
-//     // let n2nRepository: NodeToNodeRepository = new NodeToNodeRepository();
-
-//     // let n2nList: NodeToNodeDto[] = await n2nRepository.findNodes({
-//     //     where: {
-//     //         [Op.and]: [
-//     //             {
-//     //                 origNodeId: {
-//     //                     [Op.in]: nodeToNodeIdList
-//     //                 }
-//     //             },
-//     //             {
-//     //                 destNodeId: {
-//     //                     [Op.in]: nodeToNodeIdList
-//     //                 }
-//     //             }
-//     //         ]
-
-//     //     }
-//     // })
-
-//     await Promise.all(nodeToNodeIdList.map(async (nodeOuter: Record<string, any>, indexOuter: number) => {
-//         await Promise.all(nodeToNodeIdList.map(async (nodeInner: Record<string, any>, indexInner: number) => {
-//             distDurN2N[`${nodeOuter.nodeId}-${nodeInner.nodeId}`] = await getDistanceDurationBetweenNodes({ latitude: nodeOuter.latitude, longitude: nodeOuter.longitude }, { latitude: nodeInner.latitude, longitude: nodeInner.longitude });
-//             // { distance: n2n.distance, duration: n2n.duration }
-//         }));
-
-//     }))
-//     return distDurN2N;
-// }

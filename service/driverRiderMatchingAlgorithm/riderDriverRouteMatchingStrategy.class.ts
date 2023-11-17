@@ -30,7 +30,7 @@ export class RiderDriverRouteMatchingStrategy {
         outputLog = outputLog.concat(`Origin Node:      ${originNode.nodeId}\n`);
         outputLog = outputLog.concat(`Destination Node: ${destinationNode.nodeId}\n\n\n`)
 
-       const defaultStrategy: DefaultRouteClassifierStrategy = new DefaultRouteClassifierStrategy();
+        const defaultStrategy: DefaultRouteClassifierStrategy = new DefaultRouteClassifierStrategy();
 
         outputLog = outputLog.concat(`*${RouteClassification[0]} search through Norig=${originNode.nodeId}, AT=${departureDateTime}\n`)
 
@@ -164,8 +164,6 @@ export class RiderDriverRouteMatchingStrategy {
                 }));
             }));
         }));
-
-
 
         // filter those routes that do not hav any destination at all. It is recursive
         this.classifiedRoutes = defaultStrategy.filterRoutesWithDestination(this.classifiedRoutes);
