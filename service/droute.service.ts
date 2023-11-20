@@ -1148,6 +1148,12 @@ export class DriverRouteService {
                 // Primary
                 let primaryFirstNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes![primaryClassifiedRoute.riderOriginRank];
                 let primaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes![primaryClassifiedRoute.riderDestinationRank];
+
+                primaryClassifiedRoute.driverRoute.drouteNodes!.map(async (driverRouteNode: DriverRouteNodeAssocitedDto) => {
+                    driverRouteNode.departureTime = driverRouteNode.departureTime ? await normalizeTimeZone(driverRouteNode.departureTime as string) : driverRouteNode.departureTime;
+                    driverRouteNode.arrivalTime = driverRouteNode.arrivalTime ? await normalizeTimeZone(driverRouteNode.arrivalTime as string) : driverRouteNode.arrivalTime;
+                });
+
                 routeOption.primary = {
                     drouteId: primaryClassifiedRoute.driverRoute.drouteId, originNode: primaryFirstNode.nodeId, destinationNode: primaryLastNode.nodeId,
                     originDepartureTime: await normalizeTimeZone(primaryFirstNode.departureTime as string), destinationArrivalTime: await normalizeTimeZone(primaryLastNode.arrivalTime as string),
@@ -1172,6 +1178,12 @@ export class DriverRouteService {
 
                     let secondaryFirstNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes![primaryClassifiedRoute.intersectingRoute.riderOriginRank];
                     let secondaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes![primaryClassifiedRoute.intersectingRoute.riderDestinationRank];
+
+                    primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes!.map(async (driverRouteNode: DriverRouteNodeAssocitedDto) => {
+                        driverRouteNode.departureTime = driverRouteNode.departureTime ? await normalizeTimeZone(driverRouteNode.departureTime as string) : driverRouteNode.departureTime;
+                        driverRouteNode.arrivalTime = driverRouteNode.arrivalTime ? await normalizeTimeZone(driverRouteNode.arrivalTime as string) : driverRouteNode.arrivalTime;
+                    });
+
                     routeOption.secondary = {
                         originNode: secondaryFirstNode.nodeId, destinationNode: secondaryLastNode.nodeId, drouteId: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId,
                         originDepartureTime: await normalizeTimeZone(secondaryFirstNode.departureTime as string), destinationArrivalTime: await normalizeTimeZone(secondaryLastNode.arrivalTime as string),
@@ -1196,6 +1208,12 @@ export class DriverRouteService {
 
                         let tertiaryFirstNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes![primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderOriginRank];
                         let tertiaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes![primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderDestinationRank];
+
+                        primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes!.map(async (driverRouteNode: DriverRouteNodeAssocitedDto) => {
+                            driverRouteNode.departureTime = driverRouteNode.departureTime ? await normalizeTimeZone(driverRouteNode.departureTime as string) : driverRouteNode.departureTime;
+                            driverRouteNode.arrivalTime = driverRouteNode.arrivalTime ? await normalizeTimeZone(driverRouteNode.arrivalTime as string) : driverRouteNode.arrivalTime;
+                        });
+
                         routeOption.tertiary = {
                             originNode: tertiaryFirstNode.nodeId, destinationNode: tertiaryLastNode.nodeId,
                             drouteId: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId,
