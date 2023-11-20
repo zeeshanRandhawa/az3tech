@@ -1083,7 +1083,7 @@ export class DriverRouteService {
                     originNode: primaryFirstNode.nodeId, destinationNode: primaryLastNode.nodeId, drouteId: primaryClassifiedRoute.driverRoute.drouteId,
                     originDepartureTime: primaryFirstNode.departureTime as string, destinationArrivalTime: primaryLastNode.arrivalTime as string,
                     drouteName: primaryClassifiedRoute.driverRoute.drouteName!, distanceRatio: primaryClassifiedRoute.riderCumulativeDistance! / totalDistance,
-                    duration: primaryClassifiedRoute.riderCumulativeDistance!
+                    duration: parseFloat(primaryClassifiedRoute.riderCumulativeDistance!.toFixed(2))
                 }
 
                 if (primaryClassifiedRoute.intersectingRoute) {
@@ -1094,7 +1094,7 @@ export class DriverRouteService {
                         originNode: secondaryFirstNode.nodeId, destinationNode: secondaryLastNode.nodeId, drouteId: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId,
                         originDepartureTime: secondaryFirstNode.departureTime as string, destinationArrivalTime: secondaryLastNode.arrivalTime as string,
                         drouteName: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteName!, distanceRatio: primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance! / totalDistance,
-                        duration: primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance!
+                        duration: parseFloat(primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance!.toFixed(2))
                     }
 
                     if (primaryClassifiedRoute.intersectingRoute.intersectingRoute) {
@@ -1108,7 +1108,7 @@ export class DriverRouteService {
                             destinationArrivalTime: tertiaryLastNode.arrivalTime as string,
                             drouteName: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteName!,
                             distanceRatio: primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance! / totalDistance,
-                            duration: primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance!
+                            duration: parseFloat(primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance!.toFixed(2))
 
                         }
                     }
@@ -1163,9 +1163,9 @@ export class DriverRouteService {
                     destinationNodeDescription: primaryLastNode.node?.description!, destinationNodeLocation: primaryLastNode.node?.location!
                 }
                 if (!primaryClassifiedRoute.driverRoute.fixedRoute) {
-                    routeOption.primary!.driverRouteDistance = primaryClassifiedRoute.driverRouteDirectDistance;
-                    routeOption.primary!.driverRouteDuration = primaryClassifiedRoute.driverRouteDirectDuration;
-                    routeOption.primary!.driverRouteDirectDistance = primaryClassifiedRoute.driverRouteDistance;
+                    routeOption.primary!.driverRouteDistance = primaryClassifiedRoute.driverRouteDistance;
+                    routeOption.primary!.driverRouteDuration = primaryClassifiedRoute.driverRouteDuration;
+                    routeOption.primary!.driverRouteDirectDistance = primaryClassifiedRoute.driverRouteDirectDistance;
                     routeOption.primary!.driverRouteDirectDuration = primaryClassifiedRoute.driverRouteDirectDuration;
                 }
                 routeOption.routeCumulativeDuration += primaryClassifiedRoute.riderCumulativeDuration ?? 0;
@@ -1193,9 +1193,9 @@ export class DriverRouteService {
                         destinationNodeDescription: secondaryLastNode.node?.description!, destinationNodeLocation: secondaryLastNode.node?.location!
                     }
                     if (!primaryClassifiedRoute.intersectingRoute.driverRoute.fixedRoute) {
-                        routeOption.secondary!.driverRouteDistance = primaryClassifiedRoute.intersectingRoute.driverRouteDirectDistance;
-                        routeOption.secondary!.driverRouteDuration = primaryClassifiedRoute.intersectingRoute.driverRouteDirectDuration;
-                        routeOption.secondary!.driverRouteDirectDistance = primaryClassifiedRoute.intersectingRoute.driverRouteDistance;
+                        routeOption.secondary!.driverRouteDistance = primaryClassifiedRoute.intersectingRoute.driverRouteDistance;
+                        routeOption.secondary!.driverRouteDuration = primaryClassifiedRoute.intersectingRoute.driverRouteDuration;
+                        routeOption.secondary!.driverRouteDirectDistance = primaryClassifiedRoute.intersectingRoute.driverRouteDirectDistance;
                         routeOption.secondary!.driverRouteDirectDuration = primaryClassifiedRoute.intersectingRoute.driverRouteDirectDuration;
                     }
                     routeOption.routeCumulativeDuration += primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration ?? 0;
@@ -1226,9 +1226,9 @@ export class DriverRouteService {
                             destinationNodeDescription: tertiaryLastNode.node?.description!, destinationNodeLocation: tertiaryLastNode.node?.location!
                         }
                         if (!primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.fixedRoute) {
-                            routeOption.tertiary!.driverRouteDistance = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDistance;
+                            routeOption.tertiary!.driverRouteDistance = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDistance;
                             routeOption.tertiary!.driverRouteDuration = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDuration;
-                            routeOption.tertiary!.driverRouteDirectDistance = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDistance;
+                            routeOption.tertiary!.driverRouteDirectDistance = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDistance;
                             routeOption.tertiary!.driverRouteDirectDuration = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRouteDirectDuration;
                         }
                         routeOption.routeCumulativeDuration += primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDuration ?? 0;
