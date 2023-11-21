@@ -36,7 +36,7 @@ export class RiderDriverRouteMatchingStrategy {
 
 
         // Find primary routes first
-        let data: any = await defaultStrategy.findRoutesPassingAtNode(departureDateTime, riderTimeFlexibility, originNode.nodeId, originNode.transitTime ?? 0, destinationNode.nodeId, RouteClassification.Primary, []);
+        let data: any = await defaultStrategy.findRoutesPassingAtNode(departureDateTime, riderTimeFlexibility, originNode.nodeId, originNode.riderTransitTime ?? 0, destinationNode.nodeId, RouteClassification.Primary, []);
 
         this.classifiedRoutes = data.data;
 
@@ -59,7 +59,7 @@ export class RiderDriverRouteMatchingStrategy {
                     outputLog = outputLog.concat(`  **${RouteClassification[1]} search through Np=${drouteNode.nodeId}, AT ${drouteNode.arrivalTime! as string}\n`);
 
                     // let classifiedRouteList: Array<ClassifiedRoute>
-                    let data: any = await defaultStrategy.findRoutesPassingAtNode(drouteNode.arrivalTime! as string, riderTimeFlexibility, drouteNode.nodeId, drouteNode.node?.transitTime ?? 0, destinationNode.nodeId, RouteClassification.Secondary, routeIdList)
+                    let data: any = await defaultStrategy.findRoutesPassingAtNode(drouteNode.arrivalTime! as string, riderTimeFlexibility, drouteNode.nodeId, drouteNode.node?.riderTransitTime ?? 0, destinationNode.nodeId, RouteClassification.Secondary, routeIdList)
 
                     outputLog = outputLog.concat(`${data.output}\n`);
                     primaryClassifiedRoute.intersectigRoutes.push(...data.data
@@ -93,7 +93,7 @@ export class RiderDriverRouteMatchingStrategy {
 
                         // let classifiedRouteList: Array<ClassifiedRoute> =
                         let data: any = await defaultStrategy.findRoutesPassingAtNode(
-                            drouteNode.arrivalTime! as string, riderTimeFlexibility, drouteNode.nodeId, drouteNode.node?.transitTime ?? 0,
+                            drouteNode.arrivalTime! as string, riderTimeFlexibility, drouteNode.nodeId, drouteNode.node?.riderTransitTime ?? 0,
                             destinationNode.nodeId, RouteClassification.Tertiary, routeIdList
                         )
                         outputLog = outputLog.concat(`${data.output}\n`)

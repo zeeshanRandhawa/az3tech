@@ -48,7 +48,8 @@ async function calculateCoordinatesFromAddressForBatchProcess(nodeBatchMetaData:
                         { id: "city", title: "City" },
                         { id: "stateProvince", title: "State/Province" },
                         { id: "zipPostalCode", title: "Zip/Postal Code" },
-                        { id: "transitTime", title: "Transit Time" }
+                        { id: "riderTransitTime", title: "Rider Transit Time" },
+                        { id: "driverTransitTime", title: "Driver Transit Time" }
                     ]
                 });
                 const csvContent: string = csvStringifier.getHeaderString() + csvStringifier.stringifyRecords(failedNodes);

@@ -50,7 +50,11 @@ Node.init(
             type: DataTypes.TEXT,
             allowNull: true,
         },
-        transitTime: {
+        riderTransitTime: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        driverTransitTime: {
             type: DataTypes.INTEGER,
             allowNull: true,
         },

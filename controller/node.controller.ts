@@ -37,7 +37,7 @@ export class NodeController {
     }
 
     async createNode(nodeData: NodeForm): Promise<any> {
-        const requiredFields: (keyof NodeForm)[] = ["location", "description", "address", "city", "stateProvince", "zipPostalCode", "transitTime"];
+        const requiredFields: (keyof NodeForm)[] = ["location", "description", "address", "city", "stateProvince", "zipPostalCode", "riderTransitTime", "driverTransitTime"];
         const missingFields = requiredFields.filter(field => !(field in nodeData));
 
         if (missingFields.length > 0) {
@@ -57,7 +57,7 @@ export class NodeController {
     }
 
     async updateNode(nodeId: number, nodeData: NodeForm): Promise<any> {
-        const requiredFields: (keyof NodeForm)[] = ["location", "description", "address", "city", "stateProvince", "zipPostalCode", "transitTime"];
+        const requiredFields: (keyof NodeForm)[] = ["location", "description", "address", "city", "stateProvince", "zipPostalCode", "riderTransitTime", "driverTransitTime"];
         const missingFields = requiredFields.filter(field => !(field in nodeData));
 
         if (missingFields.length > 0) {

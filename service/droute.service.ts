@@ -1083,7 +1083,8 @@ export class DriverRouteService {
                     originNode: primaryFirstNode.nodeId, destinationNode: primaryLastNode.nodeId, drouteId: primaryClassifiedRoute.driverRoute.drouteId,
                     originDepartureTime: primaryFirstNode.departureTime as string, destinationArrivalTime: primaryLastNode.arrivalTime as string,
                     drouteName: primaryClassifiedRoute.driverRoute.drouteName!, distanceRatio: primaryClassifiedRoute.riderCumulativeDistance! / totalDistance,
-                    duration: parseFloat(primaryClassifiedRoute.riderCumulativeDistance!.toFixed(2))
+                    duration: parseFloat(primaryClassifiedRoute.riderCumulativeDistance!.toFixed(2)), location: primaryFirstNode.node?.location!,
+                    description: primaryFirstNode.node?.description!
                 }
 
                 if (primaryClassifiedRoute.intersectingRoute) {
@@ -1094,7 +1095,8 @@ export class DriverRouteService {
                         originNode: secondaryFirstNode.nodeId, destinationNode: secondaryLastNode.nodeId, drouteId: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId,
                         originDepartureTime: secondaryFirstNode.departureTime as string, destinationArrivalTime: secondaryLastNode.arrivalTime as string,
                         drouteName: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteName!, distanceRatio: primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance! / totalDistance,
-                        duration: parseFloat(primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance!.toFixed(2))
+                        duration: parseFloat(primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance!.toFixed(2)), location: secondaryFirstNode.node?.location!,
+                        description: secondaryFirstNode.node?.description!
                     }
 
                     if (primaryClassifiedRoute.intersectingRoute.intersectingRoute) {
@@ -1108,7 +1110,8 @@ export class DriverRouteService {
                             destinationArrivalTime: tertiaryLastNode.arrivalTime as string,
                             drouteName: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteName!,
                             distanceRatio: primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance! / totalDistance,
-                            duration: parseFloat(primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance!.toFixed(2))
+                            duration: parseFloat(primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance!.toFixed(2)),
+                            location: tertiaryFirstNode.node?.location!, description: tertiaryFirstNode.node?.description!
 
                         }
                     }

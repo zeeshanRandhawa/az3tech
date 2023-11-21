@@ -156,7 +156,7 @@ async function generateDroutesWithNodeFromDrouteMetaBatchGroupedData(driverRoute
                         if (Object.values(calculatedDistanceDurationBetweenNodes).every(value => value !== null)) {
 
                             let arrivalTime: Moment = departureTime.clone().add(calculatedDistanceDurationBetweenNodes.duration, "seconds");
-                            departureTime = arrivalTime.clone().add(routeDestinationNode?.transitTime, "minutes");
+                            departureTime = arrivalTime.clone().add(routeDestinationNode?.driverTransitTime, "minutes");
 
                             cumulativeTime += calculatedDistanceDurationBetweenNodes.duration / 60;
                             cumulativeDistance += calculatedDistanceDurationBetweenNodes.distance;

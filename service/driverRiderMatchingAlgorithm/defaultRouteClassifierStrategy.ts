@@ -80,12 +80,12 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                         passingRoute.drouteNodes![initialScheduledNodeRank].status = "SCHEDULED";
 
                         // get node departuretime chenage it
-                        let passingRouteOriginNodeDepartureTime: Moment = moment.utc(passingRoute.drouteNodes![initialScheduledNodeRank].arrivalTime).clone().add(passingRoute.drouteNodes![initialScheduledNodeRank].node?.transitTime ?? 0, "minutes");
+                        let passingRouteOriginNodeDepartureTime: Moment = moment.utc(passingRoute.drouteNodes![initialScheduledNodeRank].arrivalTime).clone().add(passingRoute.drouteNodes![initialScheduledNodeRank].node?.driverTransitTime ?? 0, "minutes");
 
                         let passingRouteOriginNodeCumulativeDistance: number = passingRoute.drouteNodes![initialScheduledNodeRank].cumDistance ?? 0;
 
                         passingRoute.drouteNodes![initialScheduledNodeRank].departureTime = passingRouteOriginNodeDepartureTime.clone().format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
-                        passingRoute.drouteNodes![initialScheduledNodeRank].cumTime! = passingRoute.drouteNodes![initialScheduledNodeRank].cumTime! + passingRoute.drouteNodes![initialScheduledNodeRank].node?.transitTime!
+                        passingRoute.drouteNodes![initialScheduledNodeRank].cumTime! = passingRoute.drouteNodes![initialScheduledNodeRank].cumTime! + passingRoute.drouteNodes![initialScheduledNodeRank].node?.driverTransitTime!
 
                         let passingRouteOriginNodeCumulativeDuration: number = passingRoute.drouteNodes![initialScheduledNodeRank].cumTime ?? 0;
 
@@ -109,9 +109,9 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
                             if (drouteNode.status === "SCHEDULED") {
 
-                                passingRouteOriginNodeDepartureTime = moment.utc(drouteNode.arrivalTime).clone().add(drouteNode.node?.transitTime ?? 0, "minutes");
+                                passingRouteOriginNodeDepartureTime = moment.utc(drouteNode.arrivalTime).clone().add(drouteNode.node?.driverTransitTime ?? 0, "minutes");
 
-                                passingRouteOriginNodeCumulativeDistance = drouteNode.cumTime + (drouteNode.node?.transitTime ?? 0);
+                                passingRouteOriginNodeCumulativeDistance = drouteNode.cumTime + (drouteNode.node?.driverTransitTime ?? 0);
 
                                 drouteNode.departureTime = passingRouteOriginNodeDepartureTime.clone().format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
                                 drouteNode.cumTime = drouteNode.cumTime + passingRouteOriginNodeCumulativeDistance;
@@ -292,7 +292,7 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
         for (let [index, classifiedRoute] of classifiedRoutes.entries()) {
 
-            outputLog = outputLog.concat(`Route ${classifiedRoute.driverRoute.drouteId}${classifiedRoute.intersectingRoute ? `->${classifiedRoute.intersectingRoute.driverRoute.drouteId}` : ""}\n`)
+            outputLog = outputLog.concat(`Route ${classifiedRoute.driverRoute.drouteId}${classifiedRoute.intersectingRoute ? `->${classifiedRoute.intersectingRoute.driverRoute.drouteId}` : ""}`)
             outputLog = outputLog.concat(`${classifiedRoute.intersectingRoute?.intersectingRoute ? `->${classifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId}` : ""}\n`)
 
             // classifiedRoute
@@ -349,12 +349,12 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                 partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].status = "SCHEDULED";
 
                 // get node departuretime chenage it
-                let passingRouteOriginNodeDepartureTime: Moment = moment.utc(partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].arrivalTime).clone().add(partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].node?.transitTime ?? 0, "minutes");
+                let passingRouteOriginNodeDepartureTime: Moment = moment.utc(partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].arrivalTime).clone().add(partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].node?.driverTransitTime ?? 0, "minutes");
 
                 let passingRouteOriginNodeCumulativeDistance: number = partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].cumDistance ?? 0;
 
                 partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].departureTime = passingRouteOriginNodeDepartureTime.clone().format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
-                partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].cumTime! = partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].cumTime! + partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].node?.transitTime!
+                partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].cumTime! = partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].cumTime! + partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].node?.driverTransitTime!
 
                 let passingRouteOriginNodeCumulativeDuration: number = partialClassifiedRoute.driverRoute.drouteNodes![initialScheduledNodeRank].cumTime ?? 0;
 
@@ -380,9 +380,9 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
                     if (drouteNode.status === "SCHEDULED") {
 
-                        passingRouteOriginNodeDepartureTime = moment.utc(drouteNode.arrivalTime).clone().add(drouteNode.node?.transitTime ?? 0, "minutes");
+                        passingRouteOriginNodeDepartureTime = moment.utc(drouteNode.arrivalTime).clone().add(drouteNode.node?.driverTransitTime ?? 0, "minutes");
 
-                        passingRouteOriginNodeCumulativeDistance = drouteNode.cumTime + (drouteNode.node?.transitTime ?? 0);
+                        passingRouteOriginNodeCumulativeDistance = drouteNode.cumTime + (drouteNode.node?.driverTransitTime ?? 0);
 
                         drouteNode.departureTime = passingRouteOriginNodeDepartureTime.clone().format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
                         drouteNode.cumTime = drouteNode.cumTime + passingRouteOriginNodeCumulativeDistance;

@@ -32,7 +32,8 @@ export interface NodeForm {
     city: string;
     stateProvince: string;
     zipPostalCode?: string;
-    transitTime?: string
+    riderTransitTime?: string
+    driverTransitTime?: string
 }
 
 export interface ProcessListEntry {
@@ -110,7 +111,8 @@ export interface NodeDto {
     long?: number;
     lat?: number;
     locid?: string;
-    transitTime?: number;
+    riderTransitTime?: number;
+    driverTransitTime?: number;
 }
 
 export interface DriverDto {
@@ -270,6 +272,8 @@ export interface RouteDetail {
 
     duration: number;
 
+    description: string;
+    location: string;
 }
 
 export interface calculatedRoute {

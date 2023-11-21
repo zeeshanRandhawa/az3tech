@@ -78,9 +78,10 @@ export class NodeService {
             zipPostalCode: nodeData.zipPostalCode,
             lat: geoCoordinates.latitude,
             long: geoCoordinates.longitude,
-            transitTime: nodeData.transitTime,
+            riderTransitTime: nodeData.riderTransitTime,
+            driverTransitTime: nodeData.driverTransitTime,
         }, {
-            fields: ["location", "description", "address", "city", "stateProvince", "zipPostalCode", "lat", "long", "transitTime"]
+            fields: ["location", "description", "address", "city", "stateProvince", "zipPostalCode", "lat", "long", "riderTransitTime", "driverTransitTime"]
         });
 
         return { status: 201, data: { message: "Node Created Successfully" } };
@@ -108,7 +109,8 @@ export class NodeService {
                 zipPostalCode: nodeData.zipPostalCode,
                 lat: geoCoordinates.latitude,
                 long: geoCoordinates.longitude,
-                transitTime: nodeData.transitTime,
+                riderTransitTime: nodeData.riderTransitTime,
+                driverTransitTime: nodeData.driverTransitTime,
             }, {
                 nodeId: nodeId
             });
@@ -117,7 +119,8 @@ export class NodeService {
                 location: nodeData.location,
                 description: nodeData.description,
                 zipPostalCode: nodeData.zipPostalCode,
-                transitTime: nodeData.transitTime,
+                riderTransitTime: nodeData.riderTransitTime,
+                driverTransitTime: nodeData.driverTransitTime,
             }, {
                 nodeId: nodeId
             });
@@ -155,7 +158,8 @@ export class NodeService {
                 { id: "long", title: "Logitude" },
                 { id: "lat", title: "latitude" },
                 { id: "locid", title: "Location Id" },
-                { id: "transitTime", title: "Transit Time" }
+                { id: "riderTransitTime", title: "Rider Transit Time" },
+                { id: "driverTransitTime", title: "Driver Transit Time" }
             ],
         });
         const csvContent: string = csvStringifier.getHeaderString() + csvStringifier.stringifyRecords(nodeList);
@@ -264,10 +268,10 @@ export class NodeService {
             return { status: 422, data: { message: "Another import process alreay running" } }
         }
 
-        if (!isValidFileHeader(fileToImport.buffer, ["Location", "Description", "Address", "City", "State/Province", "Zip/Postal Code", "Transit Time"])) {
+        if (!isValidFileHeader(fileToImport.buffer, ["Location", "Description", "Address", "City", "State/Province", "Zip/Postal Code", "Rider Transit Time", "Driver Transit Time"])) {
             throw new CustomError("Invalid column length", 422);
         }
-        const nodeBatchMetaData: Array<Record<string, any>> = prepareBatchBulkImportData(fileToImport.buffer, ["location", "description", "address", "city", "stateProvince", "zipPostalCode", "transitTime"]);
+        const nodeBatchMetaData: Array<Record<string, any>> = prepareBatchBulkImportData(fileToImport.buffer, ["location", "description", "address", "city", "stateProvince", "zipPostalCode", "riderTransitTime", "driverTransitTime"]);
 
         await fsPromises.writeFile("./util/tempFiles/nodeTemp.json", JSON.stringify(nodeBatchMetaData), { encoding: "utf8" });
 

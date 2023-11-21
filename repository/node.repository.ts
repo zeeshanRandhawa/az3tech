@@ -48,7 +48,7 @@ export class NodeRepository {
     async batchImportNodes(nodeBatchData: Array<Record<string, any>>): Promise<boolean> {
         const transaction = await sequelize.transaction();
         try {
-            await Node.bulkCreate(nodeBatchData, { validate: true, fields: ["location", "description", "address", "city", "stateProvince", "zipPostalCode", "transitTime", "lat", "long"], transaction });
+            await Node.bulkCreate(nodeBatchData, { validate: true, fields: ["location", "description", "address", "city", "stateProvince", "zipPostalCode", "riderTransitTime", "driverTransitTime", "lat", "long"], transaction });
             await transaction.commit();
             return true;
         } catch (error: any) {
