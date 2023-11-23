@@ -253,6 +253,8 @@ export interface ClassifiedRouteDto {
 
     driverRouteDistance?: number;
     driverRouteDuration?: number;
+
+    transferWaitTime: number;
 }
 
 export interface RouteOption {
@@ -317,6 +319,8 @@ export interface caculatedRouteDetail {
 
     drouteNodes: Array<DriverRouteNodeAssocitedDto>;
 
+    transferWaitTime: number;
+
 }
 
 export interface QualityMetrics {
@@ -331,6 +335,7 @@ export interface QualityMetrics {
     routeQualityRatio: number | null;
     status: string | null
 }
+
 export interface NodeToNodeDto {
     origNodeId: number;
     destNodeId: number;

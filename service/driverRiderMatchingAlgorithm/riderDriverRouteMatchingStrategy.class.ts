@@ -19,11 +19,11 @@ export class RiderDriverRouteMatchingStrategy {
     // riderTimeFlexibility howmuch rider can wait
     // originNode nearest point where rider can get rider
     // destinationNode nearest node to rider dropoff
-    async getRiderDriverRoutes(departureDateTime: string, riderTimeFlexibility: number, originNode: NodeDto, destinationNode: NodeDto, riderRouteDirectDistance: number, riderRouteDirectDuration: number): Promise<Array<ClassifiedRouteDto>> {
+    async getRiderDriverRoutes(departureDateTime: string, riderTimeFlexibility: number, originNode: NodeDto, destinationNode: NodeDto, riderRouteDirectDistance: number, riderRouteDirectDuration: number, riderOriginAddress: string, riderDestinationAddress: string): Promise<Array<ClassifiedRouteDto>> {
         let outputLog: string = "";
 
-        // outputLog = outputLog.concat(`Origin:          ${originNode.address}\n`);
-        // outputLog = outputLog.concat(`Destination:     ${destinationNode.address}\n`);
+        outputLog = outputLog.concat(`Origin:          ${riderOriginAddress}\n`);
+        outputLog = outputLog.concat(`Destination:     ${riderDestinationAddress}\n`);
         outputLog = outputLog.concat(`Departure Time:           ${departureDateTime}\n`);
         outputLog = outputLog.concat(`Flexibility:             ${riderTimeFlexibility} minute(s)\n\n`);
 
@@ -197,6 +197,14 @@ export class RiderDriverRouteMatchingStrategy {
         // loop through each route to get quality metrics
         // this.finalClassifiedRoutes = 
         data = await defaultStrategy.checkQOSMetrics(this.finalClassifiedRoutes, riderRouteDirectDistance, riderRouteDirectDuration, riderTimeFlexibility);
+
+        this.finalClassifiedRoutes = data.data;
+
+        outputLog = outputLog.concat(`${data.output}`);
+
+        outputLog = outputLog.concat(`\nSupurious route elimination\n`);
+
+        data = await defaultStrategy.supuriousRouteElimination(this.finalClassifiedRoutes);
 
         this.finalClassifiedRoutes = data.data;
 

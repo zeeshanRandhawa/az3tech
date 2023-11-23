@@ -99,6 +99,8 @@ export class DriverRouteRouter {
                 parseFloat(req.query.destinationLongitude as string),
                 req.query.departureTime as string,
                 parseInt(req.query.departureFlexibility as string, 10) as number,
+                req.query.riderOriginAddress as string,
+                req.query.riderDestinationAddress as string,
                 req.headers.cookies as string,
                 req.query.requestType as string
             ).then(data => res.status(data.status).json(data.data));

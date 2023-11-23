@@ -213,12 +213,12 @@ export class DriverRouteController {
         }
     }
 
-    async findMatchingDriverRoutes(originLatitude: number, originLongitude: number, destinationLatitude: number, destinationLongitude: number, departureTime: string, departureFlexibility: number, sessionToken: string | undefined, requestType: string): Promise<any> {
+    async findMatchingDriverRoutes(originLatitude: number, originLongitude: number, destinationLatitude: number, destinationLongitude: number, departureTime: string, departureFlexibility: number, riderOriginAddress: string, riderDestinationAddress: string, sessionToken: string | undefined, requestType: string): Promise<any> {
         try {
             return await this.driverRouteService.findMatchingDriverRoutes(
                 { latitude: originLatitude, longitude: originLongitude },
                 { latitude: destinationLatitude, longitude: destinationLongitude },
-                departureTime, departureFlexibility, sessionToken, requestType
+                departureTime, departureFlexibility, sessionToken, requestType, riderOriginAddress, riderDestinationAddress
             );
         } catch (error: any) {
             if (error instanceof CustomError) {

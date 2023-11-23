@@ -356,7 +356,7 @@ export async function normalizeTimeZone(datetimestamp: string): Promise<string> 
     if (convertedTimestamp.clone().format("YYYY-MM-DD HH:mm:ss").indexOf("1970-01-01") !== -1) {
         return convertedTimestamp.clone().format("HH:mm");
     }
-    return convertedTimestamp.clone().format("YYYY-MM-DD HH:mm");
+    return convertedTimestamp.clone().format("YYYY-MM-DD HH:mm:ss");
 }
 
 export function getActiveDateList(scheduledWeekdays: string, scheduledStartDate: string, scheduledEndDate: string): Array<string> {
