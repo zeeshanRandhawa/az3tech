@@ -24,8 +24,12 @@ export class RiderDriverRouteMatchingStrategy {
 
         outputLog = outputLog.concat(`Origin:          ${riderOriginAddress}\n`);
         outputLog = outputLog.concat(`Destination:     ${riderDestinationAddress}\n`);
+
+        outputLog = outputLog.concat(`Rider direct route distance     ${riderRouteDirectDistance} mile(s)\n`);
+        outputLog = outputLog.concat(`Rider direct route time         ${riderRouteDirectDuration} minute (s)\n`);
+
         outputLog = outputLog.concat(`Departure Time:           ${departureDateTime}\n`);
-        outputLog = outputLog.concat(`Flexibility:             ${riderTimeFlexibility} minute(s)\n\n`);
+        outputLog = outputLog.concat(`Flexibility:              ${riderTimeFlexibility} minute(s)\n\n`);
 
         outputLog = outputLog.concat(`Journey Start Node:      ${originNode.description} (${originNode.nodeId}) ${originNode.location}\n`);
         outputLog = outputLog.concat(`Journey End Node:        ${destinationNode.description} (${destinationNode.nodeId}) ${destinationNode.location}\n\n\n`)

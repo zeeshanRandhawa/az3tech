@@ -233,7 +233,9 @@ export enum RouteClassification {
 }
 
 export interface ClassifiedRouteDto {
-    routeEfficiency?: number;
+    timeQuality?: number;
+    distanceQuality?: number;
+    overallQuality?: number;
 
     classification: RouteClassification;
     driverRoute: DriverRouteAssociatedNodeDto;
@@ -279,7 +281,9 @@ export interface RouteDetail {
 }
 
 export interface calculatedRoute {
-    routeEfficiency: number;
+    timeQuality: number;
+    distanceQuality: number;
+    overallQuality: number;
 
     routeCumulativeDuration: number;
     routeCummulativeDistance: number;

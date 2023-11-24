@@ -603,7 +603,9 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
 
             outputLog = outputLog.concat(`Route is ${hasGoodQuality ? `Accepted` : `Rejected`}\n`);
 
-            primaryClassifiedRoute.routeEfficiency = parseFloat((distanceQuality * durationQuality).toFixed(2));
+            primaryClassifiedRoute.timeQuality = parseFloat(durationQuality.toFixed(2));
+            primaryClassifiedRoute.distanceQuality = parseFloat(distanceQuality.toFixed(2));
+            primaryClassifiedRoute.overallQuality = parseFloat((distanceQuality * durationQuality).toFixed(2));
 
             // if (hasGoodQuality) {
             qualityCriteriaFilteredRoutes.push(primaryClassifiedRoute);

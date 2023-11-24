@@ -5,6 +5,8 @@ import { getDistanceDurationBetweenNodes } from "../helper.utility";
 
 async function nodesToNodesCalculateDistanceDuration() {
 
+    const operationType: string = process.argv[2];
+
     const nodeRepository: NodeRepository = new NodeRepository();
     const n2nRepository: NodeToNodeRepository = new NodeToNodeRepository();
 
@@ -24,15 +26,15 @@ async function nodesToNodesCalculateDistanceDuration() {
 
     for (let [index, nodeToCalculate] of nodesListCalculteN2N.entries()) {
         try {
-            
+
             let nodeDistDurPair: Array<Record<string, any>> = await calculateDistanceDurationPair(nodeToCalculate!, allNodeList);
-            let check: boolean = await n2nRepository.batchImportNodesToNodes(nodeDistDurPair);
-            
+            let check: boolean = await n2nRepository.batchImportNodesToNodes(nodeDistDurPair, operationType);
+
             if (check) {
                 await nodeRepository.updateNode({ n2nCalculated: true }, { nodeId: nodeToCalculate.nodeId })
-            
+
             }
-            
+
         } catch (error: any) { }
     }
 }

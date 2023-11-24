@@ -14,6 +14,7 @@ import {
 } from "../util/helper.utility";
 import { SessionRepository } from "../repository/session.repository";
 import { UserRepository } from "../repository/user.repository";
+import { fork } from "child_process";
 
 
 export class NodeService {
@@ -84,6 +85,8 @@ export class NodeService {
             fields: ["location", "description", "address", "city", "stateProvince", "zipPostalCode", "lat", "long", "riderTransitTime", "driverTransitTime"]
         });
 
+        fork("./util/process/n2nAllCalculation.process.ts", ["create"]);
+
         return { status: 201, data: { message: "Node Created Successfully" } };
     }
 
@@ -111,9 +114,13 @@ export class NodeService {
                 long: geoCoordinates.longitude,
                 riderTransitTime: nodeData.riderTransitTime,
                 driverTransitTime: nodeData.driverTransitTime,
+                n2nCalculated: false
             }, {
                 nodeId: nodeId
             });
+
+            fork("./util/process/n2nAllCalculation.process.ts", ["update"]);
+
         } else {
             await this.nodeRepository.updateNode({
                 location: nodeData.location,

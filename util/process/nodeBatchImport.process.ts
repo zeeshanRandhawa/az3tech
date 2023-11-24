@@ -3,18 +3,24 @@ import { createObjectCsvStringifier } from "csv-writer";
 import { ObjectCsvStringifier } from "csv-writer/src/lib/csv-stringifiers/object";
 import { NodeRepository } from "../../repository/node.repository";
 import { getGeographicCoordinatesByAddress } from "../helper.utility";
+import { fork } from "child_process";
 
 async function batchImportNode() {
     try {
         process.send!('status:preparing bulk data from file');
-        let nodeBatchData: Array<Record<string, any>> = JSON.parse(await fsPromises.readFile("./util/tempFiles/nodeTemp.json", { encoding: "utf8" }));
+        let nodeBatchData: Array<Record<string, any>> | null = JSON.parse(await fsPromises.readFile("./util/tempFiles/nodeTemp.json", { encoding: "utf8" }));
 
         process.send!('status:Calculating coordinates from addresses');
-        nodeBatchData = await calculateCoordinatesFromAddressForBatchProcess(nodeBatchData);
+        nodeBatchData = await calculateCoordinatesFromAddressForBatchProcess(nodeBatchData!);
 
         process.send!('status:Inserting bulk data in nodes table');
         await new NodeRepository().batchImportNodes(nodeBatchData);
         process.send!('status:Bulk data insertion complete nodes table');
+
+        nodeBatchData = null;
+
+        process.send!('status:Calculating n2n distance/duration');
+        fork("./util/process/n2nAllCalculation.process.ts", ["create"]);
 
         process.send!('status:Cleaning up');
         await fsPromises.writeFile('./util/tempFiles/nodeTemp.json', '', { encoding: 'utf8' });

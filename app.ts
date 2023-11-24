@@ -69,7 +69,7 @@ class App {
         this.setupRoutes();
         this.createDirectoryIfNotExists();
 
-        // fork("./util/process/n2nAllCalculation.process.ts");
+        // fork("./util/process/n2nAllCalculation.process.ts", ["create"]);
 
     }
 
@@ -146,6 +146,9 @@ class App {
     private createDirectoryIfNotExists(): void {
         if (!existsSync("./util/tempFiles")) {
             mkdirSync("./util/tempFiles", { recursive: true });
+        }
+        if (!existsSync("./util/nodeLogos")) {
+            mkdirSync("./util/nodeLogos", { recursive: true });
         }
         if (!existsSync("./util/logs")) {
             mkdirSync("./util/logs", { recursive: true });

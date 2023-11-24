@@ -12,10 +12,17 @@ export class NodeToNodeRepository {
         return plainNodeToNodeList;
     }
 
-    async batchImportNodesToNodes(n2nBatchData: Array<Record<string, any>>): Promise<boolean> {
+    async batchImportNodesToNodes(n2nBatchData: Array<Record<string, any>>, opType: string): Promise<boolean> {
         const transaction = await sequelize.transaction();
         try {
-            await NodeToNode.bulkCreate(n2nBatchData, { ignoreDuplicates: true, validate: true, fields: ["origNodeId", "destNodeId", "distance", "duration"], transaction });
+            let options: any = { validate: true, fields: ["origNodeId", "destNodeId", "distance", "duration"], transaction }
+            if (opType === "update") {
+                options["updateOnDuplicate"] = ["distance", "duration"]
+                options["conflictAttributes"] = ["origNodeId", "destNodeId"]
+            } else {
+                options["ignoreDuplicates"] = true
+            }
+            await NodeToNode.bulkCreate(n2nBatchData, options);
             await transaction.commit();
             return true;
         } catch (error: any) {

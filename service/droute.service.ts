@@ -1141,7 +1141,9 @@ export class DriverRouteService {
             await Promise.all(matchingRoutesWithQosMetrics.map(async (primaryClassifiedRoute: ClassifiedRouteDto) => {
 
                 let routeOption: calculatedRoute = {
-                    routeEfficiency: 0,
+                    timeQuality: primaryClassifiedRoute.timeQuality ?? 0,
+                    distanceQuality: primaryClassifiedRoute.distanceQuality ?? 0,
+                    overallQuality: primaryClassifiedRoute.overallQuality ?? 0,
                     routeCumulativeDuration: 0,
                     routeCummulativeDistance: 0,
                     riderRouteDirectDistance: riderRouteDirectDistance,
@@ -1174,7 +1176,7 @@ export class DriverRouteService {
                 routeOption.routeCumulativeDuration += primaryClassifiedRoute.riderCumulativeDuration ?? 0;
                 routeOption.routeCummulativeDistance += primaryClassifiedRoute.riderCumulativeDistance ?? 0;
 
-                routeOption.routeEfficiency += primaryClassifiedRoute.routeEfficiency ?? 0;
+                // routeOption.routeEfficiency += primaryClassifiedRoute.routeEfficiency ?? 0;
 
                 // Secondary 1-Stop
                 if (primaryClassifiedRoute.intersectingRoute) {
@@ -1205,7 +1207,7 @@ export class DriverRouteService {
                     routeOption.routeCumulativeDuration += ((primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration ?? 0) + primaryClassifiedRoute.intersectingRoute.transferWaitTime);
                     routeOption.routeCummulativeDistance += primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance ?? 0;
 
-                    routeOption.routeEfficiency += primaryClassifiedRoute.intersectingRoute.routeEfficiency ?? 0;
+                    // routeOption.routeEfficiency += primaryClassifiedRoute.intersectingRoute.routeEfficiency ?? 0;
 
                     // Tertiary 2-Stop
                     if (primaryClassifiedRoute.intersectingRoute.intersectingRoute) {
@@ -1240,23 +1242,23 @@ export class DriverRouteService {
                         routeOption.routeCumulativeDuration += ((primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDuration ?? 0) + primaryClassifiedRoute.intersectingRoute.intersectingRoute.transferWaitTime);
                         routeOption.routeCummulativeDistance += primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance ?? 0;
 
-                        routeOption.routeEfficiency += primaryClassifiedRoute.intersectingRoute.intersectingRoute.routeEfficiency ?? 0;
+                        // routeOption.routeEfficiency += primaryClassifiedRoute.intersectingRoute.intersectingRoute.routeEfficiency ?? 0;
                     }
                 }
 
                 // routeOption.routeEfficiency = primaryClassifiedRoute.routeEfficiency ?? 0;
                 // routeOption.routeCumulativeDuration = (routeOption.primary.routeDuration ?? 0) + (routeOption.secondary?.routeDuration ?? 0) + (routeOption.tertiary?.routeDuration ?? 0);
 
-                if (primaryClassifiedRoute.intersectingRoute) {
-                    if (primaryClassifiedRoute.intersectingRoute.intersectingRoute) {
-                        //tertiary
-                        routeOption.routeEfficiency = parseFloat((routeOption.routeEfficiency / 3).toFixed(2));
+                // if (primaryClassifiedRoute.intersectingRoute) {
+                //     if (primaryClassifiedRoute.intersectingRoute.intersectingRoute) {
+                //         //tertiary
+                //         routeOption.routeEfficiency = parseFloat((routeOption.routeEfficiency / 3).toFixed(2));
 
-                    } else {
-                        //secondary
-                        routeOption.routeEfficiency = parseFloat((routeOption.routeEfficiency / 2).toFixed(2));
-                    }
-                }
+                //     } else {
+                //         //secondary
+                //         routeOption.routeEfficiency = parseFloat((routeOption.routeEfficiency / 2).toFixed(2));
+                //     }
+                // }
 
                 routeOption.routeCummulativeDistance = parseFloat(routeOption.routeCummulativeDistance.toFixed(2))
 
