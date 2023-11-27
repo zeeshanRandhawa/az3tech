@@ -1,7 +1,7 @@
 import multer, { Multer } from "multer";
 import { Router, Request, Response } from "express";
 import { NodeController } from "../controller/node.controller";
-import { NodeForm } from "../util/interface.utility";
+import { NodeForm, NodeTypeForm } from "../util/interface.utility";
 
 export class NodeRouter {
 
@@ -86,6 +86,18 @@ export class NodeRouter {
 
         this.router.get("/pagecount", (req: Request, res: Response) => {
             this.nodeController.getNodeCount(req.query.addressToSearch as string | undefined).then(data => res.status(data.status).json(data.data));
+        });
+
+        this.router.get("/nodetype/pagecount", (req: Request, res: Response) => {
+            this.nodeController.getNodeTypeCount().then(data => res.status(data.status).json(data.data));
+        });
+
+        this.router.get("/nodetype/list", (req: Request, res: Response) => {
+            this.nodeController.getNodeTypeList(parseInt(req.query.pageNumber as string, 10) as number).then(data => res.status(data.status).json(data.data));
+        });
+
+        this.router.post("/nodetype", (req: Request, res: Response) => {
+            this.nodeController.createNodeType(req.body as NodeTypeForm).then(data => res.status(data.status).json(data.data));
         });
     }
 }

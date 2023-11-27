@@ -1,5 +1,5 @@
 import { NodeService } from "../service/node.service"
-import { CoordinateDto, CustomError, NodeForm } from "../util/interface.utility"
+import { CoordinateDto, CustomError, NodeForm, NodeTypeForm } from "../util/interface.utility"
 
 
 export class NodeController {
@@ -12,6 +12,9 @@ export class NodeController {
 
     async listNodes(pageNumber: number): Promise<any> {
         try {
+            if (!pageNumber || pageNumber < 0) {
+                return { status: 422, data: { message: "Invalid page number" } };
+            }
             return await this.nodeService.listNodes(pageNumber);
         } catch (error: any) {
             if (error instanceof CustomError) {
@@ -201,6 +204,51 @@ export class NodeController {
     async getNodeCount(addressToSearch: string | undefined): Promise<any> {
         try {
             return await this.nodeService.getNodeCount(addressToSearch);
+        } catch (error: any) {
+            if (error instanceof CustomError) {
+                return { status: error.statusCode, data: { message: error.message } };
+            }
+            return { status: 500, data: { message: error.message } };
+        }
+    }
+
+    async getNodeTypeList(pageNumber: number): Promise<any> {
+        try {
+            if (!pageNumber || pageNumber < 0) {
+                return { status: 422, data: { message: "Invalid page number" } };
+            }
+            return await this.nodeService.getNodeTypeList(pageNumber);
+        } catch (error: any) {
+            if (error instanceof CustomError) {
+                return { status: error.statusCode, data: { message: error.message } };
+            }
+            return { status: 500, data: { message: error.message } };
+        }
+    }
+
+    async getNodeTypeCount(): Promise<any> {
+        try {
+            return await this.nodeService.getNodeTypeCount();
+        } catch (error: any) {
+            if (error instanceof CustomError) {
+                return { status: error.statusCode, data: { message: error.message } };
+            }
+            return { status: 500, data: { message: error.message } };
+        }
+    }
+
+    async createNodeType(nodeTypeData: NodeTypeForm): Promise<any> {
+        const requiredFields: (keyof NodeTypeForm)[] = ["description", "logo"];
+        const missingFields = requiredFields.filter(field => !(field in nodeTypeData));
+
+        if (missingFields.length > 0) {
+            return { status: 422, data: { message: "Invalid Data" } };
+        }
+        if (!nodeTypeData.description || !nodeTypeData.logo) {
+            return { status: 422, data: { message: "Missing Required Columns" } };
+        }
+        try {
+            return await this.nodeService.createNodeTye(nodeTypeData);
         } catch (error: any) {
             if (error instanceof CustomError) {
                 return { status: error.statusCode, data: { message: error.message } };

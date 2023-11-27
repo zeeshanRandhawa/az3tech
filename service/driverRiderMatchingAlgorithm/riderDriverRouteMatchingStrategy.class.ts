@@ -1,8 +1,10 @@
+import moment from "moment";
 import { getDistanceDurationBetweenNodes } from "../../util/helper.utility";
 import { ClassifiedRouteDto, DriverRouteNodeAssocitedDto, NodeDto, RouteClassification } from "../../util/interface.utility"
 import { DefaultRouteClassifierStrategy } from "./defaultRouteClassifierStrategy";
 import { ClassifiedRoute, } from "./util.class";
 import * as fs from 'fs/promises';
+import { fork } from "child_process";
 
 
 export class RiderDriverRouteMatchingStrategy {
@@ -132,8 +134,8 @@ export class RiderDriverRouteMatchingStrategy {
                     { longitude: driverDestinationNode.node?.long, latitude: driverDestinationNode.node?.lat }
                 );
 
-                primaryClassifiedRoute.driverRouteDirectDistance = parseFloat((directDistanceDuration.distance / 1609.34).toFixed(2));
-                primaryClassifiedRoute.driverRouteDirectDuration = parseFloat((directDistanceDuration.duration / 60).toFixed(2));
+                primaryClassifiedRoute.driverRouteDirectDistance = parseFloat((directDistanceDuration.distance / 1609.34).toFixed(1));
+                primaryClassifiedRoute.driverRouteDirectDuration = parseFloat((directDistanceDuration.duration / 60).toFixed(1));
             }
 
             await Promise.all(primaryClassifiedRoute.intersectigRoutes.map(async (secondaryClassifiedRoute: ClassifiedRoute) => {
@@ -147,8 +149,8 @@ export class RiderDriverRouteMatchingStrategy {
                         { longitude: driverDestinationNode.node?.long, latitude: driverDestinationNode.node?.lat }
                     );
 
-                    secondaryClassifiedRoute.driverRouteDirectDistance = parseFloat((directDistanceDuration.distance / 1609.34).toFixed(2));
-                    secondaryClassifiedRoute.driverRouteDirectDuration = parseFloat((directDistanceDuration.duration / 60).toFixed(2))
+                    secondaryClassifiedRoute.driverRouteDirectDistance = parseFloat((directDistanceDuration.distance / 1609.34).toFixed(1));
+                    secondaryClassifiedRoute.driverRouteDirectDuration = parseFloat((directDistanceDuration.duration / 60).toFixed(1))
 
                 }
                 await Promise.all(secondaryClassifiedRoute.intersectigRoutes.map(async (tertiaryClassifiedRoute: ClassifiedRoute) => {
@@ -162,8 +164,8 @@ export class RiderDriverRouteMatchingStrategy {
                             { longitude: driverDestinationNode.node?.long, latitude: driverDestinationNode.node?.lat }
                         );
 
-                        tertiaryClassifiedRoute.driverRouteDirectDistance = parseFloat((directDistanceDuration.distance / 1609.34).toFixed(2));
-                        tertiaryClassifiedRoute.driverRouteDirectDuration = parseFloat((directDistanceDuration.duration / 60).toFixed(2))
+                        tertiaryClassifiedRoute.driverRouteDirectDistance = parseFloat((directDistanceDuration.distance / 1609.34).toFixed(1));
+                        tertiaryClassifiedRoute.driverRouteDirectDuration = parseFloat((directDistanceDuration.duration / 60).toFixed(1))
                     }
                 }));
             }));
@@ -215,7 +217,10 @@ export class RiderDriverRouteMatchingStrategy {
         outputLog = outputLog.concat(`${data.output}`);
 
         try {
-            await fs.writeFile(`./util/logs/${new Date().toLocaleString().replace(/[/.,\s:]/g, "_")}_new_request.log`, outputLog);
+            fork("./util/process/autoDeleteLogFiles.process.ts");
+        } catch (error: any) { }
+        try {
+            await fs.writeFile(`./util/logs/${moment().format("YYYYMMDDHHmm")}_new_request.log`, outputLog);
         } catch (error: any) { }
 
         return this.finalClassifiedRoutes;

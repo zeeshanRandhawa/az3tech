@@ -37,6 +37,8 @@ import DriverRoute from "../model/droute.model";
 import DriverRouteNode from "../model/droutenode.model";
 import Node from "../model/node.model";
 import NodeToNode from "../model/n2n.model";
+import NodeType from "../model/nodetype.model";
+import DriverRoutePassenger from "../model/droutepassengers.model";
 
 User.associate({ Session, Role, Rider, Driver });
 Session.associate({ User });
@@ -49,6 +51,9 @@ Driver.associate({ User, DriverRoute });
 DriverRoute.associate({ Node, Driver, DriverRouteNode });
 DriverRouteNode.associate({ Node, DriverRoute, Driver });
 
-NodeToNode.associate({ Node })
+NodeToNode.associate({ Node });
+NodeType.associate({});
 
-export { User, Role, Session, Rider, Driver, Node, RiderRoute, DriverRoute, RiderRouteNode, DriverRouteNode, NodeToNode };
+DriverRoutePassenger.associate({ DriverRouteNode, RiderRoute });
+
+export { User, Role, Session, Rider, Driver, Node, RiderRoute, DriverRoute, RiderRouteNode, DriverRouteNode, NodeToNode, NodeType, DriverRoutePassenger };

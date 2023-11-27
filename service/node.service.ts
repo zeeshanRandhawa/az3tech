@@ -7,7 +7,7 @@ import path from "path";
 import archiver, { Archiver } from "archiver";
 import ProcessSocket from "../util/socketProcess.utility";
 import { NodeRepository } from "../repository/node.repository";
-import { CustomError, NodeDto, NodeForm, SessionDto } from "../util/interface.utility";
+import { CustomError, NodeDto, NodeForm, NodeTypeDto, NodeTypeForm, SessionDto } from "../util/interface.utility";
 import {
     findNodesOfInterestInArea, getGeographicCoordinatesByAddress,
     isValidFileHeader, prepareBatchBulkImportData
@@ -15,16 +15,20 @@ import {
 import { SessionRepository } from "../repository/session.repository";
 import { UserRepository } from "../repository/user.repository";
 import { fork } from "child_process";
+import NodeType from "../model/nodetype.model";
+import { NodeTypeRepository } from "../repository/nodetypes.repository";
 
 
 export class NodeService {
 
     private nodeRepository: NodeRepository;
+    private nodeTypeRepository: NodeTypeRepository;
     private sessionRepository: SessionRepository;
     private userRepository: UserRepository;
 
     constructor() {
         this.nodeRepository = new NodeRepository();
+        this.nodeTypeRepository = new NodeTypeRepository();
         this.sessionRepository = new SessionRepository();
         this.userRepository = new UserRepository();
     }
@@ -323,4 +327,41 @@ export class NodeService {
             return { status: 404, data: { message: "No node found in this area" } };
         }
     }
+
+    async getNodeTypeList(pageNumber: number): Promise<Record<string, any>> {
+        const nodeTypeList: NodeTypeDto[] = await this.nodeTypeRepository.findNodeTypes({
+            where: {},
+            order: [["nodeTypeId", "ASC"]],
+            limit: 10,
+            offset: (pageNumber - 1) * 10,
+        });
+
+        if (nodeTypeList.length < 1) {
+            throw new CustomError("No Node Type Found", 404);
+        }
+
+        return { status: 200, data: { nodeTypes: nodeTypeList } };
+    }
+
+    async getNodeTypeCount(): Promise<Record<string, any>> {
+        let nodeTypesCount: number;
+
+        nodeTypesCount = await this.nodeTypeRepository.countNodeTypes({
+            where: {}
+        });
+        return { status: 200, data: { nodeTypesCount: Math.ceil(nodeTypesCount) } };
+    }
+
+    async createNodeTye(nodeTypeData: NodeTypeForm): Promise<Record<string, any>> {
+
+        await this.nodeTypeRepository.createNodeType({
+            description: nodeTypeData.description,
+            logo: nodeTypeData.logo
+        }, {
+            fields: ["description", "logo"]
+        });
+
+        return { status: 201, data: { message: "Node Type Created Successfully" } };
+    }
+
 }

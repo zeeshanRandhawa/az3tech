@@ -15,27 +15,27 @@ Node.init(
             defaultValue: sequelize.literal("nextval(\'nodes_node_id_seq\'::regclass)"),
         },
         location: {
-            type: DataTypes.CHAR(50),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         description: {
-            type: DataTypes.CHAR(50),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         address: {
-            type: DataTypes.CHAR(50),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         city: {
-            type: DataTypes.CHAR(50),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         stateProvince: {
-            type: DataTypes.CHAR(50),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         zipPostalCode: {
-            type: DataTypes.CHAR(10),
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         long: {

@@ -36,6 +36,11 @@ export interface NodeForm {
     driverTransitTime?: string
 }
 
+export interface NodeTypeForm {
+    description: string;
+    logo: string
+}
+
 export interface ProcessListEntry {
     message: string;
     childProcess: ChildProcess | null;
@@ -345,4 +350,10 @@ export interface NodeToNodeDto {
     destNodeId: number;
     duration: number;
     distance: number;
+}
+
+export interface NodeTypeDto {
+    nodeTypeId: number;
+    description: string;
+    logo: string;
 }
