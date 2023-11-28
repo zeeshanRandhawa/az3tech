@@ -135,7 +135,7 @@ export class RiderDriverRouteMatchingStrategy {
                 );
 
                 primaryClassifiedRoute.driverRouteDirectDistance = parseFloat((directDistanceDuration.distance / 1609.34).toFixed(1));
-                primaryClassifiedRoute.driverRouteDirectDuration = parseFloat((directDistanceDuration.duration / 60).toFixed(1));
+                primaryClassifiedRoute.driverRouteDirectDuration = Math.round(directDistanceDuration.duration / 60);
             }
 
             await Promise.all(primaryClassifiedRoute.intersectigRoutes.map(async (secondaryClassifiedRoute: ClassifiedRoute) => {
@@ -150,7 +150,7 @@ export class RiderDriverRouteMatchingStrategy {
                     );
 
                     secondaryClassifiedRoute.driverRouteDirectDistance = parseFloat((directDistanceDuration.distance / 1609.34).toFixed(1));
-                    secondaryClassifiedRoute.driverRouteDirectDuration = parseFloat((directDistanceDuration.duration / 60).toFixed(1))
+                    secondaryClassifiedRoute.driverRouteDirectDuration = Math.round(directDistanceDuration.duration / 60)
 
                 }
                 await Promise.all(secondaryClassifiedRoute.intersectigRoutes.map(async (tertiaryClassifiedRoute: ClassifiedRoute) => {
@@ -165,7 +165,7 @@ export class RiderDriverRouteMatchingStrategy {
                         );
 
                         tertiaryClassifiedRoute.driverRouteDirectDistance = parseFloat((directDistanceDuration.distance / 1609.34).toFixed(1));
-                        tertiaryClassifiedRoute.driverRouteDirectDuration = parseFloat((directDistanceDuration.duration / 60).toFixed(1))
+                        tertiaryClassifiedRoute.driverRouteDirectDuration = Math.round(directDistanceDuration.duration / 60);
                     }
                 }));
             }));

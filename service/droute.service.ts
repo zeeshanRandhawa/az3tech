@@ -317,7 +317,7 @@ export class DriverRouteService {
         const driverRouteTransitMetaData: Array<Record<string, any>> = prepareBatchBulkImportData(fileToImport.buffer, ["routeName", "originNodeId", "destinationNodeId", "arrivalTime", "departureTime", "driverId", "passengerCapacity", "databaseManagementTag"]);
         const driverRouteTransitMetaDataGrouped: Record<string, any> = await this.prepareTransitRouteMetaBatchData(driverRouteTransitMetaData, scheduledWeekdays, scheduledStartDate, scheduledEndDate);
         const assertedDriverRouteTransitMetaDataGrouped: Record<string, any> = await this.assertDriverRouteMetaTransitGroupData(driverRouteTransitMetaDataGrouped);
-        const finalTransitRoutesToImport: Array<Record<string, any>> = await this.prepareFinalTrnsitRouteGroupToImport(Object.values(assertedDriverRouteTransitMetaDataGrouped));
+        const finalTransitRoutesToImport: Array<Record<string, any>> = await this.prepareFinalTransitRouteGroupToImport(Object.values(assertedDriverRouteTransitMetaDataGrouped));
 
         if (!(await importDriverRoutes(finalTransitRoutesToImport))) {
             return { status: 500, data: { message: "Transit route import failed" } };
@@ -386,7 +386,7 @@ export class DriverRouteService {
         } catch (error: any) { }
     }
 
-    async prepareFinalTrnsitRouteGroupToImport(driverRouteTransitMetaDataGroupedArray: any): Promise<any> {
+    async prepareFinalTransitRouteGroupToImport(driverRouteTransitMetaDataGroupedArray: any): Promise<any> {
         try {
             driverRouteTransitMetaDataGroupedArray = (await Promise.all(driverRouteTransitMetaDataGroupedArray.map(async (driverRouteMeta: Record<string, any>) => {
                 // let distinctOriginDestinationRouteNodesId: Record<string, any> = extractOrigDestNodeId(driverRouteMeta.routeNodes.initial.slice(0, -1));
@@ -1059,7 +1059,7 @@ export class DriverRouteService {
 
         // get direct osrm distance duration to get qulaity metrics
         let riderRouteDirectDistance: number = parseFloat((directDistanceDuration.distance / 1609.34).toFixed(1));
-        let riderRouteDirectDuration: number = parseFloat((directDistanceDuration.duration / 60).toFixed(1));
+        let riderRouteDirectDuration: number = Math.round(directDistanceDuration.duration / 60);
 
         let routeStrategy: RiderDriverRouteMatchingStrategy = new RiderDriverRouteMatchingStrategy();
 
@@ -1083,7 +1083,7 @@ export class DriverRouteService {
                     originNode: primaryFirstNode.nodeId, destinationNode: primaryLastNode.nodeId, drouteId: primaryClassifiedRoute.driverRoute.drouteId,
                     originDepartureTime: primaryFirstNode.departureTime as string, destinationArrivalTime: primaryLastNode.arrivalTime as string,
                     drouteName: primaryClassifiedRoute.driverRoute.drouteName!, distanceRatio: primaryClassifiedRoute.riderCumulativeDistance! / totalDistance,
-                    duration: parseFloat(primaryClassifiedRoute.riderCumulativeDistance!.toFixed(1)), location: primaryFirstNode.node?.location!,
+                    duration: Math.round(primaryClassifiedRoute.riderCumulativeDistance!), location: primaryFirstNode.node?.location!,
                     description: primaryFirstNode.node?.description!
                 }
 
@@ -1095,7 +1095,7 @@ export class DriverRouteService {
                         originNode: secondaryFirstNode.nodeId, destinationNode: secondaryLastNode.nodeId, drouteId: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId,
                         originDepartureTime: secondaryFirstNode.departureTime as string, destinationArrivalTime: secondaryLastNode.arrivalTime as string,
                         drouteName: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteName!, distanceRatio: primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance! / totalDistance,
-                        duration: parseFloat(primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance!.toFixed(1)), location: secondaryFirstNode.node?.location!,
+                        duration: Math.round(primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance!), location: secondaryFirstNode.node?.location!,
                         description: secondaryFirstNode.node?.description!
                     }
 
@@ -1110,9 +1110,8 @@ export class DriverRouteService {
                             destinationArrivalTime: tertiaryLastNode.arrivalTime as string,
                             drouteName: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteName!,
                             distanceRatio: primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance! / totalDistance,
-                            duration: parseFloat(primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance!.toFixed(1)),
+                            duration: Math.round(primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance!),
                             location: tertiaryFirstNode.node?.location!, description: tertiaryFirstNode.node?.description!
-
                         }
                     }
                 }
@@ -1120,12 +1119,12 @@ export class DriverRouteService {
                 let ratioSum: number = (routeOption.primary?.distanceRatio ?? 0) + (routeOption.secondary?.distanceRatio ?? 0) + (routeOption.tertiary?.distanceRatio ?? 0)
                 let scaleFactor: number = 10 / ratioSum;
 
-                routeOption.primary.distanceRatio = parseFloat((routeOption.primary.distanceRatio * scaleFactor).toFixed(1));
+                routeOption.primary.distanceRatio = parseFloat((routeOption.primary.distanceRatio * scaleFactor).toFixed(2));
                 if (routeOption.secondary) {
-                    routeOption.secondary.distanceRatio = parseFloat((routeOption.secondary.distanceRatio * scaleFactor).toFixed(1));
+                    routeOption.secondary.distanceRatio = parseFloat((routeOption.secondary.distanceRatio * scaleFactor).toFixed(2));
                 }
                 if (routeOption.tertiary) {
-                    routeOption.tertiary.distanceRatio = parseFloat((routeOption.tertiary.distanceRatio * scaleFactor).toFixed(1));
+                    routeOption.tertiary.distanceRatio = parseFloat((routeOption.tertiary.distanceRatio * scaleFactor).toFixed(2));
                 }
 
                 routeOptions.push(routeOption);
@@ -1162,7 +1161,7 @@ export class DriverRouteService {
                 routeOption.primary = {
                     drouteId: primaryClassifiedRoute.driverRoute.drouteId, originNode: primaryFirstNode.nodeId, destinationNode: primaryLastNode.nodeId,
                     originDepartureTime: await normalizeTimeZone(primaryFirstNode.departureTime as string), destinationArrivalTime: await normalizeTimeZone(primaryLastNode.arrivalTime as string),
-                    routeDuration: primaryClassifiedRoute.riderCumulativeDuration ?? 0, routeDistance: parseFloat(primaryClassifiedRoute.riderCumulativeDistance?.toFixed(1) ?? '0'),
+                    routeDuration: Math.round(primaryClassifiedRoute.riderCumulativeDuration ?? 0), routeDistance: parseFloat(primaryClassifiedRoute.riderCumulativeDistance?.toFixed(1) ?? '0'),
                     drouteNodes: primaryClassifiedRoute.driverRoute.drouteNodes!, drouteName: primaryClassifiedRoute.driverRoute.drouteName!,
                     originNodeDescription: primaryFirstNode.node?.description!, originNodeLocation: primaryFirstNode.node?.location!, transferWaitTime: 0,
                     destinationNodeDescription: primaryLastNode.node?.description!, destinationNodeLocation: primaryLastNode.node?.location!
@@ -1192,7 +1191,7 @@ export class DriverRouteService {
                     routeOption.secondary = {
                         originNode: secondaryFirstNode.nodeId, destinationNode: secondaryLastNode.nodeId, drouteId: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId,
                         originDepartureTime: await normalizeTimeZone(secondaryFirstNode.departureTime as string), destinationArrivalTime: await normalizeTimeZone(secondaryLastNode.arrivalTime as string),
-                        routeDuration: primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration ?? 0, routeDistance: parseFloat(primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance?.toFixed(1) ?? '0'),
+                        routeDuration: Math.round(primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration ?? 0), routeDistance: parseFloat(primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance?.toFixed(1) ?? '0'),
                         drouteNodes: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes!, drouteName: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteName!,
                         originNodeDescription: secondaryFirstNode.node?.description!, originNodeLocation: secondaryFirstNode.node?.location!,
                         destinationNodeDescription: secondaryLastNode.node?.description!, destinationNodeLocation: secondaryLastNode.node?.location!,
@@ -1225,7 +1224,7 @@ export class DriverRouteService {
                             drouteId: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId,
                             originDepartureTime: await normalizeTimeZone(tertiaryFirstNode.departureTime as string),
                             destinationArrivalTime: await normalizeTimeZone(tertiaryLastNode.arrivalTime as string),
-                            routeDuration: primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDuration ?? 0,
+                            routeDuration: Math.round(primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDuration ?? 0),
                             routeDistance: parseFloat(primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance?.toFixed(1) ?? '0'),
                             drouteNodes: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes!, drouteName: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteName!,
                             originNodeDescription: tertiaryFirstNode.node?.description!, originNodeLocation: tertiaryFirstNode.node?.location!,
