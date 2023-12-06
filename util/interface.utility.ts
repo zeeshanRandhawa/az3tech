@@ -272,17 +272,17 @@ export interface RouteOption {
 
 export interface RouteDetail {
     drouteId: number
-    drouteName: string
+    drouteName?: string
     originNode: number;
     destinationNode: number;
-    originDepartureTime: string;
-    destinationArrivalTime: string;
-    distanceRatio: number;
+    originDepartureTime?: string;
+    destinationArrivalTime?: string;
+    distanceRatio?: number;
 
-    duration: number;
+    duration?: number;
 
-    description: string;
-    location: string;
+    description?: string;
+    location?: string;
 }
 
 export interface calculatedRoute {
@@ -356,4 +356,10 @@ export interface NodeTypeDto {
     nodeTypeId: number;
     description: string;
     logo: string;
+}
+
+export interface OsrmCoordinates {
+    primary: Array<[number, number]>;
+    secondary: Array<[number, number]>;
+    tertiary: Array<[number, number]>;
 }

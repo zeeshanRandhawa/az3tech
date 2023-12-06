@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { MapController } from "../controller/map.controller";
 import { DriverRouteController } from "../controller/droute.controller";
+import { RouteOption } from "../util/interface.utility";
 
 export class MapRouter {
 
@@ -24,6 +25,10 @@ export class MapRouter {
     private initializeRoutes() {
         this.router.get("/droute/display/:drouteId", (req: Request, res: Response) => {
             this.driverRouteController.displayDriverRouteById(parseInt(req.params.drouteId as string, 10) as number).then(data => res.status(data.status).json(data.data));
+        });
+
+        this.router.post("/droute/display/section", (req: Request, res: Response) => {
+            this.driverRouteController.getOptionOsrmRoute(req.body as RouteOption).then(data => res.status(data.status).json(data.data));
         });
 
         this.router.patch("/waypointdistance", (req: Request, res: Response) => {

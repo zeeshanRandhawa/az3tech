@@ -94,11 +94,11 @@ class App {
         this.express.use("/api/rroutenode", AuthMiddleware.ensureAuthenticated, this.riderRouteNodeRouter.getRiderRouteNodeRouter());
 
         this.express.use("/api/driver", AuthMiddleware.ensureAuthenticated, this.driverRouter.getDriverRouter());
-        this.express.use("/api/droute", AuthMiddleware.ensureAuthenticated, this.driverRouteRouter.getDriverRouteRouter());
+        this.express.use("/api/droute", this.driverRouteRouter.getDriverRouteRouter());
         this.express.use("/api/droutenode", AuthMiddleware.ensureAuthenticated, this.driverRouteNodeRouter.getDriverRouteNodeRouter());
 
         this.express.use("/api/node", AuthMiddleware.ensureAuthenticated, this.nodeRouter.getNodeRouter());
-        this.express.use("/api/map", AuthMiddleware.ensureAuthenticated, this.mapRouter.getMapRouter());
+        this.express.use("/api/map", this.mapRouter.getMapRouter());
 
         this.express.get("/api/version", AuthMiddleware.ensureAuthenticated, async (_req: Request, res: Response) => {
             try {

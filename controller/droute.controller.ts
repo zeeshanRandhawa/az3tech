@@ -1,6 +1,6 @@
 import moment from "moment-timezone";
 import { DriverRouteService } from "../service/droute.service"
-import { CustomError, FilterForm } from "../util/interface.utility";
+import { CustomError, FilterForm, RouteOption } from "../util/interface.utility";
 
 
 export class DriverRouteController {
@@ -228,5 +228,15 @@ export class DriverRouteController {
         }
     }
 
+    async getOptionOsrmRoute(routeOptions: RouteOption): Promise<any> {
+        try {
+            return await this.driverRouteService.getOptionOsrmRoute(routeOptions);
+        } catch (error: any) {
+            if (error instanceof CustomError) {
+                return { status: error.statusCode, data: { message: error.message } };
+            }
+            return { status: 500, data: { message: error.message } };
+        }
+    }
 
 }
