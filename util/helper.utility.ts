@@ -5,7 +5,7 @@ import querystring from 'querystring';
 import { sequelize } from "./db.config";
 import axios, { AxiosResponse } from "axios";
 import { Op, Transaction, literal } from "sequelize";
-import { CoordinateDto, DriverRouteAssociatedNodeDto, NodeDto, NodeToNodeDto } from "./interface.utility";
+import { CoordinateDto, DriverRouteAssociatedNodeDto, DriverRouteNodeAssocitedDto, NodeDto, NodeToNodeDto, RouteClassification } from "./interface.utility";
 import { GeolibInputCoordinates } from "geolib/es/types";
 import { NodeRepository } from "../repository/node.repository";
 import { DriverRouteRepository } from "../repository/droute.repository";
@@ -349,7 +349,7 @@ export function convertColorCodeToInteger(colorCodeStr: string): number {
     return parseInt(result, 10);
 }
 
-export async function normalizeTimeZone(datetimestamp: string): Promise<string> {
+export function normalizeTimeZone(datetimestamp: string): string {
     const serverTimezone: any = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const convertedTimestamp: Moment = moment(datetimestamp).tz(serverTimezone)
 
@@ -533,4 +533,59 @@ export async function getNodeToNodeDistances(nodeToNodeIdList: Array<number>): P
     }));
 
     return distDurN2N;
+}
+
+export async function retimeRoute(passingRoute: DriverRouteAssociatedNodeDto, rank: number): Promise<DriverRouteAssociatedNodeDto> {
+
+    if (!passingRoute.fixedRoute) {
+        if (passingRoute.drouteNodes![rank].status === "POTENTIAL") {
+            let nodeToNodeDistDurList: Record<string, any> = await getNodeToNodeDistances(passingRoute.drouteNodes!.map((drouteNode: DriverRouteNodeAssocitedDto) => {
+                if (drouteNode.rank! >= rank) {
+                    return drouteNode.nodeId;
+                }
+                return undefined;
+            }).filter((nodeId: number | undefined) => nodeId !== undefined) as Array<number>);
+
+            // initial rank of scheduled node
+            let initialScheduledNodeRank: number = rank;
+
+            // change node status
+            passingRoute.drouteNodes![initialScheduledNodeRank].status = "SCHEDULED";
+
+            // get node departuretime chenage it
+            let passingRouteOriginNodeDepartureTime: Moment = moment.utc(passingRoute.drouteNodes![initialScheduledNodeRank].arrivalTime).clone().add(passingRoute.drouteNodes![initialScheduledNodeRank].node?.driverTransitTime ?? 0, "minutes");
+
+            let passingRouteOriginNodeCumulativeDistance: number = passingRoute.drouteNodes![initialScheduledNodeRank].cumDistance ?? 0;
+
+            passingRoute.drouteNodes![initialScheduledNodeRank].departureTime = passingRouteOriginNodeDepartureTime.clone().format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
+            passingRoute.drouteNodes![initialScheduledNodeRank].cumTime! = passingRoute.drouteNodes![initialScheduledNodeRank].cumTime! + passingRoute.drouteNodes![initialScheduledNodeRank].node?.driverTransitTime!
+
+            let passingRouteOriginNodeCumulativeDuration: number = parseFloat((passingRoute.drouteNodes![initialScheduledNodeRank].cumTime ?? 0).toFixed(2));
+
+
+            for (let [index, drouteNode] of passingRoute.drouteNodes!.slice(rank + 1).entries()) {
+
+                let distdur: Record<string, any> = nodeToNodeDistDurList[`${passingRoute.drouteNodes![initialScheduledNodeRank].nodeId}-${drouteNode.nodeId}`];
+
+                drouteNode.arrivalTime = passingRouteOriginNodeDepartureTime.clone().add(distdur.duration, "minutes").format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
+                drouteNode.cumDistance = parseFloat((passingRouteOriginNodeCumulativeDistance + distdur.distance).toFixed(2));
+                drouteNode.cumTime = parseFloat((passingRouteOriginNodeCumulativeDuration + distdur.duration).toFixed(2));
+
+                if (drouteNode.status === "SCHEDULED") {
+
+                    passingRouteOriginNodeDepartureTime = moment.utc(drouteNode.arrivalTime).clone().add(drouteNode.node?.driverTransitTime ?? 0, "minutes");
+
+                    passingRouteOriginNodeCumulativeDistance = drouteNode.cumTime + (drouteNode.node?.driverTransitTime ?? 0);
+
+                    drouteNode.departureTime = passingRouteOriginNodeDepartureTime.clone().format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
+                    drouteNode.cumTime = Math.round(drouteNode.cumTime + passingRouteOriginNodeCumulativeDistance);
+
+                    passingRouteOriginNodeCumulativeDuration = parseFloat(drouteNode.cumTime.toFixed(2));
+                    initialScheduledNodeRank = initialScheduledNodeRank + index + 1;
+                }
+                // passingRoute.drouteNodes![rank + index + 1] = drouteNode;
+            }
+        }
+    }
+    return passingRoute;
 }

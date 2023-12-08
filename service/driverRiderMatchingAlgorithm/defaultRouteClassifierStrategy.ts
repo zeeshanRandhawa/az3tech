@@ -1,10 +1,9 @@
 import moment from "moment";
-import { getDriverRoutesBetweenTimeFrame, getNodeToNodeDistances } from "../../util/helper.utility";
+import { getDriverRoutesBetweenTimeFrame, getNodeToNodeDistances, retimeRoute } from "../../util/helper.utility";
 import { ClassifiedRouteDto, DriverRouteAssociatedNodeDto, DriverRouteNodeAssocitedDto, RouteClassification } from "../../util/interface.utility";
 import { RouteClassifierStrategy } from "./routeClassifierStarategy.class";
 import { ClassifiedRoute } from "./util.class";
 import { Moment } from "moment-timezone";
-import { PassThrough } from "stream";
 
 export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
     constructor() {
@@ -61,73 +60,11 @@ export class DefaultRouteClassifierStrategy extends RouteClassifierStrategy {
                 if (!passingRoute.fixedRoute) {
                     if (passingRoute.drouteNodes![riderOriginRank].status === "POTENTIAL") {
 
-                        // let nodeToNodeDistDurList: Record<string, any> = await getNodeToNodeDistances(await Promise.all(passingRoute.drouteNodes!.map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
-                        //     return drouteNode.nodeId;
-                        // })));
-
-                        let nodeToNodeDistDurList: Record<string, any> = await getNodeToNodeDistances(passingRoute.drouteNodes!.map((drouteNode: DriverRouteNodeAssocitedDto) => {
-                            if (drouteNode.rank! >= riderOriginRank) {
-                                return drouteNode.nodeId;
-                            }
-                            return undefined;
-                        }).filter((nodeId: number | undefined) => nodeId !== undefined) as Array<number>);
-
                         outputLog = outputLog.concat(`     ${' '.repeat(routeClassification)}Retime flex route ${passingRoute.drouteId} at node ${passingRoute.drouteNodes![riderOriginRank].nodeId} arriving at ${passingRoute.drouteNodes![riderOriginRank].arrivalTime}\n`);
 
-                        // initial rank of scheduled node
-                        let initialScheduledNodeRank: number = riderOriginRank;
-
-                        // change node status
-                        passingRoute.drouteNodes![initialScheduledNodeRank].status = "SCHEDULED";
-
-                        // get node departuretime chenage it
-                        let passingRouteOriginNodeDepartureTime: Moment = moment.utc(passingRoute.drouteNodes![initialScheduledNodeRank].arrivalTime).clone().add(passingRoute.drouteNodes![initialScheduledNodeRank].node?.driverTransitTime ?? 0, "minutes");
-
-                        let passingRouteOriginNodeCumulativeDistance: number = passingRoute.drouteNodes![initialScheduledNodeRank].cumDistance ?? 0;
-
-                        passingRoute.drouteNodes![initialScheduledNodeRank].departureTime = passingRouteOriginNodeDepartureTime.clone().format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
-                        passingRoute.drouteNodes![initialScheduledNodeRank].cumTime! = passingRoute.drouteNodes![initialScheduledNodeRank].cumTime! + passingRoute.drouteNodes![initialScheduledNodeRank].node?.driverTransitTime!
-
-                        let passingRouteOriginNodeCumulativeDuration: number = parseFloat((passingRoute.drouteNodes![initialScheduledNodeRank].cumTime ?? 0).toFixed(2));
-
-                        // passingRoute.drouteNodes!.slice(riderOriginRank + 1).forEach(async (drouteNode: DriverRouteNodeAssocitedDto, index: number) => {
-
-                        for (let [index, drouteNode] of passingRoute.drouteNodes!.slice(riderOriginRank + 1).entries()) {
-                            // let calculatedDisDurBetweenNodes: Record<string, any> = await getDistanceDurationBetweenNodes(
-                            //     { longitude: passingRoute.drouteNodes![initialScheduledNodeRank].node!.long, latitude: passingRoute.drouteNodes![initialScheduledNodeRank].node!.lat },
-                            //     { longitude: drouteNode.node!.long, latitude: drouteNode.node!.lat }
-                            // );
-
-                            let distdur: Record<string, any> = nodeToNodeDistDurList[`${passingRoute.drouteNodes![initialScheduledNodeRank].nodeId}-${drouteNode.nodeId}`];
-
-
-                            // drouteNode.arrivalTime = passingRouteOriginNodeDepartureTime.clone().add(calculatedDisDurBetweenNodes.duration, "seconds").format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
-                            // drouteNode.cumDistance = parseFloat((passingRouteOriginNodeCumulativeDistance + (calculatedDisDurBetweenNodes.distance / 1609.34)).toFixed(1));
-                            // drouteNode.cumTime = parseFloat((passingRouteOriginNodeCumulativeDuration + (calculatedDisDurBetweenNodes.duration / 60)).toFixed(1));
-                            drouteNode.arrivalTime = passingRouteOriginNodeDepartureTime.clone().add(distdur.duration, "minutes").format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
-                            drouteNode.cumDistance = parseFloat((passingRouteOriginNodeCumulativeDistance + distdur.distance).toFixed(2));
-                            drouteNode.cumTime = parseFloat((passingRouteOriginNodeCumulativeDuration + distdur.duration).toFixed(2));
-
-                            if (drouteNode.status === "SCHEDULED") {
-
-                                passingRouteOriginNodeDepartureTime = moment.utc(drouteNode.arrivalTime).clone().add(drouteNode.node?.driverTransitTime ?? 0, "minutes");
-
-                                passingRouteOriginNodeCumulativeDistance = drouteNode.cumTime + (drouteNode.node?.driverTransitTime ?? 0);
-
-                                drouteNode.departureTime = passingRouteOriginNodeDepartureTime.clone().format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
-                                drouteNode.cumTime = Math.round(drouteNode.cumTime + passingRouteOriginNodeCumulativeDistance);
-
-                                passingRouteOriginNodeCumulativeDuration = parseFloat(drouteNode.cumTime.toFixed(2));
-                                initialScheduledNodeRank = initialScheduledNodeRank + index + 1;
-                            }
-
-                        }
-                        // );
+                        passingRoute = await retimeRoute(passingRoute, riderOriginRank)
 
                     }
-                    // else if (passingRoute.drouteNodes![riderOriginRank].status === "ORIGIN" || passingRoute.drouteNodes![riderOriginRank].status === "DESTINATION") {
-                    //     passingRoute.drouteNodes![riderOriginRank].status = "SCHEDULED";
-                    // }
                 }
 
                 passingRoutesAtNodeClassified.push(new ClassifiedRoute(passingRoute, routeClassification, riderOriginRank, riderDestinationRank));

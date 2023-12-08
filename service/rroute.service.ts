@@ -51,7 +51,7 @@ export class RiderRouteService {
 
 
         await Promise.all(riderRouteList.map(async (riderRoute) => {
-            riderRoute.departureTime = riderRoute.departureTime ? (await normalizeTimeZone(riderRoute.departureTime as string)) : riderRoute.departureTime;
+            riderRoute.departureTime = riderRoute.departureTime ? (normalizeTimeZone(riderRoute.departureTime as string)) : riderRoute.departureTime;
         }));
 
         return { status: 200, data: { riderRoutes: riderRouteList } };

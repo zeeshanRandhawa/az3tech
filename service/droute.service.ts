@@ -9,7 +9,7 @@ import { NodeRepository } from "../repository/node.repository";
 import {
     isValidFileHeader, prepareBatchBulkImportData, extractOrigDestNodeId, sortRouteNodeListByNodeStop, getNodeObjectByNodeId,
     getDistanceDurationBetweenNodes, importDriverRoutes, normalizeTimeZone, getRouteDetailsByOSRM, getActiveDateList, isRoutesDateSorted,
-    getDriverRoutesBetweenTimeFrame, findNearestNode,
+    getDriverRoutesBetweenTimeFrame, findNearestNode, retimeRoute,
 } from "../util/helper.utility";
 import { DriverRepository } from "../repository/driver.repository";
 import ProcessSocket from "../util/socketProcess.utility";
@@ -75,7 +75,7 @@ export class DriverRouteService {
         }
         await Promise.all(
             driverRouteList.map(async (driverRoute) => {
-                driverRoute.departureTime = driverRoute.departureTime ? await normalizeTimeZone(driverRoute.departureTime as string) : driverRoute.departureTime;
+                driverRoute.departureTime = driverRoute.departureTime ? normalizeTimeZone(driverRoute.departureTime as string) : driverRoute.departureTime;
             }));
         return { status: 200, data: { driverRoutes: driverRouteList } };
     }
@@ -111,7 +111,7 @@ export class DriverRouteService {
         }
         await Promise.all(
             driverRouteList.map(async (driverRoute) => {
-                driverRoute.departureTime = driverRoute.departureTime ? await normalizeTimeZone(driverRoute.departureTime as string) : driverRoute.departureTime;
+                driverRoute.departureTime = driverRoute.departureTime ? normalizeTimeZone(driverRoute.departureTime as string) : driverRoute.departureTime;
             }));
         return { status: 200, data: { driverRoutes: driverRouteList } };
     }
@@ -535,13 +535,38 @@ export class DriverRouteService {
         let dateTimeStartWindow: string = moment(departureDateTimeWindow, "YYYY-MM-DD HH:mm").clone().utcOffset(0, true).format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
         let dateTimeEndWindow: string = moment(departureDateTimeWindow, "YYYY-MM-DD HH:mm").clone().add(departureFlexibility, "minutes").utcOffset(0, true).format("YYYY-MM-DD[T]HH:mm:ss.000[Z]");
 
+        // we are getting all driver routes
         const driverRoutes: Array<DriverRouteAssociatedNodeDto> = await getDriverRoutesBetweenTimeFrame(dateTimeStartWindow, dateTimeEndWindow, [nodeId]);
+
+        let nodePointIntersectingRouteArrivalTimes: Array<Record<number, Array<{ Routeid: number; arrival_time: Date | string }>>> = [];
 
         if (!driverRoutes.length) {
             throw new CustomError("No Driver Route found in on this node in given time window", 404);
         }
 
         let driverRouteDataPlainJSON: Array<Record<string, any>> = await Promise.all(driverRoutes.map(async (driverRoute: DriverRouteAssociatedNodeDto) => {
+
+            let riderOriginRank: number = Infinity;
+
+            // find rider origin rank
+            await Promise.all(driverRoute.drouteNodes!.map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
+                if (drouteNode.nodeId === nodeId) {
+                    riderOriginRank = drouteNode.rank ?? Infinity;
+                }
+                const nodeIdIndex = nodePointIntersectingRouteArrivalTimes.findIndex(record => record.hasOwnProperty(drouteNode.nodeId));
+                const timeRecord = {
+                    Routeid: drouteNode.drouteId,
+                    arrival_time: normalizeTimeZone((drouteNode.arrivalTime ?? drouteNode.departureTime!) as string)
+                };
+
+                if (nodeIdIndex === -1) {
+                    nodePointIntersectingRouteArrivalTimes.push({ [drouteNode.nodeId]: [timeRecord] });
+                } else {
+                    nodePointIntersectingRouteArrivalTimes[nodeIdIndex][drouteNode.nodeId].push(timeRecord);
+                }
+            }));
+            driverRoute = await retimeRoute(driverRoute, riderOriginRank)
+
             let osrmRoute: Array<[number, number]> = await this.getOptionOsrmRouteSection(driverRoute.drouteId, isPartial ? nodeId : driverRoute.originNode, driverRoute.destinationNode, !isPartial ? nodeId : Infinity);
 
             // let driverRouteNodesHavingOSRMRoute: Array<NodeDto> = [];
@@ -588,6 +613,7 @@ export class DriverRouteService {
             };
         }));
 
+
         driverRouteDataPlainJSON = await Promise.all(driverRouteDataPlainJSON.map(async (driverRouteOsrm: Record<string, any>) => {
 
             let searchNodeRank: number = Infinity;
@@ -599,11 +625,12 @@ export class DriverRouteService {
 
 
             let arrivalTimeAtNode: string = "";
-            driverRouteOsrm.drouteNodes = driverRouteOsrm.drouteNodes!.filter((drouteNode: DriverRouteNodeAssocitedDto) => {
+            // driverRouteOsrm.drouteNodes = 
+            driverRouteOsrm.drouteNodes!.map((drouteNode: DriverRouteNodeAssocitedDto) => {
                 if (drouteNode.nodeId === nodeId) {
                     arrivalTimeAtNode = moment(drouteNode.arrivalTime, "YYYY-MM-DD HH:mm").utcOffset(0, true).format("YYYY-MM-DD HH:mm")
                 }
-                return drouteNode.rank! > searchNodeRank
+                // return drouteNode.rank! > searchNodeRank
             });
             driverRouteOsrm.arrivalTimeAtNode = arrivalTimeAtNode
             return driverRouteOsrm;
@@ -615,7 +642,8 @@ export class DriverRouteService {
             status: 200, data: {
                 driverRouteData: driverRouteDataPlainJSON, searchedNode: nodeToSearch,
                 nodeDepartureDateTimeWindow: departureDateTimeWindow,
-                nodeDepartureFlexibility: departureFlexibility
+                nodeDepartureFlexibility: departureFlexibility,
+                nodePointIntersectingRouteArrivalTimes: nodePointIntersectingRouteArrivalTimes,
             }
         };
     }
@@ -774,13 +802,13 @@ export class DriverRouteService {
                 let primaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.driverRoute.drouteNodes![primaryClassifiedRoute.riderDestinationRank];
 
                 primaryClassifiedRoute.driverRoute.drouteNodes!.map(async (driverRouteNode: DriverRouteNodeAssocitedDto) => {
-                    driverRouteNode.departureTime = driverRouteNode.departureTime ? await normalizeTimeZone(driverRouteNode.departureTime as string) : driverRouteNode.departureTime;
-                    driverRouteNode.arrivalTime = driverRouteNode.arrivalTime ? await normalizeTimeZone(driverRouteNode.arrivalTime as string) : driverRouteNode.arrivalTime;
+                    driverRouteNode.departureTime = driverRouteNode.departureTime ? normalizeTimeZone(driverRouteNode.departureTime as string) : driverRouteNode.departureTime;
+                    driverRouteNode.arrivalTime = driverRouteNode.arrivalTime ? normalizeTimeZone(driverRouteNode.arrivalTime as string) : driverRouteNode.arrivalTime;
                 });
 
                 routeOption.primary = {
                     drouteId: primaryClassifiedRoute.driverRoute.drouteId, originNode: primaryFirstNode.nodeId, destinationNode: primaryLastNode.nodeId,
-                    originDepartureTime: await normalizeTimeZone(primaryFirstNode.departureTime as string), destinationArrivalTime: await normalizeTimeZone(primaryLastNode.arrivalTime as string),
+                    originDepartureTime: normalizeTimeZone(primaryFirstNode.departureTime as string), destinationArrivalTime: normalizeTimeZone(primaryLastNode.arrivalTime as string),
                     routeDuration: Math.round(primaryClassifiedRoute.riderCumulativeDuration ?? 0), routeDistance: parseFloat(primaryClassifiedRoute.riderCumulativeDistance?.toFixed(1) ?? '0'),
                     drouteNodes: primaryClassifiedRoute.driverRoute.drouteNodes!, drouteName: primaryClassifiedRoute.driverRoute.drouteName!,
                     originNodeDescription: primaryFirstNode.node?.description!, originNodeLocation: primaryFirstNode.node?.location!, transferWaitTime: 0,
@@ -804,13 +832,13 @@ export class DriverRouteService {
                     let secondaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes![primaryClassifiedRoute.intersectingRoute.riderDestinationRank];
 
                     primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes!.map(async (driverRouteNode: DriverRouteNodeAssocitedDto) => {
-                        driverRouteNode.departureTime = driverRouteNode.departureTime ? await normalizeTimeZone(driverRouteNode.departureTime as string) : driverRouteNode.departureTime;
-                        driverRouteNode.arrivalTime = driverRouteNode.arrivalTime ? await normalizeTimeZone(driverRouteNode.arrivalTime as string) : driverRouteNode.arrivalTime;
+                        driverRouteNode.departureTime = driverRouteNode.departureTime ? normalizeTimeZone(driverRouteNode.departureTime as string) : driverRouteNode.departureTime;
+                        driverRouteNode.arrivalTime = driverRouteNode.arrivalTime ? normalizeTimeZone(driverRouteNode.arrivalTime as string) : driverRouteNode.arrivalTime;
                     });
 
                     routeOption.secondary = {
                         originNode: secondaryFirstNode.nodeId, destinationNode: secondaryLastNode.nodeId, drouteId: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId,
-                        originDepartureTime: await normalizeTimeZone(secondaryFirstNode.departureTime as string), destinationArrivalTime: await normalizeTimeZone(secondaryLastNode.arrivalTime as string),
+                        originDepartureTime: normalizeTimeZone(secondaryFirstNode.departureTime as string), destinationArrivalTime: normalizeTimeZone(secondaryLastNode.arrivalTime as string),
                         routeDuration: Math.round(primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration ?? 0), routeDistance: parseFloat(primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance?.toFixed(1) ?? '0'),
                         drouteNodes: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteNodes!, drouteName: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteName!,
                         originNodeDescription: secondaryFirstNode.node?.description!, originNodeLocation: secondaryFirstNode.node?.location!,
@@ -835,15 +863,15 @@ export class DriverRouteService {
                         let tertiaryLastNode: DriverRouteNodeAssocitedDto = primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes![primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderDestinationRank];
 
                         primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes!.map(async (driverRouteNode: DriverRouteNodeAssocitedDto) => {
-                            driverRouteNode.departureTime = driverRouteNode.departureTime ? await normalizeTimeZone(driverRouteNode.departureTime as string) : driverRouteNode.departureTime;
-                            driverRouteNode.arrivalTime = driverRouteNode.arrivalTime ? await normalizeTimeZone(driverRouteNode.arrivalTime as string) : driverRouteNode.arrivalTime;
+                            driverRouteNode.departureTime = driverRouteNode.departureTime ? normalizeTimeZone(driverRouteNode.departureTime as string) : driverRouteNode.departureTime;
+                            driverRouteNode.arrivalTime = driverRouteNode.arrivalTime ? normalizeTimeZone(driverRouteNode.arrivalTime as string) : driverRouteNode.arrivalTime;
                         });
 
                         routeOption.tertiary = {
                             originNode: tertiaryFirstNode.nodeId, destinationNode: tertiaryLastNode.nodeId,
                             drouteId: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteId,
-                            originDepartureTime: await normalizeTimeZone(tertiaryFirstNode.departureTime as string),
-                            destinationArrivalTime: await normalizeTimeZone(tertiaryLastNode.arrivalTime as string),
+                            originDepartureTime: normalizeTimeZone(tertiaryFirstNode.departureTime as string),
+                            destinationArrivalTime: normalizeTimeZone(tertiaryLastNode.arrivalTime as string),
                             routeDuration: Math.round(primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDuration ?? 0),
                             routeDistance: parseFloat(primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance?.toFixed(1) ?? '0'),
                             drouteNodes: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteNodes!, drouteName: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteName!,
