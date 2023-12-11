@@ -553,18 +553,24 @@ export class DriverRouteService {
                 if (drouteNode.nodeId === nodeId) {
                     riderOriginRank = drouteNode.rank ?? Infinity;
                 }
-                const nodeIdIndex = nodePointIntersectingRouteArrivalTimes.findIndex(record => record.hasOwnProperty(drouteNode.nodeId));
-                const timeRecord = {
-                    Routeid: drouteNode.drouteId,
-                    arrival_time: normalizeTimeZone((drouteNode.arrivalTime ?? drouteNode.departureTime!) as string)
-                };
+            }));
 
-                if (nodeIdIndex === -1) {
-                    nodePointIntersectingRouteArrivalTimes.push({ [drouteNode.nodeId]: [timeRecord] });
-                } else {
-                    nodePointIntersectingRouteArrivalTimes[nodeIdIndex][drouteNode.nodeId].push(timeRecord);
+            await Promise.all(driverRoute.drouteNodes!.map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
+                if (drouteNode.rank! >= riderOriginRank) {
+                    const nodeIdIndex = nodePointIntersectingRouteArrivalTimes.findIndex(record => record.hasOwnProperty(drouteNode.nodeId));
+                    const timeRecord = {
+                        Routeid: drouteNode.drouteId,
+                        arrival_time: normalizeTimeZone((drouteNode.arrivalTime ?? drouteNode.departureTime!) as string)
+                    };
+
+                    if (nodeIdIndex === -1) {
+                        nodePointIntersectingRouteArrivalTimes.push({ [drouteNode.nodeId]: [timeRecord] });
+                    } else {
+                        nodePointIntersectingRouteArrivalTimes[nodeIdIndex][drouteNode.nodeId].push(timeRecord);
+                    }
                 }
             }));
+
             driverRoute = await retimeRoute(driverRoute, riderOriginRank)
 
             let osrmRoute: Array<[number, number]> = await this.getOptionOsrmRouteSection(driverRoute.drouteId, isPartial ? nodeId : driverRoute.originNode, driverRoute.destinationNode, !isPartial ? nodeId : Infinity);
@@ -625,12 +631,11 @@ export class DriverRouteService {
 
 
             let arrivalTimeAtNode: string = "";
-            // driverRouteOsrm.drouteNodes = 
-            driverRouteOsrm.drouteNodes!.map((drouteNode: DriverRouteNodeAssocitedDto) => {
+            driverRouteOsrm.drouteNodes = driverRouteOsrm.drouteNodes!.filter((drouteNode: DriverRouteNodeAssocitedDto) => {
                 if (drouteNode.nodeId === nodeId) {
                     arrivalTimeAtNode = moment(drouteNode.arrivalTime, "YYYY-MM-DD HH:mm").utcOffset(0, true).format("YYYY-MM-DD HH:mm")
                 }
-                // return drouteNode.rank! > searchNodeRank
+                return drouteNode.rank! >= searchNodeRank
             });
             driverRouteOsrm.arrivalTimeAtNode = arrivalTimeAtNode
             return driverRouteOsrm;
