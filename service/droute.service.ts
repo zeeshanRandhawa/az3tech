@@ -556,7 +556,19 @@ export class DriverRouteService {
             }));
 
             await Promise.all(driverRoute.drouteNodes!.map(async (drouteNode: DriverRouteNodeAssocitedDto) => {
-                if (drouteNode.rank! >= riderOriginRank) {
+                if (drouteNode.rank! >= riderOriginRank && isPartial === true) {
+                    const nodeIdIndex = nodePointIntersectingRouteArrivalTimes.findIndex(record => record.hasOwnProperty(drouteNode.nodeId));
+                    const timeRecord = {
+                        Routeid: drouteNode.drouteId,
+                        arrival_time: normalizeTimeZone((drouteNode.arrivalTime ?? drouteNode.departureTime!) as string)
+                    };
+
+                    if (nodeIdIndex === -1) {
+                        nodePointIntersectingRouteArrivalTimes.push({ [drouteNode.nodeId]: [timeRecord] });
+                    } else {
+                        nodePointIntersectingRouteArrivalTimes[nodeIdIndex][drouteNode.nodeId].push(timeRecord);
+                    }
+                } else if (isPartial === false) {
                     const nodeIdIndex = nodePointIntersectingRouteArrivalTimes.findIndex(record => record.hasOwnProperty(drouteNode.nodeId));
                     const timeRecord = {
                         Routeid: drouteNode.drouteId,
@@ -736,7 +748,7 @@ export class DriverRouteService {
                     originNode: primaryFirstNode.nodeId, destinationNode: primaryLastNode.nodeId, drouteId: primaryClassifiedRoute.driverRoute.drouteId,
                     originDepartureTime: primaryFirstNode.departureTime as string, destinationArrivalTime: primaryLastNode.arrivalTime as string,
                     drouteName: primaryClassifiedRoute.driverRoute.drouteName!, distanceRatio: primaryClassifiedRoute.riderCumulativeDistance! / totalDistance,
-                    duration: Math.round(primaryClassifiedRoute.riderCumulativeDistance!), location: primaryFirstNode.node?.location!,
+                    duration: Math.round(primaryClassifiedRoute.riderCumulativeDuration!), location: primaryFirstNode.node?.location!,
                     description: primaryFirstNode.node?.description!
                 }
 
@@ -748,7 +760,7 @@ export class DriverRouteService {
                         originNode: secondaryFirstNode.nodeId, destinationNode: secondaryLastNode.nodeId, drouteId: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteId,
                         originDepartureTime: secondaryFirstNode.departureTime as string, destinationArrivalTime: secondaryLastNode.arrivalTime as string,
                         drouteName: primaryClassifiedRoute.intersectingRoute.driverRoute.drouteName!, distanceRatio: primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance! / totalDistance,
-                        duration: Math.round(primaryClassifiedRoute.intersectingRoute.riderCumulativeDistance!), location: secondaryFirstNode.node?.location!,
+                        duration: Math.round(primaryClassifiedRoute.intersectingRoute.riderCumulativeDuration!), location: secondaryFirstNode.node?.location!,
                         description: secondaryFirstNode.node?.description!
                     }
 
@@ -763,7 +775,7 @@ export class DriverRouteService {
                             destinationArrivalTime: tertiaryLastNode.arrivalTime as string,
                             drouteName: primaryClassifiedRoute.intersectingRoute.intersectingRoute.driverRoute.drouteName!,
                             distanceRatio: primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance! / totalDistance,
-                            duration: Math.round(primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDistance!),
+                            duration: Math.round(primaryClassifiedRoute.intersectingRoute.intersectingRoute.riderCumulativeDuration!),
                             location: tertiaryFirstNode.node?.location!, description: tertiaryFirstNode.node?.description!
                         }
                     }
