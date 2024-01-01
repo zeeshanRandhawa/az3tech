@@ -560,7 +560,9 @@ export class DriverRouteService {
                     const nodeIdIndex = nodePointIntersectingRouteArrivalTimes.findIndex(record => record.hasOwnProperty(drouteNode.nodeId));
                     const timeRecord = {
                         Routeid: drouteNode.drouteId,
-                        arrival_time: normalizeTimeZone((drouteNode.arrivalTime ?? drouteNode.departureTime!) as string)
+                        arrival_time: normalizeTimeZone((drouteNode.arrivalTime ?? drouteNode.departureTime!) as string),
+                        routeName: driverRoute.drouteName,
+                        routeIntialDepartureTime: normalizeTimeZone((driverRoute.departureTime) as string)
                     };
 
                     if (nodeIdIndex === -1) {
